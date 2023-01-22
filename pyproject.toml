@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "samanthas-telegram-bot"
+version = "0.1.0"
+description = "Telegram bot(s) for Samanthas Group"
+authors = ["Dmitry Kolomatskiy <58207913+lemontree210@users.noreply.github.com>"]
+license = "GPL-3.0-only"
+readme = "README.md"
+packages = [{include = "samanthas_telegram_bot"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+python-telegram-bot = "~20.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^22.12.0"
+ruff = "^0.0.229"
+pre-commit = "^2.21.0"
+icecream = "^2.1.3"
+isort = "^5.11.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
