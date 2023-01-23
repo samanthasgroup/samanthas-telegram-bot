@@ -24,6 +24,7 @@ class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
     FULL_NAME = auto()
+    AGE = auto()
     LANGUAGE_TO_LEARN = auto()
     LEVEL = auto()
     HOW_OFTEN = auto()
@@ -64,20 +65,34 @@ async def full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         "What's your full name that will be stored in our database?",
         reply_markup=ReplyKeyboardRemove(),
     )
+    return State.AGE
+
+
+async def age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the full name and asks the user what their age is."""
+
+    context.user_data["full_name_indicated_by_user"] = update.message.text
+
+    await update.message.reply_text("What's your age?", reply_markup=ReplyKeyboardRemove())
     return State.LANGUAGE_TO_LEARN
 
 
 async def language_to_learn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the full name and asks the user what language they want to learn."""
 
-    context.user_data["full_name_indicated_by_user"] = update.message.text
-
-    reply_keyboard = [["English", "German", "Swedish", "Spanish"]]
+    try:
+        context.user_data["age"] = int(update.message.text.strip())
+    except ValueError:
+        await update.message.reply_text(
+            "Hmm... that doesn't look like a number. Please try again.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return State.LANGUAGE_TO_LEARN
 
     await update.message.reply_text(
         "What language do you want to learn?",
         reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
+            [["English", "German", "Swedish", "Spanish"]],
             one_time_keyboard=True,
             input_field_placeholder="What is your level?",
         ),
@@ -231,6 +246,7 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             State.FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, full_name)],
+            State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, age)],
             State.LANGUAGE_TO_LEARN: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, language_to_learn)
             ],
