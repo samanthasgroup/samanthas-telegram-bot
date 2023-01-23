@@ -27,6 +27,8 @@ class State(IntEnum):
     AGE = auto()
     LANGUAGE_TO_LEARN = auto()
     LEVEL = auto()
+    CHECK_USERNAME = auto()
+    GET_PHONE_NUMBER = auto()
     HOW_OFTEN = auto()
     CHOOSE_DAY = auto()
     CHOOSE_TIME = auto()
@@ -94,7 +96,7 @@ async def language_to_learn(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         reply_markup=ReplyKeyboardMarkup(
             [["English", "German", "Swedish", "Spanish"]],
             one_time_keyboard=True,
-            input_field_placeholder="What is your level?",
+            input_field_placeholder="What language do you want to learn?",
         ),
     )
     return State.LEVEL
@@ -119,18 +121,71 @@ async def level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ),
     )
 
+    return State.CHECK_USERNAME
+
+
+async def check_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the selected level, checks Telegram nickname or asks for phone number."""
+
+    context.user_data["language_level"] = update.message.text
+    logger.info(f"Level: {context.user_data['language_level']}")
+
+    username = update.effective_user.username
+
+    if username:
+        await update.message.reply_text(
+            f"We will store your username @{username} to contact you the future. Is it OK?",
+            reply_markup=ReplyKeyboardMarkup(
+                [["OK!", "No, I'll provide a phone number"]],
+                one_time_keyboard=True,
+                input_field_placeholder="OK to use your Telegram username?",
+            ),
+        )
+
+    return State.GET_PHONE_NUMBER
+
+
+async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """If user's username was empty or they chose to provide a phone number, ask for it."""
+
+    username = update.effective_user.username
+
+    if update.message.text == "OK!" and username:
+        context.user_data["username"] = username
+        logger.info(f"Username: {username}. Will be stored in the database.")
+
+        # TODO this is repetition with below
+        await update.message.reply_text(
+            "How many times a week do you wish to study?",
+            reply_markup=ReplyKeyboardMarkup(
+                [["1", "2", "3"]],
+                one_time_keyboard=True,
+                input_field_placeholder="How many times?",
+            ),
+        )
+        return State.CHOOSE_DAY
+
+    else:
+        context.user_data["username"] = None
+        await update.message.reply_text(
+            "Please provide a phone number so that we can contact you",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
     return State.HOW_OFTEN
 
 
 async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the photo and asks for a location."""
 
-    reply_keyboard = [["1", "2", "3"]]
+    # checking this, not update.effective_user.username
+    if not context.user_data["username"]:
+        context.user_data["phone_number"] = update.message.text  # TODO validate
 
     await update.message.reply_text(
         "How many times a week do you wish to study?",
         reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
+            [["1", "2", "3"]],
             one_time_keyboard=True,
             input_field_placeholder="How many times?",
         ),
@@ -251,6 +306,12 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, language_to_learn)
             ],
             State.LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, level)],
+            State.CHECK_USERNAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, check_username)
+            ],
+            State.GET_PHONE_NUMBER: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_phone_number)
+            ],
             State.HOW_OFTEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, how_often)],
             State.CHOOSE_DAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_day)],
             State.CHOOSE_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_time)],
