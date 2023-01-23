@@ -1,5 +1,6 @@
 import logging
 import os
+from enum import IntEnum, auto
 
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
 from telegram.ext import (
@@ -18,7 +19,16 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-LEVEL, HOW_OFTEN, CHOOSE_DAY, CHOOSE_TIME, CHOOSE_ANOTHER_DAY, COMMENT = range(6)
+
+class State(IntEnum):
+    """Provides integer keys for the dictionary of states for ConversationHandler."""
+
+    LEVEL = auto()
+    HOW_OFTEN = auto()
+    CHOOSE_DAY = auto()
+    CHOOSE_TIME = auto()
+    CHOOSE_ANOTHER_DAY = auto()
+    COMMENT = auto()
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -38,7 +48,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             input_field_placeholder="Choose your language",
         ),
     )
-    return LEVEL
+    return State.LEVEL
 
 
 async def level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -59,7 +69,7 @@ async def level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ),
     )
 
-    return HOW_OFTEN
+    return State.HOW_OFTEN
 
 
 async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -76,7 +86,7 @@ async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         ),
     )
 
-    return CHOOSE_DAY
+    return State.CHOOSE_DAY
 
 
 async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -87,7 +97,7 @@ async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             "Great! Is there anything else you want to say?",
             reply_markup=ReplyKeyboardRemove(),
         )
-        return COMMENT
+        return State.COMMENT
 
     reply_keyboard = [
         ["All weekdays", "Weekend"],
@@ -104,7 +114,7 @@ async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             input_field_placeholder="Choose day(s)",
         ),
     )
-    return CHOOSE_TIME
+    return State.CHOOSE_TIME
 
 
 async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -116,12 +126,10 @@ async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
         f"{update.message.text}: enter time range(s)",
         reply_markup=ReplyKeyboardRemove(),
     )
-    return CHOOSE_ANOTHER_DAY
+    return State.CHOOSE_ANOTHER_DAY
 
 
-async def choose_another_day_or_done(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> int:
+async def choose_another_day_or_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the location and asks for some info about the user."""
 
     context.user_data["time_slots"].append(update.message.text)
@@ -130,9 +138,7 @@ async def choose_another_day_or_done(
 
     result = ",".join(
         f"{day} ({timing})"
-        for day, timing in zip(
-            context.user_data["days"], context.user_data["time_slots"]
-        )
+        for day, timing in zip(context.user_data["days"], context.user_data["time_slots"])
     )
 
     await update.message.reply_text(
@@ -143,14 +149,14 @@ async def choose_another_day_or_done(
             input_field_placeholder="Continue choosing?",
         ),
     )
-    return CHOOSE_DAY
+    return State.CHOOSE_DAY
 
 
 async def final_comment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the info about the user and ends the conversation."""
 
     user = update.message.from_user
-    logger.info("Bio of %s: %s", user.first_name, update.message.text)
+    logger.info("Comment from %s: %s", user.first_name, update.message.text)
 
     await update.message.reply_text("Thank you! I hope we can talk again some day.")
 
@@ -189,18 +195,14 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, level)],
-            HOW_OFTEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, how_often)],
-            CHOOSE_DAY: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, choose_day),
+            State.LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, level)],
+            State.HOW_OFTEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, how_often)],
+            State.CHOOSE_DAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_day)],
+            State.CHOOSE_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_time)],
+            State.CHOOSE_ANOTHER_DAY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, choose_another_day_or_done),
             ],
-            CHOOSE_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_time)],
-            CHOOSE_ANOTHER_DAY: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND, choose_another_day_or_done
-                ),
-            ],
-            COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, final_comment)],
+            State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, final_comment)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
