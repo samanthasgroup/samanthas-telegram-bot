@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
+    LANGUAGE_TO_LEARN = auto()
     LEVEL = auto()
     HOW_OFTEN = auto()
     CHOOSE_DAY = auto()
@@ -32,9 +33,9 @@ class State(IntEnum):
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Starts the conversation and asks the user about their gender."""
+    """Starts the conversation and asks the user about the language they want to communicate in."""
 
-    reply_keyboard = [["English", "Ukrainian", "Russian"]]
+    reply_keyboard = [["Ukrainian", "Russian"]]
 
     context.user_data["days"] = []
     context.user_data["time_slots"] = []
@@ -48,15 +49,37 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             input_field_placeholder="Choose your language",
         ),
     )
+    return State.LANGUAGE_TO_LEARN
+
+
+async def language_to_learn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the interface language and asks the user what language they want to learn."""
+
+    context.user_data["interface_language"] = update.message.text.lower()[:3]
+
+    logger.info(f"Chat ID: {update.effective_chat.id}")
+    logger.info(f"Language interface: {context.user_data['interface_language']}")
+
+    reply_keyboard = [["English", "German", "Swedish", "Spanish"]]
+
+    await update.message.reply_text(
+        "What language do you want to learn?",
+        reply_markup=ReplyKeyboardMarkup(
+            reply_keyboard,
+            one_time_keyboard=True,
+            input_field_placeholder="What is your level?",
+        ),
+    )
     return State.LEVEL
 
 
 async def level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the selected gender and asks for a photo."""
+    """Stores the selected language to learn and asks for the level (if it's English)."""
 
-    context.user_data["language"] = update.message.text.lower()[:3]
-    logger.info(f"Language interface: {context.user_data['language']}")
-    logger.info(f"Chat ID: {update.effective_chat.id}")
+    # TODO since the interface will be multilingual, we'll have to resolve this text to an ID
+    #  of language
+    context.user_data["language_to_learn"] = update.message.text
+    logger.info(f"Language to learn: {context.user_data['language_to_learn']}")
 
     reply_keyboard = [["A0", "A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["Don't know"]]
 
@@ -195,6 +218,9 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
+            State.LANGUAGE_TO_LEARN: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, language_to_learn)
+            ],
             State.LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, level)],
             State.HOW_OFTEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, how_often)],
             State.CHOOSE_DAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_day)],
