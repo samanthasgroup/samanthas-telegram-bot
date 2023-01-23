@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
+    FULL_NAME = auto()
     LANGUAGE_TO_LEARN = auto()
     LEVEL = auto()
     HOW_OFTEN = auto()
@@ -49,16 +50,27 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
             input_field_placeholder="Choose your language",
         ),
     )
+    logger.info(f"Chat ID: {update.effective_chat.id}")
+    return State.FULL_NAME
+
+
+async def full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the interface language and asks the user what their name is."""
+
+    context.user_data["interface_language"] = update.message.text.lower()[:3]
+    logger.info(f"Language of interface: {context.user_data['interface_language']}")
+
+    await update.message.reply_text(
+        "What's your full name that will be stored in our database?",
+        reply_markup=ReplyKeyboardRemove(),
+    )
     return State.LANGUAGE_TO_LEARN
 
 
 async def language_to_learn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the interface language and asks the user what language they want to learn."""
+    """Stores the full name and asks the user what language they want to learn."""
 
-    context.user_data["interface_language"] = update.message.text.lower()[:3]
-
-    logger.info(f"Chat ID: {update.effective_chat.id}")
-    logger.info(f"Language interface: {context.user_data['interface_language']}")
+    context.user_data["full_name_indicated_by_user"] = update.message.text
 
     reply_keyboard = [["English", "German", "Swedish", "Spanish"]]
 
@@ -218,6 +230,7 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
+            State.FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, full_name)],
             State.LANGUAGE_TO_LEARN: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, language_to_learn)
             ],
