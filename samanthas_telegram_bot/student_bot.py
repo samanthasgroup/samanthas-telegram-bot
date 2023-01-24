@@ -29,6 +29,7 @@ class State(IntEnum):
     LEVEL = auto()
     CHECK_USERNAME = auto()
     GET_PHONE_NUMBER = auto()
+    GET_EMAIL = auto()
     HOW_OFTEN = auto()
     CHOOSE_DAY = auto()
     CHOOSE_TIME = auto()
@@ -153,18 +154,11 @@ async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if update.message.text == "OK!" and username:
         context.user_data["username"] = username
         logger.info(f"Username: {username}. Will be stored in the database.")
-
-        # TODO this is repetition with below
         await update.message.reply_text(
-            "How many times a week do you wish to study?",
-            reply_markup=ReplyKeyboardMarkup(
-                [["1", "2", "3"]],
-                one_time_keyboard=True,
-                input_field_placeholder="How many times?",
-            ),
+            # TODO "-" for no email?
+            "Please provide an email so that we can contact you",
+            reply_markup=ReplyKeyboardRemove(),
         )
-        return State.CHOOSE_DAY
-
     else:
         context.user_data["username"] = None
         await update.message.reply_text(
@@ -172,15 +166,39 @@ async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             reply_markup=ReplyKeyboardRemove(),
         )
 
-    return State.HOW_OFTEN
+    return State.GET_EMAIL
 
 
-async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the photo and asks for a location."""
+async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the phone number and asks for email."""
 
     # checking this, not update.effective_user.username
     if not context.user_data["username"]:
+        context.user_data["phone_number"] = update.message.text
+        if not update.message.text:  # TODO validate; text cannot be empty anyway
+            await update.message.reply_text(
+                "Please provide a valid phone number",
+                reply_markup=ReplyKeyboardRemove(),
+            )
+            return State.GET_EMAIL
+
+    if update.message.text:
         context.user_data["phone_number"] = update.message.text  # TODO validate
+        await update.message.reply_text(
+            "Please provide your email",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return State.HOW_OFTEN
+
+
+async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the email and asks how many times student wants to study."""
+    if not update.message.text:  # TODO validate (message can't be empty anyway)
+        await update.message.reply_text(
+            "Please provide a valid email",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return State.HOW_OFTEN
 
     await update.message.reply_text(
         "How many times a week do you wish to study?",
@@ -312,6 +330,7 @@ def main() -> None:
             State.GET_PHONE_NUMBER: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, get_phone_number)
             ],
+            State.GET_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
             State.HOW_OFTEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, how_often)],
             State.CHOOSE_DAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_day)],
             State.CHOOSE_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_time)],
