@@ -1,10 +1,19 @@
 import logging
 import os
+import re
+from datetime import timedelta
 from enum import IntEnum, auto
 
-from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    Update,
+)
 from telegram.ext import (
     Application,
+    CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
@@ -19,6 +28,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
+EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
+
 
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
@@ -28,8 +39,9 @@ class State(IntEnum):
     LANGUAGE_TO_LEARN = auto()
     LEVEL = auto()
     CHECK_USERNAME = auto()
-    GET_PHONE_NUMBER = auto()
-    GET_EMAIL = auto()
+    PHONE_NUMBER = auto()
+    EMAIL = auto()
+    TIMEZONE = auto()
     HOW_OFTEN = auto()
     CHOOSE_DAY = auto()
     CHOOSE_TIME = auto()
@@ -143,7 +155,7 @@ async def save_level_check_username(update: Update, context: ContextTypes.DEFAUL
             ),
         )
 
-    return State.GET_PHONE_NUMBER
+    return State.PHONE_NUMBER
 
 
 async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -159,18 +171,22 @@ async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_
             "Please provide an email so that we can contact you",
             reply_markup=ReplyKeyboardRemove(),
         )
-    else:
-        context.user_data["username"] = None
-        await update.message.reply_text(
-            "Please provide a phone number so that we can contact you",
-            reply_markup=ReplyKeyboardRemove(),
-        )
+        return State.TIMEZONE
 
-    return State.GET_EMAIL
+    # TODO ReplyKeyboardMarkup([[KeyboardButton(text="Share", request_contact=True)]]
+    context.user_data["username"] = None
+    await update.message.reply_text(
+        "Please provide a phone number so that we can contact you",
+        reply_markup=ReplyKeyboardRemove(),
+    )
+
+    return State.EMAIL
 
 
 async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the phone number and asks for email."""
+
+    logger.info(f"Phone: {update.message.text}")
 
     # checking this, not update.effective_user.username
     if not context.user_data["username"]:
@@ -180,7 +196,7 @@ async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYP
                 "Please provide a valid phone number",
                 reply_markup=ReplyKeyboardRemove(),
             )
-            return State.GET_EMAIL
+            return State.EMAIL
 
     if update.message.text:
         context.user_data["phone_number"] = update.message.text  # TODO validate
@@ -188,19 +204,69 @@ async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYP
             "Please provide your email",
             reply_markup=ReplyKeyboardRemove(),
         )
-        return State.HOW_OFTEN
+        return State.TIMEZONE
 
 
-async def save_email_ask_how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the email and asks how many times student wants to study."""
-    if not update.message.text:  # TODO validate (message can't be empty anyway)
+async def save_email_ask_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the email and asks for timezone."""
+
+    email = update.message.text.strip()
+    if not EMAIL_PATTERN.match(email):
         await update.message.reply_text(
             "Please provide a valid email",
             reply_markup=ReplyKeyboardRemove(),
         )
-        return State.HOW_OFTEN
+        return State.TIMEZONE
+    context.user_data["email"] = email
+
+    timestamp = update.message.date
 
     await update.message.reply_text(
+        "What's your timezone? (Choose the correct current time)",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text=f"UTC-1 ({(timestamp - timedelta(hours=1)).strftime('%H:%M')})",
+                        callback_data="UTC-1",
+                    ),
+                    InlineKeyboardButton(
+                        text=f"UTC ({timestamp.strftime('%H:%M')})",
+                        callback_data="UTC",
+                    ),
+                    InlineKeyboardButton(
+                        text=f"UTC+1 ({(timestamp + timedelta(hours=1)).strftime('%H:%M')})",
+                        callback_data="UTC+1",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=f"UTC+2 ({(timestamp + timedelta(hours=2)).strftime('%H:%M')})",
+                        callback_data="UTC+2",
+                    ),
+                    InlineKeyboardButton(
+                        text=f"UTC+3 ({(timestamp + timedelta(hours=3)).strftime('%H:%M')})",
+                        callback_data="UTC+3",
+                    ),
+                    InlineKeyboardButton(
+                        text=f"UTC+4 ({(timestamp + timedelta(hours=4)).strftime('%H:%M')})",
+                        callback_data="UTC+4",
+                    ),
+                ],
+            ]
+        ),
+    )
+    return State.HOW_OFTEN
+
+
+async def save_timezone_ask_how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the timezone and asks how often user wants to study."""
+    query = update.callback_query
+    logger.info(query.data)
+    await query.answer()
+    await query.edit_message_text(text=f"Your timezone: {query.data}")
+
+    await update.effective_chat.send_message(
         "How many times a week do you wish to study?",
         reply_markup=ReplyKeyboardMarkup(
             [["1", "2", "3"]],
@@ -334,15 +400,14 @@ def main() -> None:
             State.CHECK_USERNAME: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_level_check_username)
             ],
-            State.GET_PHONE_NUMBER: [
+            State.PHONE_NUMBER: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_username_ask_phone)
             ],
-            State.GET_EMAIL: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_phone_ask_email)
+            State.EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_phone_ask_email)],
+            State.TIMEZONE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_timezone)
             ],
-            State.HOW_OFTEN: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_how_often)
-            ],
+            State.HOW_OFTEN: [CallbackQueryHandler(save_timezone_ask_how_often, pattern="UTC")],
             State.CHOOSE_DAY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_how_often_ask_day)
             ],
