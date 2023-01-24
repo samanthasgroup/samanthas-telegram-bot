@@ -58,7 +58,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.FULL_NAME
 
 
-async def full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_language_ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the interface language and asks the user what their name is."""
 
     context.user_data["interface_language"] = update.message.text.lower()[:3]
@@ -71,7 +71,7 @@ async def full_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.AGE
 
 
-async def age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_name_ask_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the full name and asks the user what their age is."""
 
     context.user_data["full_name_indicated_by_user"] = update.message.text
@@ -80,8 +80,8 @@ async def age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.LANGUAGE_TO_LEARN
 
 
-async def language_to_learn(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the full name and asks the user what language they want to learn."""
+async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the age and asks the user what language they want to learn."""
 
     try:
         context.user_data["age"] = int(update.message.text.strip())
@@ -103,7 +103,7 @@ async def language_to_learn(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     return State.LEVEL
 
 
-async def level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the selected language to learn and asks for the level (if it's English)."""
 
     # TODO since the interface will be multilingual, we'll have to resolve this text to an ID
@@ -125,7 +125,7 @@ async def level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.CHECK_USERNAME
 
 
-async def check_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_level_check_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the selected level, checks Telegram nickname or asks for phone number."""
 
     context.user_data["language_level"] = update.message.text
@@ -146,7 +146,7 @@ async def check_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     return State.GET_PHONE_NUMBER
 
 
-async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """If user's username was empty or they chose to provide a phone number, ask for it."""
 
     username = update.effective_user.username
@@ -169,7 +169,7 @@ async def get_phone_number(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     return State.GET_EMAIL
 
 
-async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the phone number and asks for email."""
 
     # checking this, not update.effective_user.username
@@ -191,7 +191,7 @@ async def get_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         return State.HOW_OFTEN
 
 
-async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_email_ask_how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the email and asks how many times student wants to study."""
     if not update.message.text:  # TODO validate (message can't be empty anyway)
         await update.message.reply_text(
@@ -212,8 +212,10 @@ async def how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.CHOOSE_DAY
 
 
-async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the location and asks for some info about the user."""
+async def save_how_often_ask_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Saves how often, asks for the day(s)."""
+
+    # TODO save how often; loop for the given number of days?
 
     if update.message.text.lower() == "no":
         await update.message.reply_text(
@@ -240,11 +242,12 @@ async def choose_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.CHOOSE_TIME
 
 
-async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the location and asks for some info about the user."""
+async def save_day_ask_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Stores the day and asks for time slots."""
 
     context.user_data["days"].append(update.message.text)
 
+    # TODO slots (how to choose multiple?)
     await update.message.reply_text(
         f"{update.message.text}: enter time range(s)",
         reply_markup=ReplyKeyboardRemove(),
@@ -253,7 +256,7 @@ async def choose_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int
 
 
 async def choose_another_day_or_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the location and asks for some info about the user."""
+    """Saves time slot, asks if user wants to choose another day."""
 
     context.user_data["time_slots"].append(update.message.text)
 
@@ -318,22 +321,34 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            State.FULL_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, full_name)],
-            State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, age)],
-            State.LANGUAGE_TO_LEARN: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, language_to_learn)
+            State.FULL_NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_language_ask_name)
             ],
-            State.LEVEL: [MessageHandler(filters.TEXT & ~filters.COMMAND, level)],
+            State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_name_ask_age)],
+            State.LANGUAGE_TO_LEARN: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_age_ask_language)
+            ],
+            State.LEVEL: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_language_ask_level)
+            ],
             State.CHECK_USERNAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, check_username)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_level_check_username)
             ],
             State.GET_PHONE_NUMBER: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, get_phone_number)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_username_ask_phone)
             ],
-            State.GET_EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_email)],
-            State.HOW_OFTEN: [MessageHandler(filters.TEXT & ~filters.COMMAND, how_often)],
-            State.CHOOSE_DAY: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_day)],
-            State.CHOOSE_TIME: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_time)],
+            State.GET_EMAIL: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_phone_ask_email)
+            ],
+            State.HOW_OFTEN: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_how_often)
+            ],
+            State.CHOOSE_DAY: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_how_often_ask_day)
+            ],
+            State.CHOOSE_TIME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_day_ask_time)
+            ],
             State.CHOOSE_ANOTHER_DAY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, choose_another_day_or_done),
             ],
