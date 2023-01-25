@@ -361,17 +361,38 @@ async def save_day_ask_time(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     context.user_data["days"].append(update.message.text)
 
     # TODO slots (how to choose multiple?)
-    await update.message.reply_text(
-        f"{update.message.text}: enter time range(s)",
-        reply_markup=ReplyKeyboardRemove(),
+
+    await update.effective_chat.send_message(
+        "Choose a time slot",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    # TODO store in database with timezone correction?
+                    #  How about daylight saving time?
+                    InlineKeyboardButton(text="08:00-11:00", callback_data="8-11"),
+                    InlineKeyboardButton(text="11:00-14:00", callback_data="11-14"),
+                ],
+                [
+                    InlineKeyboardButton(text="14:00-17:00", callback_data="14-17"),
+                    InlineKeyboardButton(text="17:00-21:00", callback_data="17-21"),
+                ],
+            ]
+        ),
     )
     return State.CHOOSE_ANOTHER_DAY
 
 
-async def choose_another_day_or_done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_time_choose_another_day_or_done(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
     """Saves time slot, asks if user wants to choose another day."""
 
-    context.user_data["time_slots"].append(update.message.text)
+    query = update.callback_query
+    logger.info(query.data)
+    await query.answer()
+    await query.edit_message_text(text=f"{query.data}")
+
+    context.user_data["time_slots"].append(query.data)
 
     reply_keyboard = [["Yes", "No"]]
 
@@ -380,7 +401,7 @@ async def choose_another_day_or_done(update: Update, context: ContextTypes.DEFAU
         for day, timing in zip(context.user_data["days"], context.user_data["time_slots"])
     )
 
-    await update.message.reply_text(
+    await update.effective_chat.send_message(
         f"You have chosen:{result}. Choose another day or days?",
         reply_markup=ReplyKeyboardMarkup(
             reply_keyboard,
@@ -463,7 +484,9 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_day_ask_time)
             ],
             State.CHOOSE_ANOTHER_DAY: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, choose_another_day_or_done),
+                CallbackQueryHandler(
+                    save_time_choose_another_day_or_done, pattern=r"\d{1,2}-\d{2}"
+                ),
             ],
             State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, final_comment)],
         },
