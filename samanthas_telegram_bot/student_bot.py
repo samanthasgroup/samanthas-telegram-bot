@@ -52,7 +52,7 @@ class State(IntEnum):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Starts the conversation and asks the user about the language they want to communicate in."""
 
-    reply_keyboard = [["Ukrainian", "Russian"]]
+    logger.info(f"Chat ID: {update.effective_chat.id}")
 
     context.user_data["days"] = []
     context.user_data["time_slots"] = []
@@ -60,23 +60,35 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(
         f"Hi {update.message.from_user.first_name}! Please choose your language. "
         "Send /cancel to stop talking to me.\n\n",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
-            one_time_keyboard=True,
-            input_field_placeholder="Choose your language",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text="Ukrainian",
+                        callback_data="ukr",
+                    ),
+                    InlineKeyboardButton(
+                        text="Russian",
+                        callback_data="rus",
+                    ),
+                ],
+            ]
         ),
     )
-    logger.info(f"Chat ID: {update.effective_chat.id}")
+
     return State.FULL_NAME
 
 
-async def save_language_ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_interface_lang_ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the interface language and asks the user what their name is."""
 
-    context.user_data["interface_language"] = update.message.text.lower()[:3]
-    logger.info(f"Language of interface: {context.user_data['interface_language']}")
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="Thank you", reply_markup=InlineKeyboardMarkup([]))
 
-    await update.message.reply_text(
+    context.user_data["interface_language"] = query.data
+
+    await update.effective_chat.send_message(
         "What's your full name that will be stored in our database?",
         reply_markup=ReplyKeyboardRemove(),
     )
@@ -388,7 +400,7 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             State.FULL_NAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_language_ask_name)
+                CallbackQueryHandler(save_interface_lang_ask_name, pattern="^(rus)|(ukr)$")
             ],
             State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_name_ask_age)],
             State.LANGUAGE_TO_LEARN: [
