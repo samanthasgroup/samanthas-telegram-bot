@@ -186,10 +186,15 @@ async def save_level_check_username(update: Update, context: ContextTypes.DEFAUL
     if username:
         await update.effective_chat.send_message(
             f"We will store your username @{username} to contact you the future. Is it OK?",
-            reply_markup=ReplyKeyboardMarkup(
-                [["OK!", "No, I'll provide a phone number"]],
-                one_time_keyboard=True,
-                input_field_placeholder="OK to use your Telegram username?",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(text="Yes", callback_data="store_username_yes"),
+                        InlineKeyboardButton(
+                            text="No, I'll use another phone", callback_data="store_username_no"
+                        ),
+                    ],
+                ]
             ),
         )
 
@@ -201,10 +206,14 @@ async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_
 
     username = update.effective_user.username
 
-    if update.message.text == "OK!" and username:
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="Thanks", reply_markup=InlineKeyboardMarkup([]))
+
+    if query.data == "store_username_yes" and username:
         context.user_data["username"] = username
         logger.info(f"Username: {username}. Will be stored in the database.")
-        await update.message.reply_text(
+        await update.effective_chat.send_message(
             # TODO "-" for no email?
             "Please provide an email so that we can contact you",
             reply_markup=ReplyKeyboardRemove(),
@@ -213,7 +222,7 @@ async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_
 
     # TODO ReplyKeyboardMarkup([[KeyboardButton(text="Share", request_contact=True)]]
     context.user_data["username"] = None
-    await update.message.reply_text(
+    await update.effective_chat.send_message(
         "Please provide a phone number so that we can contact you",
         reply_markup=ReplyKeyboardRemove(),
     )
@@ -437,10 +446,10 @@ def main() -> None:
                 CallbackQueryHandler(save_language_ask_level, pattern=r"^\w{3}$")
             ],
             State.CHECK_USERNAME: [
-                CallbackQueryHandler(save_level_check_username, pattern=".{2}")
+                CallbackQueryHandler(save_level_check_username, pattern="^.{2}$")
             ],
             State.PHONE_NUMBER: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_username_ask_phone)
+                CallbackQueryHandler(save_username_ask_phone, pattern="^store_username_.+$")
             ],
             State.EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_phone_ask_email)],
             State.TIMEZONE: [
