@@ -117,11 +117,22 @@ async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TY
         return State.LANGUAGE_TO_LEARN
 
     await update.message.reply_text(
-        "What language do you want to learn?",
-        reply_markup=ReplyKeyboardMarkup(
-            [["English", "German", "Swedish", "Spanish"]],
-            one_time_keyboard=True,
-            input_field_placeholder="What language do you want to learn?",
+        "What language would you like to learn?",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text="English", callback_data="eng"),
+                    InlineKeyboardButton(text="French", callback_data="fra"),
+                    InlineKeyboardButton(text="German", callback_data="ger"),
+                    InlineKeyboardButton(text="Spanish", callback_data="spa"),
+                ],
+                [
+                    InlineKeyboardButton(text="Italian", callback_data="ita"),
+                    InlineKeyboardButton(text="Polish", callback_data="pol"),
+                    InlineKeyboardButton(text="Czech", callback_data="cze"),
+                    InlineKeyboardButton(text="Swedish", callback_data="swe"),
+                ],
+            ]
         ),
     )
     return State.LEVEL
@@ -130,15 +141,17 @@ async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TY
 async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the selected language to learn and asks for the level (if it's English)."""
 
-    # TODO since the interface will be multilingual, we'll have to resolve this text to an ID
-    #  of language
-    context.user_data["language_to_learn"] = update.message.text
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text="Got it!", reply_markup=InlineKeyboardMarkup([]))
+
+    context.user_data["language_to_learn"] = query.data
     logger.info(f"Language to learn: {context.user_data['language_to_learn']}")
 
     reply_keyboard = [["A0", "A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["Don't know"]]
 
-    await update.message.reply_text(
-        "What is your level of English?",
+    await update.effective_chat.send_message(
+        "What is your level?",
         reply_markup=ReplyKeyboardMarkup(
             reply_keyboard,
             one_time_keyboard=True,
@@ -407,7 +420,8 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_age_ask_language)
             ],
             State.LEVEL: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_language_ask_level)
+                # ok for pattern to be this way because rus/ukr is not on that list anyway
+                CallbackQueryHandler(save_language_ask_level, pattern=r"^\w{3}$")
             ],
             State.CHECK_USERNAME: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_level_check_username)
