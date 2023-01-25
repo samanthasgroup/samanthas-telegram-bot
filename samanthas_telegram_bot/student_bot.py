@@ -148,14 +148,25 @@ async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_
     context.user_data["language_to_learn"] = query.data
     logger.info(f"Language to learn: {context.user_data['language_to_learn']}")
 
-    reply_keyboard = [["A0", "A1", "A2"], ["B1", "B2"], ["C1", "C2"], ["Don't know"]]
-
     await update.effective_chat.send_message(
         "What is your level?",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
-            one_time_keyboard=True,
-            input_field_placeholder="What is your level?",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(text="A0", callback_data="A0"),
+                    InlineKeyboardButton(text="A1", callback_data="A1"),
+                    InlineKeyboardButton(text="A2", callback_data="A2"),
+                ],
+                [
+                    InlineKeyboardButton(text="B1", callback_data="B1"),
+                    InlineKeyboardButton(text="B2", callback_data="B2"),
+                    InlineKeyboardButton(text="C1", callback_data="C1"),
+                    InlineKeyboardButton(text="C2", callback_data="C2"),
+                ],
+                [
+                    InlineKeyboardButton(text="Don't know", callback_data="??"),
+                ],
+            ]
         ),
     )
 
@@ -165,13 +176,15 @@ async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_
 async def save_level_check_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the selected level, checks Telegram nickname or asks for phone number."""
 
-    context.user_data["language_level"] = update.message.text
-    logger.info(f"Level: {context.user_data['language_level']}")
+    query = update.callback_query
+    await query.answer()
+    await query.edit_message_text(text=query.data, reply_markup=InlineKeyboardMarkup([]))
+    context.user_data["language_level"] = query.data
 
     username = update.effective_user.username
 
     if username:
-        await update.message.reply_text(
+        await update.effective_chat.send_message(
             f"We will store your username @{username} to contact you the future. Is it OK?",
             reply_markup=ReplyKeyboardMarkup(
                 [["OK!", "No, I'll provide a phone number"]],
@@ -424,7 +437,7 @@ def main() -> None:
                 CallbackQueryHandler(save_language_ask_level, pattern=r"^\w{3}$")
             ],
             State.CHECK_USERNAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_level_check_username)
+                CallbackQueryHandler(save_level_check_username, pattern=".{2}")
             ],
             State.PHONE_NUMBER: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_username_ask_phone)
