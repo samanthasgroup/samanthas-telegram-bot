@@ -37,6 +37,7 @@ class State(IntEnum):
     FULL_NAME = auto()
     AGE = auto()
     LANGUAGE_TO_LEARN = auto()
+    LANGUAGE_MENU = auto()
     LEVEL = auto()
     CHECK_USERNAME = auto()
     PHONE_NUMBER = auto()
@@ -104,8 +105,25 @@ async def save_name_ask_age(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     return State.LANGUAGE_TO_LEARN
 
 
+LANGUAGES = {
+    "English": "en",
+    "French": "fr",
+    "German": "de",
+    "Spanish": "sp",
+    "Italian": "it",
+    "Polish": "pl",
+    "Czech": "cz",
+    "Swedish": "se",
+}
+
+LANGUAGE_BUTTONS = tuple(
+    InlineKeyboardButton(text=key, callback_data=value) for key, value in LANGUAGES.items()
+)
+
+
 async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the age and asks the user what language they want to learn."""
+    context.user_data["language_to_learn"] = []
 
     try:
         context.user_data["age"] = int(update.message.text.strip())
@@ -117,25 +135,38 @@ async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TY
         return State.LANGUAGE_TO_LEARN
 
     await update.message.reply_text(
-        "What language would you like to learn?",
+        "What languages would you like to learn?",
+        reply_markup=InlineKeyboardMarkup([LANGUAGE_BUTTONS[:4], LANGUAGE_BUTTONS[4:]]),
+    )
+    return State.LANGUAGE_MENU
+
+
+async def save_language_ask_another(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data["language_to_learn"].append(query.data)
+
+    logger.info(f"Languages to learn: {context.user_data['language_to_learn']}")
+
+    buttons_left = tuple(
+        b
+        for b in LANGUAGE_BUTTONS
+        if b.callback_data not in context.user_data["language_to_learn"]
+    )
+
+    await query.edit_message_text(
+        # the message is the same for it to look like an interactive menu
+        "What languages would you like to learn?",
         reply_markup=InlineKeyboardMarkup(
             [
-                [
-                    InlineKeyboardButton(text="English", callback_data="eng"),
-                    InlineKeyboardButton(text="French", callback_data="fra"),
-                    InlineKeyboardButton(text="German", callback_data="ger"),
-                    InlineKeyboardButton(text="Spanish", callback_data="spa"),
-                ],
-                [
-                    InlineKeyboardButton(text="Italian", callback_data="ita"),
-                    InlineKeyboardButton(text="Polish", callback_data="pol"),
-                    InlineKeyboardButton(text="Czech", callback_data="cze"),
-                    InlineKeyboardButton(text="Swedish", callback_data="swe"),
-                ],
+                buttons_left[:4],
+                buttons_left[4:],
+                [InlineKeyboardButton(text="Done", callback_data="ok")],
             ]
         ),
     )
-    return State.LEVEL
+    return State.LANGUAGE_MENU
 
 
 async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -145,9 +176,10 @@ async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
     await query.edit_message_text(text="Got it!", reply_markup=InlineKeyboardMarkup([]))
 
-    context.user_data["language_to_learn"] = query.data
-    logger.info(f"Language to learn: {context.user_data['language_to_learn']}")
+    # no need to store because it was done in language menu
+    logger.info(f"Languages to learn: {context.user_data['language_to_learn']}")
 
+    # TODO as for each language
     await update.effective_chat.send_message(
         "What is your level?",
         reply_markup=InlineKeyboardMarkup(
@@ -462,12 +494,14 @@ def main() -> None:
             State.LANGUAGE_TO_LEARN: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_age_ask_language)
             ],
-            State.LEVEL: [
-                # ok for pattern to be this way because rus/ukr is not on that list anyway
-                CallbackQueryHandler(save_language_ask_level, pattern=r"^\w{3}$")
+            State.LANGUAGE_MENU: [
+                # first check if user finished selecting the languages, if not - show menu again
+                CallbackQueryHandler(save_language_ask_level, pattern=r"^ok$"),
+                CallbackQueryHandler(save_language_ask_another, pattern=r"^\w{2}$"),
             ],
+            State.LEVEL: [CallbackQueryHandler(save_language_ask_level, pattern=r"^\w{2}$")],
             State.CHECK_USERNAME: [
-                CallbackQueryHandler(save_level_check_username, pattern="^.{2}$")
+                CallbackQueryHandler(save_level_check_username, pattern=r"^\w\d$")
             ],
             State.PHONE_NUMBER: [
                 CallbackQueryHandler(save_username_ask_phone, pattern="^store_username_.+$")
