@@ -30,6 +30,25 @@ logger = logging.getLogger(__name__)
 
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
+LANGUAGES = {
+    "English": "en",
+    "French": "fr",
+    "German": "de",
+    "Spanish": "sp",
+    "Italian": "it",
+    "Polish": "pl",
+    "Czech": "cz",
+    "Swedish": "se",
+}
+
+LANGUAGE_BUTTONS = tuple(
+    InlineKeyboardButton(text=key, callback_data=value) for key, value in LANGUAGES.items()
+)
+
+LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1", "C2")
+LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for item in LEVELS)
+LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
+
 
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
@@ -105,22 +124,6 @@ async def save_name_ask_age(update: Update, context: ContextTypes.DEFAULT_TYPE) 
     return State.LANGUAGE_TO_LEARN
 
 
-LANGUAGES = {
-    "English": "en",
-    "French": "fr",
-    "German": "de",
-    "Spanish": "sp",
-    "Italian": "it",
-    "Polish": "pl",
-    "Czech": "cz",
-    "Swedish": "se",
-}
-
-LANGUAGE_BUTTONS = tuple(
-    InlineKeyboardButton(text=key, callback_data=value) for key, value in LANGUAGES.items()
-)
-
-
 async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Stores the age and asks the user what language they want to learn."""
     context.user_data["language_to_learn"] = []
@@ -142,12 +145,21 @@ async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TY
 
 
 async def save_language_ask_another(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Saves the first language to learn, asks for second one.
+    The student is only allowed to study maximum two languages at the moment.
+    """
     query = update.callback_query
     await query.answer()
 
     context.user_data["language_to_learn"].append(query.data)
 
-    logger.info(f"Languages to learn: {context.user_data['language_to_learn']}")
+    if len(context.user_data["language_to_learn"]) == 2:
+        await query.edit_message_text(
+            "That's it, you can only choose two languages :) What is your level?",
+            reply_markup=LEVEL_KEYBOARD,
+        )
+
+        return State.CHECK_USERNAME
 
     buttons_left = tuple(
         b
@@ -176,31 +188,8 @@ async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_
     await query.answer()
     await query.edit_message_text(text="Got it!", reply_markup=InlineKeyboardMarkup([]))
 
-    # no need to store because it was done in language menu
-    logger.info(f"Languages to learn: {context.user_data['language_to_learn']}")
-
     # TODO as for each language
-    await update.effective_chat.send_message(
-        "What is your level?",
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(text="A0", callback_data="A0"),
-                    InlineKeyboardButton(text="A1", callback_data="A1"),
-                    InlineKeyboardButton(text="A2", callback_data="A2"),
-                ],
-                [
-                    InlineKeyboardButton(text="B1", callback_data="B1"),
-                    InlineKeyboardButton(text="B2", callback_data="B2"),
-                    InlineKeyboardButton(text="C1", callback_data="C1"),
-                    InlineKeyboardButton(text="C2", callback_data="C2"),
-                ],
-                [
-                    InlineKeyboardButton(text="Don't know", callback_data="??"),
-                ],
-            ]
-        ),
-    )
+    await update.effective_chat.send_message("What is your level?", reply_markup=LEVEL_KEYBOARD)
 
     return State.CHECK_USERNAME
 
@@ -235,6 +224,8 @@ async def save_level_check_username(update: Update, context: ContextTypes.DEFAUL
 
 async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """If user's username was empty or they chose to provide a phone number, ask for it."""
+
+    logger.info(f"Languages to learn: {context.user_data['language_to_learn']}")
 
     username = update.effective_user.username
 
