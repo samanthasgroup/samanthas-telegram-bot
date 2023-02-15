@@ -11,6 +11,7 @@ from telegram import (
     ReplyKeyboardRemove,
     Update,
 )
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -30,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
-LANGUAGES = {
+CALLBACK_DATA_FOR_LANGUAGE = {
     "English": "en",
     "French": "fr",
     "German": "de",
@@ -40,9 +41,11 @@ LANGUAGES = {
     "Czech": "cz",
     "Swedish": "se",
 }
+LANGUAGE_FOR_CALLBACK_DATA = {value: key for key, value in CALLBACK_DATA_FOR_LANGUAGE.items()}
 
 LANGUAGE_BUTTONS = tuple(
-    InlineKeyboardButton(text=key, callback_data=value) for key, value in LANGUAGES.items()
+    InlineKeyboardButton(text=key, callback_data=value)
+    for key, value in CALLBACK_DATA_FOR_LANGUAGE.items()
 )
 
 LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1", "C2")
@@ -154,12 +157,14 @@ async def save_language_ask_another(update: Update, context: ContextTypes.DEFAUL
     context.user_data["language_to_learn"].append(query.data)
 
     if len(context.user_data["language_to_learn"]) == 2:
+        # check the level of 2nd language chosen
         await query.edit_message_text(
-            "That's it, you can only choose two languages :) What is your level?",
+            f"That's it, you can only choose two languages 😉\nWhat is your level of "
+            f"*{LANGUAGE_FOR_CALLBACK_DATA[query.data]}*?",
             reply_markup=LEVEL_KEYBOARD,
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
-
-        return State.CHECK_USERNAME
+        return State.LEVEL
 
     buttons_left = tuple(
         b
@@ -181,15 +186,24 @@ async def save_language_ask_another(update: Update, context: ContextTypes.DEFAUL
     return State.LANGUAGE_MENU
 
 
-async def save_language_ask_level(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    """Stores the selected language to learn and asks for the level (if it's English)."""
+async def save_languages_ask_level_of_first_language(
+    update: Update, context: ContextTypes.DEFAULT_TYPE
+) -> int:
+    """Asks for the level of the first language chosen."""
+
+    # If the student chose two languages, then the level of the second languages was asked in the
+    # previous function.
+
+    # TODO record level of 2nd language if it's there; make a dictionary in user_data
 
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(text="Got it!", reply_markup=InlineKeyboardMarkup([]))
-
-    # TODO as for each language
-    await update.effective_chat.send_message("What is your level?", reply_markup=LEVEL_KEYBOARD)
+    language_name = LANGUAGE_FOR_CALLBACK_DATA[context.user_data["language_to_learn"][0]]
+    await query.edit_message_text(
+        text=f"What is your level of *{language_name}*?",
+        reply_markup=LEVEL_KEYBOARD,
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
 
     return State.CHECK_USERNAME
 
@@ -470,7 +484,6 @@ async def send_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main() -> None:
     """Run the bot."""
-
     # Create the Application and pass it the bot's token.
     application = Application.builder().token(os.environ.get("TOKEN")).build()
 
@@ -487,10 +500,12 @@ def main() -> None:
             ],
             State.LANGUAGE_MENU: [
                 # first check if user finished selecting the languages, if not - show menu again
-                CallbackQueryHandler(save_language_ask_level, pattern=r"^ok$"),
+                CallbackQueryHandler(save_languages_ask_level_of_first_language, pattern=r"^ok$"),
                 CallbackQueryHandler(save_language_ask_another, pattern=r"^\w{2}$"),
             ],
-            State.LEVEL: [CallbackQueryHandler(save_language_ask_level, pattern=r"^\w{2}$")],
+            State.LEVEL: [
+                CallbackQueryHandler(save_languages_ask_level_of_first_language, pattern=r"^.{2}$")
+            ],
             State.CHECK_USERNAME: [
                 CallbackQueryHandler(save_level_check_username, pattern=r"^\w\d$")
             ],
