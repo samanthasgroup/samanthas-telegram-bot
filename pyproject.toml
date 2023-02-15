@@ -9,12 +9,12 @@ packages = [{include = "samanthas_telegram_bot"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-python-telegram-bot = "~20.0"
+python-telegram-bot = "~20.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
 ruff = "^0.0.244"
-pre-commit = "^2.21.0"
+pre-commit = "^3.0.4"
 icecream = "^2.1.3"
 isort = "^5.12.0"
 
