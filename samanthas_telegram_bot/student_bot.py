@@ -1,8 +1,10 @@
 import logging
 import os
 import re
+from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, auto
+from typing import Any
 
 from telegram import (
     InlineKeyboardButton,
@@ -14,10 +16,12 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
+    CallbackContext,
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
+    ExtBot,
     MessageHandler,
     filters,
 )
@@ -26,7 +30,6 @@ from telegram.ext import (
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
-
 logger = logging.getLogger(__name__)
 
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
@@ -53,6 +56,25 @@ LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for it
 LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
 
 
+@dataclass
+class UserData:
+    interface_language: str = None
+    first_name: str = None
+    last_name: str = None
+    age: int = None
+    username: str = None
+    phone_number: str = None
+    email: str = None
+    teaching_languages: list = None
+    days: list = None
+    time_slots: list = None
+
+
+# include the custom class into ContextTypes to get attribute hinting
+# (replacing standard dict with UserData for "user_data")
+CUSTOM_CONTEXT_TYPES = CallbackContext[ExtBot[None], UserData, dict[Any, Any], dict[Any, Any]]
+
+
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
@@ -72,13 +94,13 @@ class State(IntEnum):
     COMMENT = auto()
 
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Starts the conversation and asks the user about the language they want to communicate in."""
 
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
-    context.user_data["days"] = []
-    context.user_data["time_slots"] = []
+    context.user_data.days = []
+    context.user_data.time = []
 
     await update.message.reply_text(
         f"Hi {update.message.from_user.first_name}! Please choose your language. "
@@ -102,14 +124,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return State.FULL_NAME
 
 
-async def save_interface_lang_ask_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_interface_lang_ask_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the interface language and asks the user what their name is."""
 
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(text="Thank you", reply_markup=InlineKeyboardMarkup([]))
 
-    context.user_data["interface_language"] = query.data
+    context.user_data.interface_language = query.data
 
     await update.effective_chat.send_message(
         "What's your full name that will be stored in our database?",
@@ -118,21 +140,21 @@ async def save_interface_lang_ask_name(update: Update, context: ContextTypes.DEF
     return State.AGE
 
 
-async def save_name_ask_age(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_name_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the full name and asks the user what their age is."""
 
-    context.user_data["full_name_indicated_by_user"] = update.message.text
+    context.user_data.first_name = update.message.text
 
     await update.message.reply_text("What's your age?", reply_markup=ReplyKeyboardRemove())
     return State.LANGUAGE_TO_LEARN
 
 
-async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_age_ask_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the age and asks the user what language they want to learn."""
-    context.user_data["language_to_learn"] = []
+    context.user_data.teaching_languages = []
 
     try:
-        context.user_data["age"] = int(update.message.text.strip())
+        context.user_data.age = int(update.message.text.strip())
     except ValueError:
         await update.message.reply_text(
             "Hmm... that doesn't look like a number. Please try again.",
@@ -147,16 +169,16 @@ async def save_age_ask_language(update: Update, context: ContextTypes.DEFAULT_TY
     return State.LANGUAGE_MENU
 
 
-async def save_language_ask_another(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_language_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Saves the first language to learn, asks for second one.
     The student is only allowed to study maximum two languages at the moment.
     """
     query = update.callback_query
     await query.answer()
 
-    context.user_data["language_to_learn"].append(query.data)
+    context.user_data.teaching_languages.append(query.data)
 
-    if len(context.user_data["language_to_learn"]) == 2:
+    if len(context.user_data.teaching_languages) == 2:
         # check the level of 2nd language chosen
         await query.edit_message_text(
             f"That's it, you can only choose two languages 😉\nWhat is your level of "
@@ -167,9 +189,7 @@ async def save_language_ask_another(update: Update, context: ContextTypes.DEFAUL
         return State.LEVEL
 
     buttons_left = tuple(
-        b
-        for b in LANGUAGE_BUTTONS
-        if b.callback_data not in context.user_data["language_to_learn"]
+        b for b in LANGUAGE_BUTTONS if b.callback_data not in context.user_data.teaching_languages
     )
 
     await query.edit_message_text(
@@ -187,7 +207,7 @@ async def save_language_ask_another(update: Update, context: ContextTypes.DEFAUL
 
 
 async def save_languages_ask_level_of_first_language(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Asks for the level of the first language chosen."""
 
@@ -198,7 +218,7 @@ async def save_languages_ask_level_of_first_language(
 
     query = update.callback_query
     await query.answer()
-    language_name = LANGUAGE_FOR_CALLBACK_DATA[context.user_data["language_to_learn"][0]]
+    language_name = LANGUAGE_FOR_CALLBACK_DATA[context.user_data.teaching_languages[0]]
     await query.edit_message_text(
         text=f"What is your level of *{language_name}*?",
         reply_markup=LEVEL_KEYBOARD,
@@ -208,13 +228,13 @@ async def save_languages_ask_level_of_first_language(
     return State.CHECK_USERNAME
 
 
-async def save_level_check_username(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_level_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the selected level, checks Telegram nickname or asks for phone number."""
 
     query = update.callback_query
     await query.answer()
     await query.edit_message_text(text=query.data, reply_markup=InlineKeyboardMarkup([]))
-    context.user_data["language_level"] = query.data
+    # context.user_data["language_level"] = query.data
 
     username = update.effective_user.username
 
@@ -236,10 +256,10 @@ async def save_level_check_username(update: Update, context: ContextTypes.DEFAUL
     return State.PHONE_NUMBER
 
 
-async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """If user's username was empty or they chose to provide a phone number, ask for it."""
 
-    logger.info(f"Languages to learn: {context.user_data['language_to_learn']}")
+    logger.info(f"Languages to learn: {context.user_data.teaching_languages}")
 
     username = update.effective_user.username
 
@@ -248,7 +268,7 @@ async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_
     await query.edit_message_text(text="Thanks", reply_markup=InlineKeyboardMarkup([]))
 
     if query.data == "store_username_yes" and username:
-        context.user_data["username"] = username
+        context.user_data.username = username
         logger.info(f"Username: {username}. Will be stored in the database.")
         await update.effective_chat.send_message(
             # TODO "-" for no email?
@@ -258,7 +278,7 @@ async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_
         return State.TIMEZONE
 
     # TODO ReplyKeyboardMarkup([[KeyboardButton(text="Share", request_contact=True)]]
-    context.user_data["username"] = None
+    context.user_data.username = None
     await update.effective_chat.send_message(
         "Please provide a phone number so that we can contact you",
         reply_markup=ReplyKeyboardRemove(),
@@ -267,14 +287,14 @@ async def save_username_ask_phone(update: Update, context: ContextTypes.DEFAULT_
     return State.EMAIL
 
 
-async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the phone number and asks for email."""
 
     logger.info(f"Phone: {update.message.text}")
 
     # checking this, not update.effective_user.username
-    if not context.user_data["username"]:
-        context.user_data["phone_number"] = update.message.text
+    if not context.user_data.username:
+        context.user_data.phone_number = update.message.text
         if not update.message.text:  # TODO validate; text cannot be empty anyway
             await update.message.reply_text(
                 "Please provide a valid phone number",
@@ -283,7 +303,7 @@ async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYP
             return State.EMAIL
 
     if update.message.text:
-        context.user_data["phone_number"] = update.message.text  # TODO validate
+        context.user_data.phone_number = update.message.text  # TODO validate
         await update.message.reply_text(
             "Please provide your email",
             reply_markup=ReplyKeyboardRemove(),
@@ -291,7 +311,7 @@ async def save_phone_ask_email(update: Update, context: ContextTypes.DEFAULT_TYP
         return State.TIMEZONE
 
 
-async def save_email_ask_timezone(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the email and asks for timezone."""
 
     email = update.message.text.strip()
@@ -301,7 +321,7 @@ async def save_email_ask_timezone(update: Update, context: ContextTypes.DEFAULT_
             reply_markup=ReplyKeyboardRemove(),
         )
         return State.TIMEZONE
-    context.user_data["email"] = email
+    context.user_data.email = email
 
     timestamp = update.message.date
 
@@ -343,7 +363,7 @@ async def save_email_ask_timezone(update: Update, context: ContextTypes.DEFAULT_
     return State.HOW_OFTEN
 
 
-async def save_timezone_ask_how_often(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_timezone_ask_how_often(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the timezone and asks how often user wants to study."""
     query = update.callback_query
     logger.info(query.data)
@@ -362,7 +382,7 @@ async def save_timezone_ask_how_often(update: Update, context: ContextTypes.DEFA
     return State.CHOOSE_DAY
 
 
-async def save_how_often_ask_day(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_how_often_ask_day(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Saves how often, asks for the day(s)."""
 
     # TODO save how often; loop for the given number of days?
@@ -392,10 +412,10 @@ async def save_how_often_ask_day(update: Update, context: ContextTypes.DEFAULT_T
     return State.CHOOSE_TIME
 
 
-async def save_day_ask_time(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def save_day_ask_time(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the day and asks for time slots."""
 
-    context.user_data["days"].append(update.message.text)
+    context.user_data.days.append(update.message.text)
 
     # TODO slots (how to choose multiple?)
 
@@ -420,7 +440,7 @@ async def save_day_ask_time(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def save_time_choose_another_day_or_done(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
+    update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Saves time slot, asks if user wants to choose another day."""
 
@@ -429,13 +449,13 @@ async def save_time_choose_another_day_or_done(
     await query.answer()
     await query.edit_message_text(text=f"{query.data}")
 
-    context.user_data["time_slots"].append(query.data)
+    context.user_data.time_slots.append(query.data)
 
     reply_keyboard = [["Yes", "No"]]
 
     result = ",".join(
         f"{day} ({timing})"
-        for day, timing in zip(context.user_data["days"], context.user_data["time_slots"])
+        for day, timing in zip(context.user_data.days, context.user_data.time_slots)
     )
 
     await update.effective_chat.send_message(
@@ -449,7 +469,7 @@ async def save_time_choose_another_day_or_done(
     return State.CHOOSE_DAY
 
 
-async def final_comment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the info about the user and ends the conversation."""
 
     user = update.message.from_user
@@ -460,7 +480,7 @@ async def final_comment(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     return ConversationHandler.END
 
 
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Cancels and ends the conversation."""
 
     user = update.message.from_user
@@ -474,7 +494,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
-async def send_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES):
     """Displays help message."""
 
     await update.message.reply_text(
@@ -485,7 +505,12 @@ async def send_help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it the bot's token.
-    application = Application.builder().token(os.environ.get("TOKEN")).build()
+    application = (
+        Application.builder()
+        .token(os.environ.get("TOKEN"))
+        .context_types(ContextTypes(user_data=UserData))
+        .build()
+    )
 
     # Add conversation handler
     conv_handler = ConversationHandler(
