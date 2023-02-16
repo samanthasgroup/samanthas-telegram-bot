@@ -1,0 +1,3 @@
+internal_id,en,ru,ua
+hello,Hello,Здравствуйте,Привіт
+choose_language_of_conversation,"In which language do you want to communicate with me? To stop talking to me at, you can send /cancel at any time.","На каком языке мы будем общаться? Для завершения разговора со мной Вы можете в любой момент ввести команду /cancel",...

@@ -26,6 +26,8 @@ from telegram.ext import (
     filters,
 )
 
+from data.read_phrases import read_phrases
+
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -54,6 +56,9 @@ LANGUAGE_BUTTONS = tuple(
 LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1", "C2")
 LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for item in LEVELS)
 LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
+
+LOCALES = ("ua", "en", "ru")
+PHRASES = read_phrases()
 
 
 @dataclass
@@ -102,19 +107,29 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     context.user_data.days = []
     context.user_data.time = []
 
+    greeting = ""
+    for locale in LOCALES:
+        greeting += (
+            f"{PHRASES['hello'][locale]} {update.message.from_user.first_name}! "
+            f"{PHRASES['choose_language_of_conversation'][locale]}\n\n"
+        )
+
     await update.message.reply_text(
-        f"Hi {update.message.from_user.first_name}! Please choose your language. "
-        "Send /cancel to stop talking to me.\n\n",
+        greeting,
         reply_markup=InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        text="Ukrainian",
-                        callback_data="ukr",
+                        text="українською",
+                        callback_data="ua",
                     ),
                     InlineKeyboardButton(
-                        text="Russian",
-                        callback_data="rus",
+                        text="in English",
+                        callback_data="en",
+                    ),
+                    InlineKeyboardButton(
+                        text="по-русски",
+                        callback_data="ru",
                     ),
                 ],
             ]
@@ -517,7 +532,7 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             State.FULL_NAME: [
-                CallbackQueryHandler(save_interface_lang_ask_name, pattern="^(rus)|(ukr)$")
+                CallbackQueryHandler(save_interface_lang_ask_name, pattern="^(ru)|(ua)|(en)$")
             ],
             State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_name_ask_age)],
             State.LANGUAGE_TO_LEARN: [
