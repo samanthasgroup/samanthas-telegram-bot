@@ -9,6 +9,7 @@ from typing import Any
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
+    KeyboardButton,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
     Update,
@@ -341,12 +342,21 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
         )
         return State.TIMEZONE
 
-    # TODO ReplyKeyboardMarkup([[KeyboardButton(text="Share", request_contact=True)]]
     context.user_data.username = None
-    await query.edit_message_text(
+    await query.delete_message()
+
+    await update.effective_chat.send_message(
         PHRASES["ask_phone"][context.user_data.locale],
         parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup([]),
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                [
+                    KeyboardButton(
+                        text=PHRASES["share_phone"][context.user_data.locale], request_contact=True
+                    )
+                ]
+            ]
+        ),
     )
 
     return State.EMAIL
@@ -355,11 +365,21 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
 async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the phone number and asks for email."""
 
-    logger.info(f"Phone: {update.message.text}")
+    logger.info(f"Phone: {update.message.contact.phone_number}")
+
+    # if user passed their contact, record phone number and proceed
+    if update.message.contact.phone_number:
+        context.user_data.phone_number = update.message.contact.phone_number
+
+        await update.message.reply_text(
+            PHRASES["ask_email"][context.user_data.locale],
+            reply_markup=ReplyKeyboardRemove(),
+        )
+
+        return State.TIMEZONE
 
     # checking this, not update.effective_user.username
     if not context.user_data.username:
-        context.user_data.phone_number = update.message.text
         if not update.message.text:  # TODO validate; text cannot be empty anyway
             await update.message.reply_text(
                 PHRASES["invalid_phone_number"][context.user_data.locale],
@@ -391,7 +411,7 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
     timestamp = update.message.date
 
     await update.message.reply_text(
-        "What's your timezone? (Choose the correct current time)",
+        PHRASES["ask_timezone"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup(
             [
                 [
@@ -430,6 +450,7 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
 
 async def save_timezone_ask_how_often(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the timezone and asks how often user wants to study."""
+    # TODO record either summer or winter timezone
     query = update.callback_query
     logger.info(query.data)
     await query.answer()
@@ -603,7 +624,11 @@ def main() -> None:
             State.PHONE_NUMBER: [
                 CallbackQueryHandler(save_username_ask_phone, pattern="^store_username_.+$")
             ],
-            State.EMAIL: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_phone_ask_email)],
+            State.EMAIL: [
+                MessageHandler(
+                    (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND, save_phone_ask_email
+                )
+            ],
             State.TIMEZONE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_timezone)
             ],
