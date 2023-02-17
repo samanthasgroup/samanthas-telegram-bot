@@ -45,6 +45,7 @@ LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for it
 LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
 
 LOCALES = ("ua", "en", "ru")
+PHONE_PATTERN = re.compile("^(\+)|(00)[1-9][0-9]{1,14}$")
 PHRASES = read_phrases()
 
 
@@ -365,35 +366,31 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
 async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the phone number and asks for email."""
 
-    logger.info(f"Phone: {update.message.contact.phone_number}")
+    # just in case: deleting spaces and hyphens
+    text = (
+        update.message.text.replace("-", "").replace(" ", "").strip()
+        if update.message.text
+        else ""
+    )
 
-    # if user passed their contact, record phone number and proceed
-    if update.message.contact.phone_number:
+    if not (update.message.contact or PHONE_PATTERN.match(text)):
+        await update.message.reply_text(
+            PHRASES["invalid_phone_number"][context.user_data.locale],
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return State.EMAIL
+
+    if update.message.contact:
         context.user_data.phone_number = update.message.contact.phone_number
+    else:
+        context.user_data.phone_number = text
 
-        await update.message.reply_text(
-            PHRASES["ask_email"][context.user_data.locale],
-            reply_markup=ReplyKeyboardRemove(),
-        )
-
-        return State.TIMEZONE
-
-    # checking this, not update.effective_user.username
-    if not context.user_data.username:
-        if not update.message.text:  # TODO validate; text cannot be empty anyway
-            await update.message.reply_text(
-                PHRASES["invalid_phone_number"][context.user_data.locale],
-                reply_markup=ReplyKeyboardRemove(),
-            )
-            return State.EMAIL
-
-    if update.message.text:
-        context.user_data.phone_number = update.message.text  # TODO validate
-        await update.message.reply_text(
-            PHRASES["ask_email"][context.user_data.locale],
-            reply_markup=ReplyKeyboardRemove(),
-        )
-        return State.TIMEZONE
+    await update.message.reply_text(
+        PHRASES["ask_email"][context.user_data.locale],
+        reply_markup=ReplyKeyboardRemove(),
+    )
+    logger.info(f"Phone: {context.user_data.phone_number}")
+    return State.TIMEZONE
 
 
 async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
