@@ -63,7 +63,7 @@ PHRASES = read_phrases()
 
 @dataclass
 class UserData:
-    interface_language: str = None
+    locale: str = None
     first_name: str = None
     last_name: str = None
     age: int = None
@@ -83,7 +83,8 @@ CUSTOM_CONTEXT_TYPES = CallbackContext[ExtBot[None], UserData, dict[Any, Any], d
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
-    FULL_NAME = auto()
+    IS_REGISTERED = auto()
+    FIRST_NAME_OR_BYE = auto()
     AGE = auto()
     LANGUAGE_TO_LEARN = auto()
     LANGUAGE_MENU = auto()
@@ -136,21 +137,59 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         ),
     )
 
-    return State.FULL_NAME
+    return State.IS_REGISTERED
 
 
-async def save_interface_lang_ask_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the interface language and asks the user what their name is."""
+async def save_interface_lang_ask_if_already_registered(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores the interface language and asks the user if they are already registered."""
 
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(text="Thank you", reply_markup=InlineKeyboardMarkup([]))
+    context.user_data.locale = query.data
 
-    context.user_data.interface_language = query.data
+    keyboard = InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    PHRASES["option_yes"][context.user_data.locale], callback_data="yes"
+                ),
+                InlineKeyboardButton(
+                    PHRASES["option_no"][context.user_data.locale], callback_data="no"
+                ),
+            ]
+        ]
+    )
 
-    await update.effective_chat.send_message(
-        "What's your full name that will be stored in our database?",
-        reply_markup=ReplyKeyboardRemove(),
+    await query.edit_message_text(
+        text=PHRASES["confirm_language_of_conversation"][context.user_data.locale]
+        + "\n"
+        + PHRASES["ask_already_with_us"][context.user_data.locale],
+        reply_markup=keyboard,
+    )
+    return State.FIRST_NAME_OR_BYE
+
+
+async def redirect_to_coordinator_if_registered_ask_first_name(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If user is already registered, redirect to coordinator. Otherwise, ask for first name."""
+
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "yes":
+        await query.edit_message_text(
+            PHRASES["reply_go_to_other_chat"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return ConversationHandler.END
+
+    await query.edit_message_text(
+        # the message is the same for it to look like an interactive menu
+        PHRASES["ask_first_name"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
     )
     return State.AGE
 
@@ -160,7 +199,9 @@ async def save_name_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
 
     context.user_data.first_name = update.message.text
 
-    await update.message.reply_text("What's your age?", reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text(
+        PHRASES["ask_age"][context.user_data.locale], reply_markup=ReplyKeyboardRemove()
+    )
     return State.LANGUAGE_TO_LEARN
 
 
@@ -531,8 +572,15 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            State.FULL_NAME: [
-                CallbackQueryHandler(save_interface_lang_ask_name, pattern="^(ru)|(ua)|(en)$")
+            State.IS_REGISTERED: [
+                CallbackQueryHandler(
+                    save_interface_lang_ask_if_already_registered, pattern="^(ru)|(ua)|(en)$"
+                )
+            ],
+            State.FIRST_NAME_OR_BYE: [
+                CallbackQueryHandler(
+                    redirect_to_coordinator_if_registered_ask_first_name, pattern="^(yes)|(no)$"
+                )
             ],
             State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_name_ask_age)],
             State.LANGUAGE_TO_LEARN: [
