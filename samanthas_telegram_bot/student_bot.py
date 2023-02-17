@@ -295,21 +295,24 @@ async def save_level_check_username(update: Update, context: CUSTOM_CONTEXT_TYPE
 
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(text=query.data, reply_markup=InlineKeyboardMarkup([]))
-    # context.user_data["language_level"] = query.data
+
+    # TODO
+    # context.user_data.language_level = query.data
 
     username = update.effective_user.username
 
     if username:
-        await update.effective_chat.send_message(
-            f"We will store your username @{username} to contact you the future. Is it OK?",
+        await query.edit_message_text(
+            f"{PHRASES['ask_username_1'][context.user_data.locale]} @{username}"
+            f"{PHRASES['ask_username_2'][context.user_data.locale]}",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
-                        InlineKeyboardButton(text="Yes", callback_data="store_username_yes"),
                         InlineKeyboardButton(
-                            text="No, I'll use another phone", callback_data="store_username_no"
-                        ),
+                            text=PHRASES[f"username_reply_{option}"][context.user_data.locale],
+                            callback_data=f"store_username_{option}",
+                        )
+                        for option in ("yes", "no")
                     ],
                 ]
             ),
@@ -327,23 +330,23 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
 
     query = update.callback_query
     await query.answer()
-    await query.edit_message_text(text="Thanks", reply_markup=InlineKeyboardMarkup([]))
 
     if query.data == "store_username_yes" and username:
         context.user_data.username = username
         logger.info(f"Username: {username}. Will be stored in the database.")
-        await update.effective_chat.send_message(
+        await query.edit_message_text(
             # TODO "-" for no email?
-            "Please provide an email so that we can contact you",
-            reply_markup=ReplyKeyboardRemove(),
+            PHRASES["ask_email"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
         )
         return State.TIMEZONE
 
     # TODO ReplyKeyboardMarkup([[KeyboardButton(text="Share", request_contact=True)]]
     context.user_data.username = None
-    await update.effective_chat.send_message(
-        "Please provide a phone number so that we can contact you",
-        reply_markup=ReplyKeyboardRemove(),
+    await query.edit_message_text(
+        PHRASES["ask_phone"][context.user_data.locale],
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup([]),
     )
 
     return State.EMAIL
@@ -359,7 +362,7 @@ async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
         context.user_data.phone_number = update.message.text
         if not update.message.text:  # TODO validate; text cannot be empty anyway
             await update.message.reply_text(
-                "Please provide a valid phone number",
+                PHRASES["invalid_phone_number"][context.user_data.locale],
                 reply_markup=ReplyKeyboardRemove(),
             )
             return State.EMAIL
@@ -367,7 +370,7 @@ async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
     if update.message.text:
         context.user_data.phone_number = update.message.text  # TODO validate
         await update.message.reply_text(
-            "Please provide your email",
+            PHRASES["ask_email"][context.user_data.locale],
             reply_markup=ReplyKeyboardRemove(),
         )
         return State.TIMEZONE
