@@ -4,7 +4,7 @@ import re
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, auto
-from typing import Any
+from typing import Any, Literal
 
 from telegram import (
     InlineKeyboardButton,
@@ -54,7 +54,9 @@ class UserData:
     locale: str = None
     first_name: str = None
     last_name: str = None
+    role: Literal["student", "teacher"] = None
     age: str = None  # it will be an age range
+    source: str = None
     username: str = None
     phone_number: str = None
     email: str = None
@@ -73,7 +75,10 @@ class State(IntEnum):
 
     IS_REGISTERED = auto()
     FIRST_NAME_OR_BYE = auto()
+    ROLE = auto()
     AGE = auto()
+    LAST_NAME = auto()
+    SOURCE = auto()
     LANGUAGE_TO_LEARN = auto()
     LEVEL = auto()
     CHECK_USERNAME = auto()
@@ -136,6 +141,7 @@ async def save_interface_lang_ask_if_already_registered(
     await query.answer()
     context.user_data.locale = query.data
 
+    # TODO can we factor this out? This is tricky given that user's locale has to be respected
     keyboard = InlineKeyboardMarkup(
         [
             [
@@ -167,6 +173,7 @@ async def redirect_to_coordinator_if_registered_ask_first_name(
     await query.answer()
 
     if query.data == "yes":
+        # TODO actual link to chat
         await query.edit_message_text(
             PHRASES["reply_go_to_other_chat"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -178,55 +185,138 @@ async def redirect_to_coordinator_if_registered_ask_first_name(
         PHRASES["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
+    return State.ROLE
+
+
+async def save_first_name_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the first name and asks the user if they want to become a student or a teacher.
+    The question about their age will depend on this answer.
+    """
+    context.user_data.first_name = update.message.text
+
+    await update.message.reply_text(
+        PHRASES["ask_role"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text=PHRASES["option_student"][context.user_data.locale],
+                        callback_data="student",
+                    ),
+                    InlineKeyboardButton(
+                        text=PHRASES["option_teacher"][context.user_data.locale],
+                        callback_data="teacher",
+                    ),
+                ],
+            ]
+        ),
+    )
     return State.AGE
 
 
-async def save_first_name_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the full name and asks the user what their age is."""
+async def save_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the role and asks the user what their age is (the question depends on role)."""
 
-    context.user_data.first_name = update.message.text
-
-    ages = [
-        ["6-8", "9-11", "12-14", "15-17"],
-        ["18-20", "21-25", "26-30", "31-35"],
-        ["36-40", "41-45", "46-50", "51-55"],
-        ["56-60", "61-65", "66-70", "71-75"],
-        ["76-80", "81-65", "86-90", "91-95"],
-    ]
-
-    rows_of_buttons = [
-        [InlineKeyboardButton(text, callback_data=text) for text in row] for row in ages
-    ]
-
-    await update.message.reply_text(
-        PHRASES["ask_age"][context.user_data.locale],
-        reply_markup=InlineKeyboardMarkup(rows_of_buttons),
-    )
-    return State.LANGUAGE_TO_LEARN
-
-
-async def save_age_ask_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the age and asks the user what language they want to learn."""
     query = update.callback_query
     await query.answer()
 
-    context.user_data.age = query.data
+    context.user_data.role = query.data
 
-    language_for_callback_data = {
-        code: PHRASES[code][context.user_data.locale] for code in LANGUAGE_CODES
-    }
+    if context.user_data.role == "student":
+        student_ages = [
+            ["6-8", "9-11", "12-14", "15-17"],
+            ["18-20", "21-25", "26-30", "31-35"],
+            ["36-40", "41-45", "46-50", "51-55"],
+            ["56-60", "61-65", "66-70", "71-75"],
+            ["76-80", "81-65", "86-90", "91-95"],
+        ]
 
-    language_buttons = tuple(
-        InlineKeyboardButton(text=value, callback_data=key)
-        for key, value in language_for_callback_data.items()
-    )
+        rows_of_buttons = [
+            [InlineKeyboardButton(text, callback_data=text) for text in row]
+            for row in student_ages
+        ]
 
-    await query.edit_message_text(
-        PHRASES["ask_language_to_learn"][context.user_data.locale],
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup([language_buttons[:4], language_buttons[4:]]),
-    )
-    return State.LEVEL
+        await query.edit_message_text(
+            PHRASES["ask_age"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup(rows_of_buttons),
+        )
+    else:
+        # TODO this is repeated above
+        keyboard = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        PHRASES["option_yes"][context.user_data.locale], callback_data="yes"
+                    ),
+                    InlineKeyboardButton(
+                        PHRASES["option_no"][context.user_data.locale], callback_data="no"
+                    ),
+                ]
+            ]
+        )
+
+        await query.edit_message_text(
+            PHRASES["ask_if_18"][context.user_data.locale],
+            reply_markup=keyboard,
+        )
+
+    return State.LAST_NAME
+
+
+async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """For students, stores age. For teachers, checks if they are above 18. Asks teachers above 18
+    and all students to give their last name.
+    """
+
+    query = update.callback_query
+    await query.answer()
+
+    # end conversation for would-be teachers that are minors
+    if context.user_data.role == "teacher" and query.data == "no":
+        # TODO actual link to chat
+        await query.edit_message_text(
+            PHRASES["reply_under_18"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return ConversationHandler.END
+
+    if context.user_data.role == "student":
+        context.user_data.age = query.data
+
+    await query.edit_message_text(PHRASES["ask_last_name"][context.user_data.locale])
+    return State.SOURCE
+
+
+async def save_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the last name and asks the user how they found out about Samantha's Group."""
+    context.user_data.last_name = update.message.text
+    await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
+    return State.CHECK_USERNAME
+
+
+# async def save_student_age_ask_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+#     """Stores the student's age and asks the user what language they want to learn."""
+#
+#     query = update.callback_query
+#     await query.answer()
+#
+#     context.user_data.age = query.data
+#
+#     language_for_callback_data = {
+#         code: PHRASES[code][context.user_data.locale] for code in LANGUAGE_CODES
+#     }
+#
+#     language_buttons = tuple(
+#         InlineKeyboardButton(text=value, callback_data=key)
+#         for key, value in language_for_callback_data.items()
+#     )
+#
+#     await query.edit_message_text(
+#         PHRASES["ask_language_to_learn"][context.user_data.locale],
+#         parse_mode=ParseMode.MARKDOWN_V2,
+#         reply_markup=InlineKeyboardMarkup([language_buttons[:4], language_buttons[4:]]),
+#     )
+#     return State.LEVEL
 
 
 # # SAVING FOR TEACHER's BOT
@@ -267,44 +357,42 @@ async def save_age_ask_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -
 #     return State.LANGUAGE_MENU
 
 
-async def save_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Asks for the level of the language chosen."""
+# async def save_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+#     """Asks for the level of the language chosen."""
+#
+#     query = update.callback_query
+#     await query.answer()
+#
+#     # list conforms to general approach that a person can potentially learn/teach many languages
+#     context.user_data.teaching_languages = [query.data]
+#
+#     # I have to repeat this because of user's locale (can't define as global constant)
+#     # TODO maybe refactor to a function
+#     language_for_callback_data = {
+#         code: PHRASES[code][context.user_data.locale] for code in LANGUAGE_CODES
+#     }
+#
+#     lang_name = language_for_callback_data[context.user_data.teaching_languages[0]]
+#     await query.edit_message_text(
+#         text=f"{PHRASES['ask_student_language_level'][context.user_data.locale]} *{lang_name}*?",
+#         reply_markup=LEVEL_KEYBOARD,
+#         parse_mode=ParseMode.MARKDOWN_V2,
+#     )
+#
+#     return State.CHECK_USERNAME
 
-    query = update.callback_query
-    await query.answer()
 
-    # a list conforms to general approach that a person can potentially learn/teach many languages
-    context.user_data.teaching_languages = [query.data]
+async def save_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the source of knowledge about SSG, checks Telegram nickname or asks for
+    phone number.
+    """
 
-    # I have to repeat this because of user's locale (can't define as global constant)
-    # TODO maybe refactor to a function
-    language_for_callback_data = {
-        code: PHRASES[code][context.user_data.locale] for code in LANGUAGE_CODES
-    }
-
-    lang_name = language_for_callback_data[context.user_data.teaching_languages[0]]
-    await query.edit_message_text(
-        text=f"{PHRASES['ask_student_language_level'][context.user_data.locale]} *{lang_name}*?",
-        reply_markup=LEVEL_KEYBOARD,
-        parse_mode=ParseMode.MARKDOWN_V2,
-    )
-
-    return State.CHECK_USERNAME
-
-
-async def save_level_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the selected level, checks Telegram nickname or asks for phone number."""
-
-    query = update.callback_query
-    await query.answer()
-
-    # TODO
-    # context.user_data.language_level = query.data
+    context.user_data.source = update.message.text
 
     username = update.effective_user.username
 
     if username:
-        await query.edit_message_text(
+        await update.effective_chat.send_message(
             f"{PHRASES['ask_username_1'][context.user_data.locale]} @{username}"
             f"{PHRASES['ask_username_2'][context.user_data.locale]}",
             reply_markup=InlineKeyboardMarkup(
@@ -605,10 +693,19 @@ def main() -> None:
             State.FIRST_NAME_OR_BYE: [
                 CallbackQueryHandler(redirect_to_coordinator_if_registered_ask_first_name)
             ],
-            State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_first_name_ask_age)],
-            State.LANGUAGE_TO_LEARN: [CallbackQueryHandler(save_age_ask_language)],
-            State.LEVEL: [CallbackQueryHandler(save_language_ask_level)],
-            State.CHECK_USERNAME: [CallbackQueryHandler(save_level_check_username)],
+            State.ROLE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_first_name_ask_role)
+            ],
+            State.AGE: [CallbackQueryHandler(save_role_ask_age)],
+            State.LAST_NAME: [CallbackQueryHandler(save_age_ask_last_name)],
+            State.SOURCE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_last_name_ask_source)
+            ],
+            # State.LANGUAGE_TO_LEARN: [CallbackQueryHandler(save_student_age_ask_language)],
+            # State.LEVEL: [CallbackQueryHandler(save_language_ask_level)],
+            State.CHECK_USERNAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, save_source_check_username)
+            ],
             State.PHONE_NUMBER: [CallbackQueryHandler(save_username_ask_phone)],
             State.EMAIL: [
                 MessageHandler(
