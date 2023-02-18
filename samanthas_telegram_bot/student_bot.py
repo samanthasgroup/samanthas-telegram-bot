@@ -600,27 +600,16 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             State.IS_REGISTERED: [
-                CallbackQueryHandler(
-                    save_interface_lang_ask_if_already_registered, pattern="^(ru)|(ua)|(en)$"
-                )
+                CallbackQueryHandler(save_interface_lang_ask_if_already_registered)
             ],
             State.FIRST_NAME_OR_BYE: [
-                CallbackQueryHandler(
-                    redirect_to_coordinator_if_registered_ask_first_name, pattern="^(yes)|(no)$"
-                )
+                CallbackQueryHandler(redirect_to_coordinator_if_registered_ask_first_name)
             ],
             State.AGE: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_first_name_ask_age)],
-            State.LANGUAGE_TO_LEARN: [
-                # name can contain multiple words (hyphens are possible in them) with spaces
-                CallbackQueryHandler(save_age_ask_language, pattern=r"^(\s*[\w-]+\s*)+$")
-            ],
-            State.LEVEL: [CallbackQueryHandler(save_language_ask_level, pattern=r"^.{2}$")],
-            State.CHECK_USERNAME: [
-                CallbackQueryHandler(save_level_check_username, pattern=r"^\w\d$")
-            ],
-            State.PHONE_NUMBER: [
-                CallbackQueryHandler(save_username_ask_phone, pattern="^store_username_.+$")
-            ],
+            State.LANGUAGE_TO_LEARN: [CallbackQueryHandler(save_age_ask_language)],
+            State.LEVEL: [CallbackQueryHandler(save_language_ask_level)],
+            State.CHECK_USERNAME: [CallbackQueryHandler(save_level_check_username)],
+            State.PHONE_NUMBER: [CallbackQueryHandler(save_username_ask_phone)],
             State.EMAIL: [
                 MessageHandler(
                     (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND, save_phone_ask_email
@@ -629,7 +618,7 @@ def main() -> None:
             State.TIMEZONE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_timezone)
             ],
-            State.HOW_OFTEN: [CallbackQueryHandler(save_timezone_ask_how_often, pattern="UTC")],
+            State.HOW_OFTEN: [CallbackQueryHandler(save_timezone_ask_how_often)],
             State.CHOOSE_DAY: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_how_often_ask_day)
             ],
@@ -637,9 +626,7 @@ def main() -> None:
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_day_ask_time)
             ],
             State.CHOOSE_ANOTHER_DAY: [
-                CallbackQueryHandler(
-                    save_time_choose_another_day_or_done, pattern=r"\d{1,2}-\d{2}"
-                ),
+                CallbackQueryHandler(save_time_choose_another_day_or_done),
             ],
             State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, final_comment)],
         },
