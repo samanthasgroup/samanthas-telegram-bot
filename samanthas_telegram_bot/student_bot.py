@@ -592,18 +592,32 @@ def make_inline_keyboard_for_time_slots(
     }
 
 
-async def save_timezone_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the timezone and gives time slots for Monday."""
+async def ask_slots_for_one_day(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """If this function is called for the first time in a conversation, **stores the timezone**
+    and gives time slots for Monday.
+
+    If this function is called after choosing time slots for a day, asks for time slots for the
+    next day.
+
+    If this is the last day, makes a transition to the next conversation state.
+    """
 
     query = update.callback_query
     await query.answer()
 
-    # whether it's summer or winter timezone will be for the backend to decide
-    context.user_data.utc_offset = int(query.data)
-    context.user_data.time_slots_for_day = defaultdict(list)
+    if re.match(r"^[+-]?\d{1,2}$", query.data):  # this is a UTC offset
+        # whether it's summer or winter timezone will be for the backend to decide
+        context.user_data.utc_offset = int(query.data)
+        context.user_data.time_slots_for_day = defaultdict(list)
 
-    # this is temporary, so won't mix it with user_data
-    context.chat_data["day_idx"] = 0
+        # setting day of week to Monday.  This is temporary, so won't mix it with user_data
+        context.chat_data["day_idx"] = 0
+
+    elif query.data == "next":  # this is user having pressed "next" button after choosing slots
+        if context.chat_data["day_idx"] == 6:  # we have reached Sunday
+            # TODO this is temporary (send a message and return a different state)
+            return State.COMMENT
+        context.chat_data["day_idx"] += 1
 
     await query.edit_message_text(**make_inline_keyboard_for_time_slots(context))
 
@@ -663,6 +677,7 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
 async def bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the comment and ends the conversation."""
 
+    logger.info(context.user_data.time_slots_for_day)
     await update.effective_chat.send_message("Thank you! I hope we can talk again some day.")
     return ConversationHandler.END
 
@@ -731,9 +746,9 @@ def main() -> None:
             State.TIMEZONE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_timezone)
             ],
-            State.TIME_SLOTS_START: [CallbackQueryHandler(save_timezone_ask_slots_for_monday)],
+            State.TIME_SLOTS_START: [CallbackQueryHandler(ask_slots_for_one_day)],
             State.TIME_SLOTS_MENU: [
-                CallbackQueryHandler(bye, pattern="^next$"),
+                CallbackQueryHandler(ask_slots_for_one_day, pattern="^next$"),
                 CallbackQueryHandler(save_one_time_slot_ask_another),
             ],
             State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
