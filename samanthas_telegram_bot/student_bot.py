@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, auto
@@ -35,6 +36,16 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+DAY_OF_WEEK_FOR_INDEX = {
+    0: "Monday",
+    1: "Tuesday",
+    2: "Wednesday",
+    3: "Thursday",
+    4: "Friday",
+    5: "Saturday",
+    6: "Sunday",
+}
+
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
 # TODO maybe factor out from phrases; addition of language will require double changes
@@ -45,8 +56,11 @@ LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for it
 LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
 
 LOCALES = ("ua", "en", "ru")
-PHONE_PATTERN = re.compile("^(\+)|(00)[1-9][0-9]{1,14}$")
+PHONE_PATTERN = re.compile(r"^(\+)|(00)[1-9][0-9]{1,14}$")
 PHRASES = read_phrases()
+
+# UTC_TIME_SLOTS = ("05:00-08:00", "08:00-11:00", "11:00-14:00", "14:00-17:00", "17:00-21:00")
+UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))
 
 
 @dataclass
@@ -60,9 +74,9 @@ class UserData:
     username: str = None
     phone_number: str = None
     email: str = None
+    utc_offset: int = None
     teaching_languages: list = None
-    days: list = None
-    time_slots: list = None
+    time_slots_for_day: dict = None
 
 
 # include the custom class into ContextTypes to get attribute hinting
@@ -85,10 +99,8 @@ class State(IntEnum):
     PHONE_NUMBER = auto()
     EMAIL = auto()
     TIMEZONE = auto()
-    HOW_OFTEN = auto()
-    CHOOSE_DAY = auto()
-    CHOOSE_TIME = auto()
-    CHOOSE_ANOTHER_DAY = auto()
+    TIME_SLOTS_START = auto()
+    TIME_SLOTS_MENU = auto()
     COMMENT = auto()
 
 
@@ -501,153 +513,164 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
             [
                 [
                     InlineKeyboardButton(
-                        text=f"UTC-1 ({(timestamp - timedelta(hours=1)).strftime('%H:%M')})",
-                        callback_data="UTC-1",
+                        text=f"UTC-1 ({(timestamp + timedelta(hours=-1)).strftime('%H:%M')})",
+                        callback_data=-1,
                     ),
                     InlineKeyboardButton(
                         text=f"UTC ({timestamp.strftime('%H:%M')})",
-                        callback_data="UTC",
+                        callback_data=0,
                     ),
                     InlineKeyboardButton(
                         text=f"UTC+1 ({(timestamp + timedelta(hours=1)).strftime('%H:%M')})",
-                        callback_data="UTC+1",
+                        callback_data=1,
                     ),
                 ],
                 [
                     InlineKeyboardButton(
                         text=f"UTC+2 ({(timestamp + timedelta(hours=2)).strftime('%H:%M')})",
-                        callback_data="UTC+2",
+                        callback_data=2,
                     ),
                     InlineKeyboardButton(
                         text=f"UTC+3 ({(timestamp + timedelta(hours=3)).strftime('%H:%M')})",
-                        callback_data="UTC+3",
+                        callback_data=3,
                     ),
                     InlineKeyboardButton(
                         text=f"UTC+4 ({(timestamp + timedelta(hours=4)).strftime('%H:%M')})",
-                        callback_data="UTC+4",
+                        callback_data=4,
                     ),
                 ],
             ]
         ),
     )
-    return State.HOW_OFTEN
+    return State.TIME_SLOTS_START
 
 
-async def save_timezone_ask_how_often(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the timezone and asks how often user wants to study."""
-    # TODO record either summer or winter timezone
+async def save_timezone_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the timezone and gives time slots for Monday."""
+
     query = update.callback_query
-    logger.info(query.data)
     await query.answer()
-    await query.edit_message_text(text=f"Your timezone: {query.data}")
 
-    await update.effective_chat.send_message(
-        "How many times a week do you wish to study?",
-        reply_markup=ReplyKeyboardMarkup(
-            [["1", "2", "3"]],
-            one_time_keyboard=True,
-            input_field_placeholder="How many times?",
-        ),
-    )
+    # whether it's summer or winter timezone will be for the backend to decide
+    context.user_data.utc_offset = int(query.data)
+    context.user_data.time_slots_for_day = defaultdict(list)
 
-    return State.CHOOSE_DAY
+    # this is temporary, so won't mix it with user_data
+    context.chat_data["day_idx"] = 0
 
-
-async def save_how_often_ask_day(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Saves how often, asks for the day(s)."""
-
-    # TODO save how often; loop for the given number of days?
-
-    if update.message.text.lower() == "no":
-        await update.message.reply_text(
-            "Great! Is there anything else you want to say?",
-            reply_markup=ReplyKeyboardRemove(),
+    # TODO factor out as function
+    # % 24 is needed to avoid showing 22:00-25:00 to the user
+    buttons = [
+        InlineKeyboardButton(
+            f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
+            f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
+            callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
         )
-        return State.COMMENT
-
-    reply_keyboard = [
-        ["All weekdays", "Weekend"],
-        ["Monday", "Tuesday", "Wednesday"],
-        ["Thursday", "Friday"],
-        ["Saturday", "Sunday"],
+        for pair in UTC_TIME_SLOTS
     ]
 
-    await update.message.reply_text(
-        "Choose day or days",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
-            one_time_keyboard=True,
-            input_field_placeholder="Choose day(s)",
-        ),
+    message_text = (
+        PHRASES["ask_timeslots"][context.user_data.locale]
+        + " *"
+        + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
+        + r"*\?"
     )
-    return State.CHOOSE_TIME
+
+    await query.edit_message_text(
+        message_text,
+        reply_markup=InlineKeyboardMarkup([buttons[:3], buttons[3:]]),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
+
+    return State.TIME_SLOTS_MENU
 
 
-async def save_day_ask_time(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the day and asks for time slots."""
+async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores one time slot and offers to choose another."""
+    query = update.callback_query
+    await query.answer()
 
-    context.user_data.days.append(update.message.text)
+    day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
+    context.user_data.time_slots_for_day[day].append(query.data)
 
-    # TODO slots (how to choose multiple?)
+    buttons = [
+        InlineKeyboardButton(
+            f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
+            f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
+            callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
+        )
+        for pair in UTC_TIME_SLOTS
+        if f"{pair[0]}-{pair[1]}" not in context.user_data.time_slots_for_day[day]
+    ]
 
-    await update.effective_chat.send_message(
-        "Choose a time slot",
+    message_text = (
+        PHRASES["ask_timeslots"][context.user_data.locale]
+        + " *"
+        + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
+        + r"*\?"
+    )
+
+    await query.edit_message_text(
+        message_text,
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             [
+                buttons[: len(buttons) // 2],
+                buttons[len(buttons) // 2 :],
                 [
-                    # TODO store in database with timezone correction?
-                    #  How about daylight saving time?
-                    InlineKeyboardButton(text="08:00-11:00", callback_data="8-11"),
-                    InlineKeyboardButton(text="11:00-14:00", callback_data="11-14"),
-                ],
-                [
-                    InlineKeyboardButton(text="14:00-17:00", callback_data="14-17"),
-                    InlineKeyboardButton(text="17:00-21:00", callback_data="17-21"),
+                    InlineKeyboardButton(
+                        text=PHRASES["ask_slots_next"][context.user_data.locale],
+                        callback_data="next",
+                    )
                 ],
             ]
         ),
     )
-    return State.CHOOSE_ANOTHER_DAY
+
+    return State.TIME_SLOTS_MENU
 
 
-async def save_time_choose_another_day_or_done(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Saves time slot, asks if user wants to choose another day."""
+# async def save_language_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+#     """Saves the first language to learn, asks for second one.
+#     The student is only allowed to study maximum two languages at the moment.
+#     """
+#     query = update.callback_query
+#     await query.answer()
+#
+#     context.user_data.teaching_languages.append(query.data)
+#
+#     if len(context.user_data.teaching_languages) == 2:
+#         # check the level of 2nd language chosen
+#         await query.edit_message_text(
+#             f"That's it, you can only choose two languages 😉\nWhat is your level of "
+#             f"*{LANGUAGE_FOR_CALLBACK_DATA[query.data]}*?",
+#             reply_markup=LEVEL_KEYBOARD,
+#             parse_mode=ParseMode.MARKDOWN_V2,
+#         )
+#         return State.LEVEL
+#
+#     buttons_left = tuple(
+#        b for b in LANGUAGE_BUTTONS if b.callback_data not in context.user_data.teaching_languages
+#     )
+#
+#     await query.edit_message_text(
+#         # the message is the same for it to look like an interactive menu
+#         "What languages would you like to learn?",
+#         reply_markup=InlineKeyboardMarkup(
+#             [
+#                 buttons_left[:4],
+#                 buttons_left[4:],
+#                 [InlineKeyboardButton(text="Done", callback_data="ok")],
+#             ]
+#         ),
+#     )
+#     return State.LANGUAGE_MENU
 
-    query = update.callback_query
-    logger.info(query.data)
-    await query.answer()
-    await query.edit_message_text(text=f"{query.data}")
 
-    context.user_data.time_slots.append(query.data)
+async def bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the comment and ends the conversation."""
 
-    reply_keyboard = [["Yes", "No"]]
-
-    result = ",".join(
-        f"{day} ({timing})"
-        for day, timing in zip(context.user_data.days, context.user_data.time_slots)
-    )
-
-    await update.effective_chat.send_message(
-        f"You have chosen:{result}. Choose another day or days?",
-        reply_markup=ReplyKeyboardMarkup(
-            reply_keyboard,
-            one_time_keyboard=True,
-            input_field_placeholder="Continue choosing?",
-        ),
-    )
-    return State.CHOOSE_DAY
-
-
-async def final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the info about the user and ends the conversation."""
-
-    user = update.message.from_user
-    logger.info("Comment from %s: %s", user.first_name, update.message.text)
-
-    await update.message.reply_text("Thank you! I hope we can talk again some day.")
-
+    await update.effective_chat.send_message("Thank you! I hope we can talk again some day.")
     return ConversationHandler.END
 
 
@@ -715,17 +738,12 @@ def main() -> None:
             State.TIMEZONE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_timezone)
             ],
-            State.HOW_OFTEN: [CallbackQueryHandler(save_timezone_ask_how_often)],
-            State.CHOOSE_DAY: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_how_often_ask_day)
+            State.TIME_SLOTS_START: [CallbackQueryHandler(save_timezone_ask_slots_for_monday)],
+            State.TIME_SLOTS_MENU: [
+                CallbackQueryHandler(bye, pattern="^next$"),
+                CallbackQueryHandler(save_one_time_slot_ask_another),
             ],
-            State.CHOOSE_TIME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_day_ask_time)
-            ],
-            State.CHOOSE_ANOTHER_DAY: [
-                CallbackQueryHandler(save_time_choose_another_day_or_done),
-            ],
-            State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, final_comment)],
+            State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
