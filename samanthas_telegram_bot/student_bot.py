@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, auto
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from telegram import (
     InlineKeyboardButton,
@@ -545,6 +545,53 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
     return State.TIME_SLOTS_START
 
 
+def make_inline_keyboard_for_time_slots(
+    context: CUSTOM_CONTEXT_TYPES,
+) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    """A helper function that produces data to send to a user for them to choose a time slot.
+    Returns a dictionary with message text, parse mode and inline keyboard,
+    that can be simply unpacked when passing to `edit_message_text()`.
+    """
+
+    day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
+
+    # % 24 is needed to avoid showing 22:00-25:00 to the user
+    buttons = [
+        InlineKeyboardButton(
+            f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
+            f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
+            callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
+        )
+        for pair in UTC_TIME_SLOTS
+        # exclude slots that user has already selected
+        if f"{pair[0]}-{pair[1]}" not in context.user_data.time_slots_for_day[day]
+    ]
+
+    message_text = (
+        PHRASES["ask_timeslots"][context.user_data.locale]
+        + " *"
+        + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
+        + r"*\?"
+    )
+
+    return {
+        "text": message_text,
+        "parse_mode": ParseMode.MARKDOWN_V2,
+        "reply_markup": InlineKeyboardMarkup(
+            [
+                buttons[: len(buttons) // 2],
+                buttons[len(buttons) // 2 :],
+                [
+                    InlineKeyboardButton(
+                        text=PHRASES["ask_slots_next"][context.user_data.locale],
+                        callback_data="next",
+                    )
+                ],
+            ]
+        ),
+    }
+
+
 async def save_timezone_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the timezone and gives time slots for Monday."""
 
@@ -558,29 +605,7 @@ async def save_timezone_ask_slots_for_monday(update: Update, context: CUSTOM_CON
     # this is temporary, so won't mix it with user_data
     context.chat_data["day_idx"] = 0
 
-    # TODO factor out as function
-    # % 24 is needed to avoid showing 22:00-25:00 to the user
-    buttons = [
-        InlineKeyboardButton(
-            f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
-            f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
-            callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
-        )
-        for pair in UTC_TIME_SLOTS
-    ]
-
-    message_text = (
-        PHRASES["ask_timeslots"][context.user_data.locale]
-        + " *"
-        + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
-        + r"*\?"
-    )
-
-    await query.edit_message_text(
-        message_text,
-        reply_markup=InlineKeyboardMarkup([buttons[:3], buttons[3:]]),
-        parse_mode=ParseMode.MARKDOWN_V2,
-    )
+    await query.edit_message_text(**make_inline_keyboard_for_time_slots(context))
 
     return State.TIME_SLOTS_MENU
 
@@ -593,39 +618,7 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
     day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
     context.user_data.time_slots_for_day[day].append(query.data)
 
-    buttons = [
-        InlineKeyboardButton(
-            f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
-            f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
-            callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
-        )
-        for pair in UTC_TIME_SLOTS
-        if f"{pair[0]}-{pair[1]}" not in context.user_data.time_slots_for_day[day]
-    ]
-
-    message_text = (
-        PHRASES["ask_timeslots"][context.user_data.locale]
-        + " *"
-        + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
-        + r"*\?"
-    )
-
-    await query.edit_message_text(
-        message_text,
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup(
-            [
-                buttons[: len(buttons) // 2],
-                buttons[len(buttons) // 2 :],
-                [
-                    InlineKeyboardButton(
-                        text=PHRASES["ask_slots_next"][context.user_data.locale],
-                        callback_data="next",
-                    )
-                ],
-            ]
-        ),
-    )
+    await query.edit_message_text(**make_inline_keyboard_for_time_slots(context))
 
     return State.TIME_SLOTS_MENU
 
