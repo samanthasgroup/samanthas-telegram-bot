@@ -1,7 +1,5 @@
 import re
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-
 from data.read_phrases import read_phrases
 
 DAY_OF_WEEK_FOR_INDEX = {
@@ -18,12 +16,7 @@ EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
 # TODO maybe factor out from phrases; addition of language will require double changes
 LANGUAGE_CODES = ("en", "fr", "de", "es", "it", "pl", "cz", "se")
-
-LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1", "C2")
-LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for item in LEVELS)
-# TODO use auxil function?
-LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
-
+LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1")
 LOCALES = ("ua", "en", "ru")
 PHONE_PATTERN = re.compile(r"^(\+)|(00)[1-9][0-9]{1,14}$")
 

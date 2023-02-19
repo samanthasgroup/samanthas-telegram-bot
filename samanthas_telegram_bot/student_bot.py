@@ -27,16 +27,15 @@ from telegram.ext import (
 from samanthas_telegram_bot.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
-    LANGUAGE_CODES,
-    LEVEL_KEYBOARD,
     LOCALES,
     PHONE_PATTERN,
     PHRASES,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.inline_keyboards import (
-    make_dict_for_inline_keyboard_with_languages,
-    make_dict_for_inline_keyboard_with_time_slots,
+    make_dict_for_message_with_inline_keyboard_with_language_levels,
+    make_dict_for_message_with_inline_keyboard_with_languages,
+    make_dict_for_message_with_inline_keyboard_with_time_slots,
 )
 from samanthas_telegram_bot.user_data import UserData
 
@@ -310,7 +309,6 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
         context.user_data.username = username
         logger.info(f"Username: {username}. Will be stored in the database.")
         await query.edit_message_text(
-            # TODO "-" for no email?
             PHRASES["ask_email"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
@@ -425,7 +423,7 @@ async def ask_slots_for_one_day(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     If this function is called after choosing time slots for a day, asks for time slots for the
     next day.
 
-    If this is the last day, makes a transition to the next conversation state.
+    If this is the last day, makes asks for the first language to learn/teach.
     """
 
     query = update.callback_query
@@ -443,11 +441,15 @@ async def ask_slots_for_one_day(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
             context.user_data.levels_for_teaching_language = {}
             # TODO what if the user chose no slots at all?
-            await query.edit_message_text(**make_dict_for_inline_keyboard_with_languages(context))
+            await query.edit_message_text(
+                **make_dict_for_message_with_inline_keyboard_with_languages(context)
+            )
             return State.TEACHING_LANGUAGE
         context.chat_data["day_idx"] += 1
 
-    await query.edit_message_text(**make_dict_for_inline_keyboard_with_time_slots(context))
+    await query.edit_message_text(
+        **make_dict_for_message_with_inline_keyboard_with_time_slots(context)
+    )
 
     return State.TIME_SLOTS_MENU
 
@@ -460,60 +462,63 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
     day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
     context.user_data.time_slots_for_day[day].append(query.data)
 
-    await query.edit_message_text(**make_dict_for_inline_keyboard_with_time_slots(context))
+    await query.edit_message_text(
+        **make_dict_for_message_with_inline_keyboard_with_time_slots(context)
+    )
 
     return State.TIME_SLOTS_MENU
 
 
-async def save_teaching_language_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Saves teaching language and, if the user is a teacher, asks for more languages."""
+async def save_teaching_language_ask_another_or_level(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Saves teaching language and, if the user is a teacher, asks for more languages.
+    If this is a student or the teacher has finished choosing languages, starts asking for levels.
+    """
 
     query = update.callback_query
     await query.answer()
-
-    if query.data == "done":
-        await query.edit_message_text(
-            "What is the level of?", reply_markup=InlineKeyboardMarkup([])
-        )  # TODO
-        return State.LEVEL
 
     # levels will be filled at next stage
     context.user_data.levels_for_teaching_language[query.data] = []
 
-    if context.user_data.role == "student":
-        # a student is only allowed to choose one language at the moment
-        await query.edit_message_text(
-            "What is the level of?", reply_markup=InlineKeyboardMarkup([])
-        )  # TODO
-        return State.LEVEL
-
-    await query.edit_message_text(**make_dict_for_inline_keyboard_with_languages(context))
-    return State.TEACHING_LANGUAGE
+    await query.edit_message_text(
+        **make_dict_for_message_with_inline_keyboard_with_language_levels(
+            context, show_done_button=False
+        )
+    )
+    return State.LEVEL
 
 
-async def save_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Asks for the level of the language chosen."""
+async def save_level_ask_level_for_next_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Saves level, asks for another level of the language chosen (for teachers)."""
 
     query = update.callback_query
     await query.answer()
 
-    # list conforms to general approach that a person can potentially learn/teach many languages
-    context.user_data.teaching_languages = [query.data]
+    logger.info(context.user_data.levels_for_teaching_language)
 
-    # I have to repeat this because of user's locale (can't define as global constant)
-    # TODO maybe refactor to a function
-    language_for_callback_data = {
-        code: PHRASES[code][context.user_data.locale] for code in LANGUAGE_CODES
-    }
+    # move on for a student (they can only choose one language and one level)
+    if context.user_data.role == "student":
+        return State.COMMENT  # TODO
 
-    lang_name = language_for_callback_data[context.user_data.teaching_languages[0]]
+    if query.data == "done":
+        # A teacher has finished selecting levels for this language: ask for another language
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard_with_languages(context)
+        )
+        return State.TEACHING_LANGUAGE
+
+    last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
+    context.user_data.levels_for_teaching_language[last_language_added].append(query.data)
+
+    # Ask the teacher for another level of the same language
     await query.edit_message_text(
-        text=f"{PHRASES['ask_student_language_level'][context.user_data.locale]} *{lang_name}*?",
-        reply_markup=LEVEL_KEYBOARD,
-        parse_mode=ParseMode.MARKDOWN_V2,
+        **make_dict_for_message_with_inline_keyboard_with_language_levels(context)
     )
-
-    return State.COMMENT  # TODO
+    return State.LEVEL
 
 
 async def bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -574,8 +579,6 @@ def main() -> None:
             State.SOURCE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_last_name_ask_source)
             ],
-            State.TEACHING_LANGUAGE: [CallbackQueryHandler(save_teaching_language_ask_another)],
-            # State.LEVEL: [CallbackQueryHandler(save_language_ask_level)],
             State.CHECK_USERNAME: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, save_source_check_username)
             ],
@@ -593,6 +596,11 @@ def main() -> None:
                 CallbackQueryHandler(ask_slots_for_one_day, pattern="^next$"),
                 CallbackQueryHandler(save_one_time_slot_ask_another),
             ],
+            State.TEACHING_LANGUAGE: [
+                CallbackQueryHandler(bye, pattern="^done$"),  # TODO
+                CallbackQueryHandler(save_teaching_language_ask_another_or_level),
+            ],
+            State.LEVEL: [CallbackQueryHandler(save_level_ask_level_for_next_language)],
             State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
