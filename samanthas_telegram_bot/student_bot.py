@@ -2,11 +2,8 @@ import logging
 import os
 import re
 from collections import defaultdict
-from dataclasses import dataclass
 from datetime import timedelta
 from enum import IntEnum, auto
-from math import ceil
-from typing import Any, Literal, Union
 
 from telegram import (
     InlineKeyboardButton,
@@ -19,70 +16,30 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
-    CallbackContext,
     CallbackQueryHandler,
     CommandHandler,
     ContextTypes,
     ConversationHandler,
-    ExtBot,
     MessageHandler,
     filters,
 )
 
-from data.read_phrases import read_phrases
+from samanthas_telegram_bot.auxil import make_inline_keyboard_for_time_slots
+from samanthas_telegram_bot.constants import (
+    DAY_OF_WEEK_FOR_INDEX,
+    EMAIL_PATTERN,
+    LOCALES,
+    PHONE_PATTERN,
+    PHRASES,
+)
+from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.user_data import UserData
 
 # Enable logging
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-DAY_OF_WEEK_FOR_INDEX = {
-    0: "Monday",
-    1: "Tuesday",
-    2: "Wednesday",
-    3: "Thursday",
-    4: "Friday",
-    5: "Saturday",
-    6: "Sunday",
-}
-
-EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
-
-# TODO maybe factor out from phrases; addition of language will require double changes
-LANGUAGE_CODES = ("en", "fr", "de", "es", "it", "pl", "cz", "se")
-
-LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1", "C2")
-LEVEL_BUTTONS = tuple(InlineKeyboardButton(text=item, callback_data=item) for item in LEVELS)
-LEVEL_KEYBOARD = InlineKeyboardMarkup([LEVEL_BUTTONS[:3], LEVEL_BUTTONS[3:]])
-
-LOCALES = ("ua", "en", "ru")
-PHONE_PATTERN = re.compile(r"^(\+)|(00)[1-9][0-9]{1,14}$")
-PHRASES = read_phrases()
-
-# UTC_TIME_SLOTS = ("05:00-08:00", "08:00-11:00", "11:00-14:00", "14:00-17:00", "17:00-21:00")
-UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))
-
-
-@dataclass
-class UserData:
-    locale: str = None
-    first_name: str = None
-    last_name: str = None
-    role: Literal["student", "teacher"] = None
-    age: str = None  # it will be an age range
-    source: str = None
-    username: str = None
-    phone_number: str = None
-    email: str = None
-    utc_offset: int = None
-    teaching_languages: list = None
-    time_slots_for_day: dict = None
-
-
-# include the custom class into ContextTypes to get attribute hinting
-# (replacing standard dict with UserData for "user_data")
-CUSTOM_CONTEXT_TYPES = CallbackContext[ExtBot[None], UserData, dict[Any, Any], dict[Any, Any]]
 
 
 class State(IntEnum):
@@ -456,73 +413,6 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
         ),
     )
     return State.TIME_SLOTS_START
-
-
-def _make_inline_keyboard(
-    message_text: str, buttons: list[InlineKeyboardButton], locale: str, buttons_per_row: int = 3
-) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-    """Makes an inline keyboard, the number of rows in which depends on how many buttons
-    are passed. The buttons are evenly distributed over the rows. The last row always contains
-    the "Next" button.
-
-    Returns dictionary that can be unpacked into query.edit_message_text()
-    """
-
-    number_of_rows = ceil(len(buttons) / buttons_per_row)
-
-    if number_of_rows == 0:
-        number_of_rows = 1
-
-    return {
-        "text": message_text,
-        "parse_mode": ParseMode.MARKDOWN_V2,
-        "reply_markup": InlineKeyboardMarkup(
-            [
-                buttons[: len(buttons) // number_of_rows],
-                buttons[len(buttons) // number_of_rows :],
-                [
-                    InlineKeyboardButton(
-                        text=PHRASES["ask_slots_next"][locale],
-                        callback_data="next",
-                    )
-                ],
-            ]
-        ),
-    }
-
-
-def make_inline_keyboard_for_time_slots(
-    context: CUSTOM_CONTEXT_TYPES,
-) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-    """A helper function that produces data to send to a user for them to choose a time slot.
-    Returns a dictionary with message text, parse mode and inline keyboard,
-    that can be simply unpacked when passing to `edit_message_text()`.
-    """
-
-    day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
-
-    # % 24 is needed to avoid showing 22:00-25:00 to the user
-    buttons = [
-        InlineKeyboardButton(
-            f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
-            f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
-            callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
-        )
-        for pair in UTC_TIME_SLOTS
-        # exclude slots that user has already selected
-        if f"{pair[0]}-{pair[1]}" not in context.user_data.time_slots_for_day[day]
-    ]
-
-    message_text = (
-        PHRASES["ask_timeslots"][context.user_data.locale]
-        + " *"
-        + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
-        + r"*\?"
-    )
-
-    return _make_inline_keyboard(
-        message_text=message_text, buttons=buttons, locale=context.user_data.locale
-    )
 
 
 async def ask_slots_for_one_day(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
