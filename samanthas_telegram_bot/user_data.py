@@ -14,5 +14,5 @@ class UserData:
     phone_number: str = None
     email: str = None
     utc_offset: int = None
-    teaching_languages: list = None
+    levels_for_teaching_language: dict = None
     time_slots_for_day: dict = None
