@@ -206,23 +206,11 @@ async def save_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
             reply_markup=InlineKeyboardMarkup(rows_of_buttons),
         )
     else:
-        # TODO this is repeated above
-        keyboard = InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        PHRASES["option_yes"][context.user_data.locale], callback_data="yes"
-                    ),
-                    InlineKeyboardButton(
-                        PHRASES["option_no"][context.user_data.locale], callback_data="no"
-                    ),
-                ]
-            ]
-        )
-
         await query.edit_message_text(
-            PHRASES["ask_if_18"][context.user_data.locale],
-            reply_markup=keyboard,
+            **make_dict_for_message_with_yes_no_inline_keyboard(
+                context,
+                question_phrase_internal_id="ask_if_18",
+            )
         )
 
     return State.LAST_NAME
