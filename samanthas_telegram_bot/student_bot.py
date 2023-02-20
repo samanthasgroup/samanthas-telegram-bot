@@ -35,6 +35,7 @@ from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.inline_keyboards import (
     make_dict_for_message_with_inline_keyboard_with_language_levels,
     make_dict_for_message_with_inline_keyboard_with_student_communication_languages,
+    make_dict_for_message_with_inline_keyboard_with_teaching_frequency,
     make_dict_for_message_with_inline_keyboard_with_teaching_languages,
     make_dict_for_message_with_inline_keyboard_with_time_slots,
     make_dict_for_message_with_yes_no_inline_keyboard,
@@ -66,7 +67,8 @@ class State(IntEnum):
     TEACHING_LANGUAGE = auto()
     LEVEL = auto()
     STUDENT_COMMUNICATION_LANGUAGE = auto()
-    TEACHING_EXPERIENCE = auto()
+    NUMBER_OF_GROUPS_OR_FREQUENCY = auto()
+    TEACHING_FREQUENCY = auto()
     COMMENT = auto()
 
 
@@ -450,11 +452,13 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
     return State.TIME_SLOTS_MENU
 
 
-async def save_teaching_language_ask_another_or_level(
+async def save_teaching_language_ask_another_or_level_or_experience(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves teaching language and, if the user is a teacher, asks for more languages.
-    If this is a student or the teacher has finished choosing languages, starts asking for levels.
+    """Saves teaching language, asks for level. If the user is a teacher and is done choosing
+    levels, asks for more languages.
+
+    If the user is a teacher and has finished choosing languages, asks for teaching experience.
     """
 
     query = update.callback_query
@@ -469,7 +473,7 @@ async def save_teaching_language_ask_another_or_level(
                 context, question_phrase_internal_id="ask_teacher_experience"
             )
         )
-        return State.TEACHING_EXPERIENCE
+        return State.NUMBER_OF_GROUPS_OR_FREQUENCY
 
     context.user_data.levels_for_teaching_language[query.data] = []
 
@@ -533,6 +537,61 @@ async def save_student_communication_language_start_test_for_english(
 
     logger.info(context.user_data.student_communication_language)
 
+    return State.COMMENT  # TODO
+
+
+async def save_prior_teaching_experience_ask_groups_or_frequency(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Saves information about teaching experience, asks for frequency (inexperienced teachers)
+    or number of groups (for experienced teachers).
+    """
+
+    query = update.callback_query
+    await query.answer()
+    context.user_data.has_prior_teaching_experience = True if query.data == "yes" else False
+
+    logger.info(f"Has teaching experience: {context.user_data.has_prior_teaching_experience}")
+
+    if context.user_data.has_prior_teaching_experience:
+        numbers_of_groups = (1, 2)
+
+        buttons = [
+            [
+                InlineKeyboardButton(
+                    PHRASES[f"option_number_of_groups_{number}"][context.user_data.locale],
+                    callback_data=number,
+                )
+                for number in numbers_of_groups
+            ]
+        ]
+
+        await query.edit_message_text(
+            PHRASES["ask_teacher_number_of_groups"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup(buttons),
+        )
+        return State.TEACHING_FREQUENCY
+    else:
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
+        )
+        return State.COMMENT  # TODO
+
+
+async def save_number_of_groups_ask_frequency(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """For experienced teachers: saves information about number of groups, asks for frequency
+    (inexperienced teachers).
+    """
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.teacher_number_of_groups = query.data
+
+    await query.edit_message_text(
+        **make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
+    )
     return State.COMMENT  # TODO
 
 
@@ -614,7 +673,7 @@ def main() -> None:
                 CallbackQueryHandler(save_one_time_slot_ask_another),
             ],
             State.TEACHING_LANGUAGE: [
-                CallbackQueryHandler(save_teaching_language_ask_another_or_level),
+                CallbackQueryHandler(save_teaching_language_ask_another_or_level_or_experience),
             ],
             State.LEVEL: [
                 CallbackQueryHandler(
@@ -624,7 +683,10 @@ def main() -> None:
             State.STUDENT_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(save_student_communication_language_start_test_for_english)
             ],
-            State.TEACHING_EXPERIENCE: [CallbackQueryHandler(bye)],  # TODO
+            State.NUMBER_OF_GROUPS_OR_FREQUENCY: [
+                CallbackQueryHandler(save_prior_teaching_experience_ask_groups_or_frequency)
+            ],
+            State.TEACHING_FREQUENCY: [CallbackQueryHandler(save_number_of_groups_ask_frequency)],
             State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],

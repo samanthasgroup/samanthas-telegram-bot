@@ -17,3 +17,5 @@ class UserData:
     levels_for_teaching_language: dict[str, list[str]] = None
     time_slots_for_day: dict = None
     student_communication_language: Literal["en", "ru", "ua"] = None
+    has_prior_teaching_experience: bool = None
+    teacher_number_of_groups: int = None

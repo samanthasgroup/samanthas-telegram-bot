@@ -78,6 +78,32 @@ def make_dict_for_message_with_inline_keyboard_with_student_communication_langua
     )
 
 
+def make_dict_for_message_with_inline_keyboard_with_teaching_frequency(
+    context: CUSTOM_CONTEXT_TYPES,
+) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    """A helper function that produces data to send to a teacher for them to choose the frequency
+    of their classes.
+
+    Returns a dictionary with message text, parse mode and inline keyboard,
+    that can be simply unpacked when passing to `query.edit_message_text()`.
+    """
+
+    buttons = [
+        InlineKeyboardButton(
+            text=PHRASES[f"option_frequency_{number}"][context.user_data.locale],
+            callback_data=number,
+        )
+        for number in (1, 2, 3)
+    ]
+
+    return _make_dict_for_message_with_inline_keyboard(
+        message_text=PHRASES["ask_teacher_frequency"][context.user_data.locale],
+        buttons=buttons,
+        buttons_per_row=1,
+        parse_mode=None,
+    )
+
+
 def make_dict_for_message_with_inline_keyboard_with_teaching_languages(
     context: CUSTOM_CONTEXT_TYPES,
     show_done_button: bool = True,
