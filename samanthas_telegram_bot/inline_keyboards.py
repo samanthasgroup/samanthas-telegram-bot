@@ -9,6 +9,7 @@ from samanthas_telegram_bot.constants import (
     LANGUAGE_CODES,
     LEVELS,
     PHRASES,
+    STUDENT_COMMUNICATION_LANGUAGE_CODES,
     UTC_TIME_SLOTS,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
@@ -33,10 +34,11 @@ def _make_dict_for_message_with_inline_keyboard(
     if number_of_rows == 0:
         number_of_rows = 1
 
-    rows = [
-        buttons[: len(buttons) // number_of_rows],
-        buttons[len(buttons) // number_of_rows :],
-    ]
+    rows = []
+    copied_buttons = buttons[:]
+    for _ in range(number_of_rows):
+        rows += [copied_buttons[:buttons_per_row]]  # it works even if there are fewer buttons left
+        del copied_buttons[:buttons_per_row]
 
     if bottom_row_button:
         rows.append([bottom_row_button])
@@ -48,7 +50,35 @@ def _make_dict_for_message_with_inline_keyboard(
     }
 
 
-def make_dict_for_message_with_inline_keyboard_with_languages(
+def make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
+    context: CUSTOM_CONTEXT_TYPES,
+) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    """A helper function that produces data to send to a student for them to choose languages
+    to communicate in (Russian, Ukrainian or any).
+
+    Returns a dictionary with message text, parse mode and inline keyboard,
+    that can be simply unpacked when passing to `query.edit_message_text()`.
+    """
+
+    language_for_callback_data = {
+        code: PHRASES[f"student_communication_language_option_{code}"][context.user_data.locale]
+        for code in STUDENT_COMMUNICATION_LANGUAGE_CODES
+    }
+
+    language_buttons = [
+        InlineKeyboardButton(text=value, callback_data=key)
+        for key, value in language_for_callback_data.items()
+    ]
+
+    return _make_dict_for_message_with_inline_keyboard(
+        message_text=PHRASES["ask_student_communication_language"][context.user_data.locale],
+        buttons=language_buttons,
+        buttons_per_row=1,
+        parse_mode=None,
+    )
+
+
+def make_dict_for_message_with_inline_keyboard_with_teaching_languages(
     context: CUSTOM_CONTEXT_TYPES,
     show_done_button: bool = True,
 ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
@@ -83,7 +113,7 @@ def make_dict_for_message_with_inline_keyboard_with_languages(
             context.user_data.locale
         ],
         buttons=language_buttons,
-        buttons_per_row=4,
+        buttons_per_row=3,
         bottom_row_button=done_button,
     )
 
@@ -168,4 +198,31 @@ def make_dict_for_message_with_inline_keyboard_with_time_slots(
             text=PHRASES["ask_slots_next"][context.user_data.locale],
             callback_data="next",
         ),
+    )
+
+
+def make_dict_for_message_with_yes_no_inline_keyboard(
+    context: CUSTOM_CONTEXT_TYPES,
+    question_phrase_internal_id: str,
+) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    """A helper function that produces data for an inline keyboard with options "yes" and "no"
+    (localized).
+
+    Returns a dictionary with message text, parse mode and inline keyboard,
+    that can be simply unpacked when passing to `query.edit_message_text()`.
+    """
+
+    phrase_for_callback_data = {
+        option: PHRASES[f"option_{option}"][context.user_data.locale] for option in ("yes", "no")
+    }
+
+    buttons = [
+        InlineKeyboardButton(text=value, callback_data=key)
+        for key, value in phrase_for_callback_data.items()
+    ]
+
+    return _make_dict_for_message_with_inline_keyboard(
+        message_text=PHRASES[question_phrase_internal_id][context.user_data.locale],
+        buttons=buttons,
+        buttons_per_row=2,
     )

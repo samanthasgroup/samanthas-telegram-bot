@@ -7,7 +7,7 @@ class UserData:
     locale: str = None
     first_name: str = None
     last_name: str = None
-    role: Literal["student", "teacher"] = None
+    role: Literal["student", "teacher"] = None  # TODO Enum
     age: str = None  # it will be an age range
     source: str = None
     username: str = None
@@ -16,3 +16,4 @@ class UserData:
     utc_offset: int = None
     levels_for_teaching_language: dict[str, list[str]] = None
     time_slots_for_day: dict = None
+    student_communication_language: Literal["en", "ru", "ua"] = None
