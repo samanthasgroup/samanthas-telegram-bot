@@ -1,6 +1,15 @@
 import re
+from enum import Enum
 
 from data.read_phrases import read_phrases
+
+
+class Role(str, Enum):
+    """Role of a person. Members of this enum can be treated as strings."""
+
+    STUDENT = "student"
+    TEACHER = "teacher"
+
 
 DAY_OF_WEEK_FOR_INDEX = {
     0: "Monday",

@@ -11,6 +11,7 @@ from samanthas_telegram_bot.constants import (
     PHRASES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     UTC_TIME_SLOTS,
+    Role,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
@@ -63,7 +64,7 @@ def make_dict_for_message_with_inline_keyboard_with_student_communication_langua
 
     locale = context.user_data.locale
 
-    if context.user_data.role == "teacher":
+    if context.user_data.role == Role.TEACHER:
         language_codes = STUDENT_COMMUNICATION_LANGUAGE_CODES[:]
     else:
         # the student cannot choose "L2 only" because that wouldn't make sense

@@ -30,6 +30,7 @@ from samanthas_telegram_bot.constants import (
     LOCALES,
     PHONE_PATTERN,
     PHRASES,
+    Role,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.inline_keyboards import (
@@ -171,13 +172,10 @@ async def save_first_name_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES
             [
                 [
                     InlineKeyboardButton(
-                        text=PHRASES["option_student"][context.user_data.locale],
-                        callback_data="student",
-                    ),
-                    InlineKeyboardButton(
-                        text=PHRASES["option_teacher"][context.user_data.locale],
-                        callback_data="teacher",
-                    ),
+                        text=PHRASES[f"option_{role}"][context.user_data.locale],
+                        callback_data=role,
+                    )
+                    for role in (Role.STUDENT, Role.TEACHER)
                 ],
             ]
         ),
@@ -193,7 +191,7 @@ async def save_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
 
     context.user_data.role = query.data
 
-    if context.user_data.role == "student":
+    if context.user_data.role == Role.STUDENT:
         student_ages = [
             ["6-8", "9-11", "12-14", "15-17"],
             ["18-20", "21-25", "26-30", "31-35"],
@@ -231,7 +229,7 @@ async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     await query.answer()
 
     # end conversation for would-be teachers that are minors
-    if context.user_data.role == "teacher" and query.data == "no":
+    if context.user_data.role == Role.TEACHER and query.data == "no":
         # TODO actual link to chat
         await query.edit_message_text(
             PHRASES["reply_under_18"][context.user_data.locale],
@@ -239,7 +237,7 @@ async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) 
         )
         return ConversationHandler.END
 
-    if context.user_data.role == "student":
+    if context.user_data.role == Role.STUDENT:
         context.user_data.age = query.data
 
     await query.edit_message_text(PHRASES["ask_last_name"][context.user_data.locale])
@@ -510,7 +508,7 @@ async def save_teaching_language_ask_another_or_level_or_experience(
 
     # for now students can only choose one language, so callback_data == "done" is only possible
     # for a teacher, but we'll keep it explicit here
-    if query.data == "done" and context.user_data.role == "teacher":
+    if query.data == "done" and context.user_data.role == Role.TEACHER:
         await query.edit_message_text(
             **make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
                 context
@@ -551,7 +549,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
     logger.info(context.user_data.levels_for_teaching_language)
 
     # move on for a student (they can only choose one language and one level)
-    if context.user_data.role == "student":
+    if context.user_data.role == Role.STUDENT:
         await query.edit_message_text(
             **make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
                 context
@@ -580,7 +578,7 @@ async def save_student_communication_language_start_test_or_ask_teaching_experie
 
     logger.info(context.user_data.communication_language_in_class)
 
-    if context.user_data.role == "student":
+    if context.user_data.role == Role.STUDENT:
         # start test
         return State.COMMENT  # TODO
     else:
