@@ -19,3 +19,5 @@ class UserData:
     student_communication_language: Literal["en", "ru", "ua"] = None
     has_prior_teaching_experience: bool = None
     teacher_number_of_groups: int = None
+    class_frequency: int = None
+    teacher_age_groups_of_students: list = None

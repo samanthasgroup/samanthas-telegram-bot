@@ -34,6 +34,7 @@ from samanthas_telegram_bot.constants import (
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.inline_keyboards import (
     make_dict_for_message_with_inline_keyboard_with_language_levels,
+    make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher,
     make_dict_for_message_with_inline_keyboard_with_student_communication_languages,
     make_dict_for_message_with_inline_keyboard_with_teaching_frequency,
     make_dict_for_message_with_inline_keyboard_with_teaching_languages,
@@ -69,6 +70,9 @@ class State(IntEnum):
     STUDENT_COMMUNICATION_LANGUAGE = auto()
     NUMBER_OF_GROUPS_OR_FREQUENCY = auto()
     TEACHING_FREQUENCY = auto()
+    PREFERRED_STUDENT_AGE_GROUPS_START = auto()
+    PREFERRED_STUDENT_AGE_GROUPS_MENU = auto()
+    ADDITIONAL_SKILLS = auto()
     COMMENT = auto()
 
 
@@ -614,7 +618,7 @@ async def save_prior_teaching_experience_ask_groups_or_frequency(
         await query.edit_message_text(
             **make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
         )
-        return State.COMMENT  # TODO
+        return State.PREFERRED_STUDENT_AGE_GROUPS_START
 
 
 async def save_number_of_groups_ask_frequency(
@@ -631,7 +635,45 @@ async def save_number_of_groups_ask_frequency(
     await query.edit_message_text(
         **make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
     )
-    return State.COMMENT  # TODO
+    return State.PREFERRED_STUDENT_AGE_GROUPS_START
+
+
+async def save_frequency_ask_student_age_groups(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Saves frequency, asks for preferred age groups of students."""
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.class_frequency = query.data
+    context.user_data.teacher_age_groups_of_students = []
+
+    await query.edit_message_text(
+        **make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(context)
+    )
+
+    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
+
+
+async def save_student_age_group_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Saves preferred age group of students, asks another."""
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == "done":
+        return State.COMMENT  # TODO
+
+    context.user_data.teacher_age_groups_of_students.append(query.data)
+
+    # TODO extract constant (all groups are selected)
+    if len(context.user_data.teacher_age_groups_of_students) == 3:
+        return State.COMMENT  # TODO
+
+    await query.edit_message_text(
+        **make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(context)
+    )
+
+    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
 
 
 async def bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -726,6 +768,12 @@ def main() -> None:
                 CallbackQueryHandler(save_prior_teaching_experience_ask_groups_or_frequency)
             ],
             State.TEACHING_FREQUENCY: [CallbackQueryHandler(save_number_of_groups_ask_frequency)],
+            State.PREFERRED_STUDENT_AGE_GROUPS_START: [
+                CallbackQueryHandler(save_frequency_ask_student_age_groups)
+            ],
+            State.PREFERRED_STUDENT_AGE_GROUPS_MENU: [
+                CallbackQueryHandler(save_student_age_group_ask_another)
+            ],
             State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],

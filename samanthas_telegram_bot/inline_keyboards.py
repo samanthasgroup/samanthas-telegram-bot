@@ -186,6 +186,47 @@ def make_dict_for_message_with_inline_keyboard_with_language_levels(
     )
 
 
+def make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(
+    context: CUSTOM_CONTEXT_TYPES,
+) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    """A helper function that produces data to send to a teacher for them to use age groups of
+    students.
+
+    Returns a dictionary with message text, parse mode and inline keyboard,
+    that can be simply unpacked when passing to `query.edit_message_text()`.
+    """
+    locale = context.user_data.locale
+
+    all_buttons = [
+        InlineKeyboardButton(text=PHRASES["option_children"][locale], callback_data="6-11"),
+        InlineKeyboardButton(text=PHRASES["option_adolescents"][locale], callback_data="12-17"),
+        InlineKeyboardButton(text=PHRASES["option_adults"][locale], callback_data="18-"),
+    ]
+
+    buttons_to_show = [
+        b
+        for b in all_buttons
+        if b.callback_data not in context.user_data.teacher_age_groups_of_students
+    ]
+
+    # only show "Done" button if the user has selected something on the previous step
+    done_button = (
+        None
+        if buttons_to_show == all_buttons
+        else InlineKeyboardButton(
+            text=PHRASES["ask_teacher_student_age_groups_done"][locale],
+            callback_data="done",
+        )
+    )
+
+    return _make_dict_for_message_with_inline_keyboard(
+        message_text=PHRASES["ask_teacher_student_age_groups"][locale],
+        buttons=buttons_to_show,
+        buttons_per_row=1,
+        bottom_row_button=done_button,
+    )
+
+
 def make_dict_for_message_with_inline_keyboard_with_time_slots(
     context: CUSTOM_CONTEXT_TYPES,
 ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
