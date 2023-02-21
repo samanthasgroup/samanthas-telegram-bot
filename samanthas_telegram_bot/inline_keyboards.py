@@ -53,25 +53,34 @@ def _make_dict_for_message_with_inline_keyboard(
 def make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
     context: CUSTOM_CONTEXT_TYPES,
 ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-    """A helper function that produces data to send to a student for them to choose languages
-    to communicate in (Russian, Ukrainian or any).
+    """A helper function that produces data to send to a user for them to choose languages
+    to communicate in (Russian, Ukrainian or any for a student; Russian, Ukrainian, any of those
+    two or L2 only for a teacher).
 
     Returns a dictionary with message text, parse mode and inline keyboard,
     that can be simply unpacked when passing to `query.edit_message_text()`.
     """
 
+    locale = context.user_data.locale
+
+    if context.user_data.role == "teacher":
+        language_codes = STUDENT_COMMUNICATION_LANGUAGE_CODES[:]
+    else:
+        # the student cannot choose "L2 only" because that wouldn't make sense
+        language_codes = [c for c in STUDENT_COMMUNICATION_LANGUAGE_CODES if c != "l2_only"]
+
     language_for_callback_data = {
-        code: PHRASES[f"student_communication_language_option_{code}"][context.user_data.locale]
-        for code in STUDENT_COMMUNICATION_LANGUAGE_CODES
+        code: PHRASES[f"student_communication_language_option_{code}"][locale]
+        for code in language_codes
     }
 
     language_buttons = [
         InlineKeyboardButton(text=value, callback_data=key)
         for key, value in language_for_callback_data.items()
     ]
-
+    role = context.user_data.role
     return _make_dict_for_message_with_inline_keyboard(
-        message_text=PHRASES["ask_student_communication_language"][context.user_data.locale],
+        message_text=PHRASES[f"ask_student_communication_language_{role}"][locale],
         buttons=language_buttons,
         buttons_per_row=1,
         parse_mode=None,

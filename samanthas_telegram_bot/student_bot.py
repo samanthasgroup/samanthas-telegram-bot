@@ -67,7 +67,7 @@ class State(IntEnum):
     TIME_SLOTS_MENU = auto()
     TEACHING_LANGUAGE = auto()
     LEVEL = auto()
-    STUDENT_COMMUNICATION_LANGUAGE = auto()
+    COMMUNICATION_LANGUAGE_IN_CLASS = auto()
     NUMBER_OF_GROUPS_OR_FREQUENCY = auto()
     TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
@@ -501,22 +501,22 @@ async def save_teaching_language_ask_another_or_level_or_experience(
     """Saves teaching language, asks for level. If the user is a teacher and is done choosing
     levels, asks for more languages.
 
-    If the user is a teacher and has finished choosing languages, asks for teaching experience.
+    If the user is a teacher and has finished choosing languages, asks about language of
+    communication in class.
     """
 
     query = update.callback_query
     await query.answer()
 
     # for now students can only choose one language, so callback_data == "done" is only possible
-    # for a teacher, but we'll keep it explicit here because we're moving on to a teacher-specific
-    # state
+    # for a teacher, but we'll keep it explicit here
     if query.data == "done" and context.user_data.role == "teacher":
         await query.edit_message_text(
-            **make_dict_for_message_with_yes_no_inline_keyboard(
-                context, question_phrase_internal_id="ask_teacher_experience"
+            **make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
+                context
             )
         )
-        return State.NUMBER_OF_GROUPS_OR_FREQUENCY
+        return State.COMMUNICATION_LANGUAGE_IN_CLASS
 
     context.user_data.levels_for_teaching_language[query.data] = []
 
@@ -557,7 +557,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
                 context
             )
         )
-        return State.STUDENT_COMMUNICATION_LANGUAGE
+        return State.COMMUNICATION_LANGUAGE_IN_CLASS
 
     # Ask the teacher for another level of the same language
     await query.edit_message_text(
@@ -566,21 +566,30 @@ async def save_level_ask_level_for_next_language_or_communication_language(
     return State.LEVEL
 
 
-async def save_student_communication_language_start_test_for_english(
+async def save_student_communication_language_start_test_or_ask_teaching_experience(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves communication language for student, starts English test (if the teaching language
-    chosen was English).
+    """Saves communication language, starts test for a student (if the teaching language
+    chosen was English) or asks teacher about teaching experience.
     """
 
     query = update.callback_query
     await query.answer()
 
-    context.user_data.student_communication_language = query.data
+    context.user_data.communication_language_in_class = query.data
 
-    logger.info(context.user_data.student_communication_language)
+    logger.info(context.user_data.communication_language_in_class)
 
-    return State.COMMENT  # TODO
+    if context.user_data.role == "student":
+        # start test
+        return State.COMMENT  # TODO
+    else:
+        await query.edit_message_text(
+            **make_dict_for_message_with_yes_no_inline_keyboard(
+                context, question_phrase_internal_id="ask_teacher_experience"
+            )
+        )
+        return State.NUMBER_OF_GROUPS_OR_FREQUENCY
 
 
 async def save_prior_teaching_experience_ask_groups_or_frequency(
@@ -761,8 +770,10 @@ def main() -> None:
                     save_level_ask_level_for_next_language_or_communication_language
                 )
             ],
-            State.STUDENT_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(save_student_communication_language_start_test_for_english)
+            State.COMMUNICATION_LANGUAGE_IN_CLASS: [
+                CallbackQueryHandler(
+                    save_student_communication_language_start_test_or_ask_teaching_experience
+                )
             ],
             State.NUMBER_OF_GROUPS_OR_FREQUENCY: [
                 CallbackQueryHandler(save_prior_teaching_experience_ask_groups_or_frequency)
