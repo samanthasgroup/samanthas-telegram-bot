@@ -365,31 +365,66 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
             [
                 [
                     InlineKeyboardButton(
-                        text=f"UTC-1 ({(timestamp + timedelta(hours=-1)).strftime('%H:%M')})",
+                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} ({delta})",
+                        callback_data=delta,
+                    )
+                    for delta in (-8, -7, -6)
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} ({delta})",
+                        callback_data=delta,
+                    )
+                    for delta in (-5, -4, -3)
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=f"{(timestamp + timedelta(hours=-1)).strftime('%H:%M')} (-1)",
                         callback_data=-1,
                     ),
                     InlineKeyboardButton(
-                        text=f"UTC ({timestamp.strftime('%H:%M')})",
+                        text=f"{timestamp.strftime('%H:%M')} (0)",
                         callback_data=0,
                     ),
                     InlineKeyboardButton(
-                        text=f"UTC+1 ({(timestamp + timedelta(hours=1)).strftime('%H:%M')})",
+                        text=f"{(timestamp + timedelta(hours=1)).strftime('%H:%M')} (+1)",
                         callback_data=1,
+                    ),
+                    InlineKeyboardButton(
+                        text=f"{(timestamp + timedelta(hours=2)).strftime('%H:%M')} (+2)",
+                        callback_data=2,
                     ),
                 ],
                 [
                     InlineKeyboardButton(
-                        text=f"UTC+2 ({(timestamp + timedelta(hours=2)).strftime('%H:%M')})",
-                        callback_data=2,
-                    ),
-                    InlineKeyboardButton(
-                        text=f"UTC+3 ({(timestamp + timedelta(hours=3)).strftime('%H:%M')})",
+                        text=f"{(timestamp + timedelta(hours=3)).strftime('%H:%M')} (+3)",
                         callback_data=3,
                     ),
                     InlineKeyboardButton(
-                        text=f"UTC+4 ({(timestamp + timedelta(hours=4)).strftime('%H:%M')})",
+                        text=f"{(timestamp + timedelta(hours=4)).strftime('%H:%M')} (+4)",
                         callback_data=4,
                     ),
+                    InlineKeyboardButton(
+                        text=f"{(timestamp + timedelta(hours=5, minutes=30)).strftime('%H:%M')} "
+                        f"(+5:30)",
+                        callback_data=5.5,  # TODO is it OK?
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} "
+                        f"(+{delta})",
+                        callback_data=delta,
+                    )
+                    for delta in (8, 9, 10)
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} "
+                        f"(+{delta})",
+                        callback_data=delta,
+                    )
+                    for delta in (11, 12, 13)
                 ],
             ]
         ),
