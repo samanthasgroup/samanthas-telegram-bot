@@ -407,7 +407,7 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
                     InlineKeyboardButton(
                         text=f"{(timestamp + timedelta(hours=5, minutes=30)).strftime('%H:%M')} "
                         f"(+5:30)",
-                        callback_data=5.5,  # TODO is it OK?
+                        callback_data=5.5,
                     ),
                 ],
                 [
@@ -448,7 +448,6 @@ async def ask_slots_for_one_day_or_teaching_language(
     await query.answer()
 
     if re.match(r"^[+-]?\d{1,2}$", query.data):  # this is a UTC offset
-        # whether it's summer or winter timezone will be for the backend to decide
         context.user_data.utc_offset = int(query.data)
         context.user_data.time_slots_for_day = defaultdict(list)
 
