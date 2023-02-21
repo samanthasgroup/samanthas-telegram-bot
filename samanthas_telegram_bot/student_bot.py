@@ -457,11 +457,16 @@ async def ask_slots_for_one_day_or_teaching_language(
 
     elif query.data == "next":  # this is user having pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
-            context.user_data.levels_for_teaching_language = {}
             # TODO what if the user chose no slots at all?
+            context.user_data.levels_for_teaching_language = {}
+            # if the dictionary is empty, it means that no language was chosen yet.
+            # In this case no "done" button must be shown.
+            show_done_button = True if context.user_data.levels_for_teaching_language else False
             await query.edit_message_text(
-                **make_dict_for_message_with_inline_keyboard_with_teaching_languages(context)
-            )  # TODO no "Done" button for 1st language
+                **make_dict_for_message_with_inline_keyboard_with_teaching_languages(
+                    context, show_done_button=show_done_button
+                )
+            )
             return State.TEACHING_LANGUAGE
         context.chat_data["day_idx"] += 1
 
