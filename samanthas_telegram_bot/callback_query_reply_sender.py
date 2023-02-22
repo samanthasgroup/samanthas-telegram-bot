@@ -1,7 +1,7 @@
 from math import ceil
 from typing import Union
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.constants import (
@@ -16,20 +16,25 @@ from samanthas_telegram_bot.constants import (
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
-class CallbackQueryEditMessageTextHelper:
-    """A helper class for executing telegram.CallbackQuery.edit_message_text()."""
+class CallbackQueryReplySender:
+    """A helper class that send a reply to user by executing
+    `telegram.Callbackawait query.edit_message_text()`.
+
+    Can only be used in callbacks that are handled by `CallbackQueryHandler`.
+
+    Note that all methods in this class are **class methods**. We cannot create an instance of this
+    class because context can be different, and especially CallbackQuery object **will** be
+    different at each call of the methods.
+    """
 
     @classmethod
-    def make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
+    async def ask_student_communication_languages(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data to send to a user for them to choose languages
-        to communicate in (Russian, Ukrainian or any for a student; Russian, Ukrainian, any of those
-        two or L2 only for a teacher).
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
+        query: CallbackQuery,
+    ) -> None:
+        """Asks user to choose languages to communicate in (Russian, Ukrainian or any for
+        a student; Russian, Ukrainian, any of those two or L2 only for a teacher).
         """
 
         locale = context.user_data.locale
@@ -50,24 +55,23 @@ class CallbackQueryEditMessageTextHelper:
             for key, value in language_for_callback_data.items()
         ]
         role = context.user_data.role
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=PHRASES[f"ask_student_communication_language_{role}"][locale],
-            buttons=language_buttons,
-            buttons_per_row=1,
-            parse_mode=None,
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES[f"ask_student_communication_language_{role}"][locale],
+                buttons=language_buttons,
+                buttons_per_row=1,
+                parse_mode=None,
+            )
         )
 
     @classmethod
-    def make_dict_for_message_with_inline_keyboard_with_teaching_frequency(
+    async def ask_teaching_frequency(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data to send to a teacher for them to choose the frequency
-        of their classes.
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
-        """
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a teacher to choose the frequency of their classes."""
 
         buttons = [
             InlineKeyboardButton(
@@ -77,25 +81,23 @@ class CallbackQueryEditMessageTextHelper:
             for number in (1, 2, 3)
         ]
 
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=PHRASES["ask_teacher_frequency"][context.user_data.locale],
-            buttons=buttons,
-            buttons_per_row=1,
-            parse_mode=None,
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_frequency"][context.user_data.locale],
+                buttons=buttons,
+                buttons_per_row=1,
+                parse_mode=None,
+            )
         )
 
     @classmethod
-    def make_dict_for_message_with_inline_keyboard_with_teaching_languages(
+    async def ask_teaching_languages(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
         show_done_button: bool = True,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data to send to a user for them to choose languages
-        to learn/teach.
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
-        """
+    ) -> None:
+        """Asks a user for them to choose languages to learn/teach."""
 
         language_for_callback_data = {
             code: PHRASES[code][context.user_data.locale]
@@ -116,26 +118,25 @@ class CallbackQueryEditMessageTextHelper:
             for key, value in language_for_callback_data.items()
         ]
 
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=PHRASES[f"ask_teaching_language_{context.user_data.role}"][
-                context.user_data.locale
-            ],
-            buttons=language_buttons,
-            buttons_per_row=3,
-            bottom_row_button=done_button,
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES[f"ask_teaching_language_{context.user_data.role}"][
+                    context.user_data.locale
+                ],
+                buttons=language_buttons,
+                buttons_per_row=3,
+                bottom_row_button=done_button,
+            )
         )
 
     @classmethod
-    def make_dict_for_message_with_inline_keyboard_with_language_levels(
+    async def ask_language_levels(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
         show_done_button: bool = True,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data to send to a user for them to choose language level(s).
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
-        """
+    ) -> None:
+        """Asks a user to choose language level(s)."""
 
         # if the user has already chosen one level, add "Next" button
         done_button = None
@@ -160,30 +161,30 @@ class CallbackQueryEditMessageTextHelper:
             if level not in context.user_data.levels_for_teaching_language[last_language_added]
         ]
 
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=text,
-            buttons=level_buttons,
-            buttons_per_row=3,
-            bottom_row_button=done_button,
-            parse_mode=None,
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=text,
+                buttons=level_buttons,
+                buttons_per_row=3,
+                bottom_row_button=done_button,
+                parse_mode=None,
+            )
         )
 
     @classmethod
-    def make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(
+    async def ask_student_age_groups_for_teacher(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data to send to a teacher for them to use age groups of
-        students.
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
-        """
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a teacher to choose age groups of students."""
         locale = context.user_data.locale
 
         all_buttons = [
             InlineKeyboardButton(text=PHRASES["option_children"][locale], callback_data="6-11"),
-            InlineKeyboardButton(text=PHRASES["option_adolescents"][locale], callback_data="12-17"),
+            InlineKeyboardButton(
+                text=PHRASES["option_adolescents"][locale], callback_data="12-17"
+            ),
             InlineKeyboardButton(text=PHRASES["option_adults"][locale], callback_data="18-"),
         ]
 
@@ -203,23 +204,22 @@ class CallbackQueryEditMessageTextHelper:
             )
         )
 
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=PHRASES["ask_teacher_student_age_groups"][locale],
-            buttons=buttons_to_show,
-            buttons_per_row=1,
-            bottom_row_button=done_button,
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_student_age_groups"][locale],
+                buttons=buttons_to_show,
+                buttons_per_row=1,
+                bottom_row_button=done_button,
+            )
         )
 
     @classmethod
-    def make_dict_for_message_with_inline_keyboard_with_time_slots(
+    async def ask_with_time_slots(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data to send to a user for them to choose a time slot.
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
-        """
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a user to choose a time slot on one particular day."""
 
         day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
 
@@ -242,31 +242,30 @@ class CallbackQueryEditMessageTextHelper:
             + r"*\?"
         )
 
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=message_text,
-            buttons=buttons,
-            buttons_per_row=3,
-            bottom_row_button=InlineKeyboardButton(
-                text=PHRASES["ask_slots_next"][context.user_data.locale],
-                callback_data="next",
-            ),
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=message_text,
+                buttons=buttons,
+                buttons_per_row=3,
+                bottom_row_button=InlineKeyboardButton(
+                    text=PHRASES["ask_slots_next"][context.user_data.locale],
+                    callback_data="next",
+                ),
+            )
         )
 
     @classmethod
-    def make_dict_for_message_with_yes_no_inline_keyboard(
+    async def ask_yes_no(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
         question_phrase_internal_id: str,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """A helper function that produces data for an inline keyboard with options "yes" and "no"
-        (localized).
-
-        Returns a dictionary with message text, parse mode and inline keyboard,
-        that can be simply unpacked when passing to `query.edit_message_text()`.
-        """
+    ) -> None:
+        """Asks "yes" or "no" (localized)."""
 
         phrase_for_callback_data = {
-            option: PHRASES[f"option_{option}"][context.user_data.locale] for option in ("yes", "no")
+            option: PHRASES[f"option_{option}"][context.user_data.locale]
+            for option in ("yes", "no")
         }
 
         buttons = [
@@ -274,25 +273,27 @@ class CallbackQueryEditMessageTextHelper:
             for key, value in phrase_for_callback_data.items()
         ]
 
-        return cls._make_dict_for_message_with_inline_keyboard(
-            message_text=PHRASES[question_phrase_internal_id][context.user_data.locale],
-            buttons=buttons,
-            buttons_per_row=2,
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES[question_phrase_internal_id][context.user_data.locale],
+                buttons=buttons,
+                buttons_per_row=2,
+            )
         )
 
     @staticmethod
     def _make_dict_for_message_with_inline_keyboard(
-            message_text: str,
-            buttons: list[InlineKeyboardButton],
-            buttons_per_row,
-            bottom_row_button: InlineKeyboardButton = None,
-            parse_mode: Union[ParseMode, None] = ParseMode.MARKDOWN_V2,
+        message_text: str,
+        buttons: list[InlineKeyboardButton],
+        buttons_per_row,
+        bottom_row_button: InlineKeyboardButton = None,
+        parse_mode: Union[ParseMode, None] = ParseMode.MARKDOWN_V2,
     ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
         """Makes a message with an inline keyboard, the number of rows in which depends on how many
-        buttons are passed. The buttons are evenly distributed over the rows. The last row can contain
-        the lone button (that could be e.g. "Next" or "Done").
+        buttons are passed. The buttons are evenly distributed over the rows. The last row can
+        contain the lone button (that could be e.g. "Next" or "Done").
 
-        Returns dictionary that can be unpacked into query.edit_message_text()
+        Returns dictionary that can be unpacked into await query.edit_message_text()
         """
 
         number_of_rows = ceil(len(buttons) / buttons_per_row)
@@ -304,7 +305,8 @@ class CallbackQueryEditMessageTextHelper:
         copied_buttons = buttons[:]
         for _ in range(number_of_rows):
             rows += [
-                copied_buttons[:buttons_per_row]]  # it works even if there are fewer buttons left
+                copied_buttons[:buttons_per_row]
+            ]  # it works even if there are fewer buttons left
             del copied_buttons[:buttons_per_row]
 
         if bottom_row_button:
