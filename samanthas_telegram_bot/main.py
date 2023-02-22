@@ -501,7 +501,7 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
     return State.TIME_SLOTS_MENU
 
 
-async def save_teaching_language_ask_another_or_level_or_experience(
+async def save_teaching_language_ask_another_or_level_or_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Saves teaching language, asks for level. If the user is a teacher and is done choosing
@@ -597,7 +597,7 @@ async def save_prior_teaching_experience_ask_groups_or_frequency(
     )
 
     logger.info(f"Has teaching experience: {context.user_data.has_prior_teaching_experience}")
-
+    # TODO modify message if teacher has no experience. "Each" is confusing
     if context.user_data.has_prior_teaching_experience:
         numbers_of_groups = (1, 2)
 
@@ -748,7 +748,9 @@ def main() -> None:
                 CallbackQueryHandler(save_one_time_slot_ask_another),
             ],
             State.TEACHING_LANGUAGE: [
-                CallbackQueryHandler(save_teaching_language_ask_another_or_level_or_experience),
+                CallbackQueryHandler(
+                    save_teaching_language_ask_another_or_level_or_communication_language
+                ),
             ],
             State.LEVEL: [
                 CallbackQueryHandler(

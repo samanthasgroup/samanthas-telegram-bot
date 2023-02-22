@@ -40,5 +40,5 @@ LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1")
 LOCALES = ("ua", "en", "ru")
 PHONE_PATTERN = re.compile(r"^(\+)|(00)[1-9][0-9]{1,14}$")
 PHRASES = read_phrases()
-STUDENT_COMMUNICATION_LANGUAGE_CODES = ("ru", "ua", "any", "l2_only")
+STUDENT_COMMUNICATION_LANGUAGE_CODES = ("ru", "ua", "ru_ua", "l2_only")
 UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))  # to make "05:00-08:00" etc.
