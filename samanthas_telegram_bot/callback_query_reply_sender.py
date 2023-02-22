@@ -19,7 +19,10 @@ from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 class CallbackQueryReplySender:
     """A helper class that send a reply to user by executing
-    `telegram.Callbackawait query.edit_message_text()`.
+    `telegram.Callback.await query.edit_message_text()`.
+
+    Methods in this class are called several times in the bot's code and/or are complex.
+    Simple calls to .edit_message_text() can be coded in the bot's code directly.
 
     Can only be used in callbacks that are handled by `CallbackQueryHandler`.
 
