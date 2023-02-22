@@ -33,15 +33,7 @@ from samanthas_telegram_bot.constants import (
     Role,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.inline_keyboards import (
-    make_dict_for_message_with_inline_keyboard_with_language_levels,
-    make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher,
-    make_dict_for_message_with_inline_keyboard_with_student_communication_languages,
-    make_dict_for_message_with_inline_keyboard_with_teaching_frequency,
-    make_dict_for_message_with_inline_keyboard_with_teaching_languages,
-    make_dict_for_message_with_inline_keyboard_with_time_slots,
-    make_dict_for_message_with_yes_no_inline_keyboard,
-)
+from samanthas_telegram_bot.inline_keyboards import CallbackQueryEditMessageTextHelper as Helper
 from samanthas_telegram_bot.user_data import UserData
 
 # Enable logging
@@ -127,7 +119,7 @@ async def save_interface_lang_ask_if_already_registered(
     context.user_data.locale = query.data
 
     await query.edit_message_text(
-        **make_dict_for_message_with_yes_no_inline_keyboard(
+        **Helper.make_dict_for_message_with_yes_no_inline_keyboard(
             context,
             question_phrase_internal_id="ask_already_with_us",
         )
@@ -211,7 +203,7 @@ async def save_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
         )
     else:
         await query.edit_message_text(
-            **make_dict_for_message_with_yes_no_inline_keyboard(
+            **Helper.make_dict_for_message_with_yes_no_inline_keyboard(
                 context,
                 question_phrase_internal_id="ask_if_18",
             )
@@ -464,7 +456,7 @@ async def ask_slots_for_one_day_or_teaching_language(
             # In this case no "done" button must be shown.
             show_done_button = True if context.user_data.levels_for_teaching_language else False
             await query.edit_message_text(
-                **make_dict_for_message_with_inline_keyboard_with_teaching_languages(
+                **Helper.make_dict_for_message_with_inline_keyboard_with_teaching_languages(
                     context, show_done_button=show_done_button
                 )
             )
@@ -472,7 +464,7 @@ async def ask_slots_for_one_day_or_teaching_language(
         context.chat_data["day_idx"] += 1
 
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_time_slots(context)
+        **Helper.make_dict_for_message_with_inline_keyboard_with_time_slots(context)
     )
 
     return State.TIME_SLOTS_MENU
@@ -487,7 +479,7 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
     context.user_data.time_slots_for_day[day].append(query.data)
 
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_time_slots(context)
+        **Helper.make_dict_for_message_with_inline_keyboard_with_time_slots(context)
     )
 
     return State.TIME_SLOTS_MENU
@@ -510,7 +502,7 @@ async def save_teaching_language_ask_another_or_level_or_experience(
     # for a teacher, but we'll keep it explicit here
     if query.data == "done" and context.user_data.role == Role.TEACHER:
         await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
+            **Helper.make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
                 context
             )
         )
@@ -519,7 +511,7 @@ async def save_teaching_language_ask_another_or_level_or_experience(
     context.user_data.levels_for_teaching_language[query.data] = []
 
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_language_levels(
+        **Helper.make_dict_for_message_with_inline_keyboard_with_language_levels(
             context, show_done_button=False
         )
     )
@@ -539,7 +531,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
     if query.data == "done":
         # A teacher has finished selecting levels for this language: ask for another language
         await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard_with_teaching_languages(context)
+            **Helper.make_dict_for_message_with_inline_keyboard_with_teaching_languages(context)
         )
         return State.TEACHING_LANGUAGE
 
@@ -551,7 +543,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
     # move on for a student (they can only choose one language and one level)
     if context.user_data.role == Role.STUDENT:
         await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
+            **Helper.make_dict_for_message_with_inline_keyboard_with_student_communication_languages(
                 context
             )
         )
@@ -559,7 +551,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
 
     # Ask the teacher for another level of the same language
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_language_levels(context)
+        **Helper.make_dict_for_message_with_inline_keyboard_with_language_levels(context)
     )
     return State.LEVEL
 
@@ -583,7 +575,7 @@ async def save_student_communication_language_start_test_or_ask_teaching_experie
         return State.COMMENT  # TODO
     else:
         await query.edit_message_text(
-            **make_dict_for_message_with_yes_no_inline_keyboard(
+            **Helper.make_dict_for_message_with_yes_no_inline_keyboard(
                 context, question_phrase_internal_id="ask_teacher_experience"
             )
         )
@@ -623,7 +615,7 @@ async def save_prior_teaching_experience_ask_groups_or_frequency(
         return State.TEACHING_FREQUENCY
     else:
         await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
+            **Helper.make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
         )
         return State.PREFERRED_STUDENT_AGE_GROUPS_START
 
@@ -640,7 +632,7 @@ async def save_number_of_groups_ask_frequency(
     context.user_data.teacher_number_of_groups = query.data
 
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
+        **Helper.make_dict_for_message_with_inline_keyboard_with_teaching_frequency(context)
     )
     return State.PREFERRED_STUDENT_AGE_GROUPS_START
 
@@ -656,7 +648,7 @@ async def save_frequency_ask_student_age_groups(
     context.user_data.teacher_age_groups_of_students = []
 
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(context)
+        **Helper.make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(context)
     )
 
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
@@ -677,7 +669,7 @@ async def save_student_age_group_ask_another(update: Update, context: CUSTOM_CON
         return State.COMMENT  # TODO
 
     await query.edit_message_text(
-        **make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(context)
+        **Helper.make_dict_for_message_with_inline_keyboard_with_student_age_groups_for_teacher(context)
     )
 
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
