@@ -4,6 +4,17 @@ from enum import Enum
 from data.read_phrases import read_phrases
 
 
+class CallbackData(str, Enum):
+    """Enumeration for fixed values of callback_data. Members of this enum can be treated as
+    strings.
+    """
+
+    DONE = "done"
+    NEXT = "next"
+    NO = "no"
+    YES = "yes"
+
+
 class Role(str, Enum):
     """Role of a person. Members of this enum can be treated as strings."""
 

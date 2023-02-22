@@ -33,6 +33,7 @@ from samanthas_telegram_bot.constants import (
     LOCALES,
     PHONE_PATTERN,
     PHRASES,
+    CallbackData,
     Role,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
@@ -137,7 +138,7 @@ async def redirect_to_coordinator_if_registered_ask_first_name(
     query = update.callback_query
     await query.answer()
 
-    if query.data == "yes":
+    if query.data == CallbackData.YES:
         # TODO actual link to chat
         await query.edit_message_text(
             PHRASES["reply_go_to_other_chat"][context.user_data.locale],
@@ -221,7 +222,7 @@ async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     await query.answer()
 
     # end conversation for would-be teachers that are minors
-    if context.user_data.role == Role.TEACHER and query.data == "no":
+    if context.user_data.role == Role.TEACHER and query.data == CallbackData.NO:
         # TODO actual link to chat
         await query.edit_message_text(
             PHRASES["reply_under_18"][context.user_data.locale],
@@ -263,7 +264,7 @@ async def save_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYP
                             text=PHRASES[f"username_reply_{option}"][context.user_data.locale],
                             callback_data=f"store_username_{option}",
                         )
-                        for option in ("yes", "no")
+                        for option in (CallbackData.YES, CallbackData.NO)
                     ],
                 ]
             ),
@@ -448,7 +449,7 @@ async def ask_slots_for_one_day_or_teaching_language(
         # setting day of week to Monday.  This is temporary, so won't mix it with user_data
         context.chat_data["day_idx"] = 0
 
-    elif query.data == "next":  # this is user having pressed "next" button after choosing slots
+    elif query.data == CallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
             # TODO what if the user chose no slots at all?
             context.user_data.levels_for_teaching_language = {}
@@ -494,7 +495,7 @@ async def save_teaching_language_ask_another_or_level_or_experience(
 
     # for now students can only choose one language, so callback_data == "done" is only possible
     # for a teacher, but we'll keep it explicit here
-    if query.data == "done" and context.user_data.role == Role.TEACHER:
+    if query.data == CallbackData.DONE and context.user_data.role == Role.TEACHER:
         await CQReplySender.ask_student_communication_languages(context, query)
         return State.COMMUNICATION_LANGUAGE_IN_CLASS
 
@@ -514,7 +515,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
     query = update.callback_query
     await query.answer()
 
-    if query.data == "done":
+    if query.data == CallbackData.DONE:
         # A teacher has finished selecting levels for this language: ask for another language
         await CQReplySender.ask_teaching_languages(context, query)
         return State.TEACHING_LANGUAGE
@@ -570,7 +571,9 @@ async def save_prior_teaching_experience_ask_groups_or_frequency(
 
     query = update.callback_query
     await query.answer()
-    context.user_data.has_prior_teaching_experience = True if query.data == "yes" else False
+    context.user_data.has_prior_teaching_experience = (
+        True if query.data == CallbackData.YES else False
+    )
 
     logger.info(f"Has teaching experience: {context.user_data.has_prior_teaching_experience}")
 
@@ -632,7 +635,7 @@ async def save_student_age_group_ask_another(update: Update, context: CUSTOM_CON
     query = update.callback_query
     await query.answer()
 
-    if query.data == "done":
+    if query.data == CallbackData.DONE:
         return State.COMMENT  # TODO
 
     context.user_data.teacher_age_groups_of_students.append(query.data)

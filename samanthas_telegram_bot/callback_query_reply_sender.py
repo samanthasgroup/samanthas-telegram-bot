@@ -11,6 +11,7 @@ from samanthas_telegram_bot.constants import (
     PHRASES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     UTC_TIME_SLOTS,
+    CallbackData,
     Role,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
@@ -110,7 +111,7 @@ class CallbackQueryReplySender:
         if show_done_button:
             done_button = InlineKeyboardButton(
                 text=PHRASES["ask_teaching_language_done"][context.user_data.locale],
-                callback_data="done",
+                callback_data=CallbackData.DONE,
             )
 
         language_buttons = [
@@ -144,7 +145,7 @@ class CallbackQueryReplySender:
         if show_done_button:
             done_button = InlineKeyboardButton(
                 text=PHRASES["ask_teaching_language_level_done"][context.user_data.locale],
-                callback_data="done",
+                callback_data=CallbackData.DONE,
             )
 
         last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
@@ -200,7 +201,7 @@ class CallbackQueryReplySender:
             if buttons_to_show == all_buttons
             else InlineKeyboardButton(
                 text=PHRASES["ask_teacher_student_age_groups_done"][locale],
-                callback_data="done",
+                callback_data=CallbackData.DONE,
             )
         )
 
@@ -249,7 +250,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=3,
                 bottom_row_button=InlineKeyboardButton(
                     text=PHRASES["ask_slots_next"][context.user_data.locale],
-                    callback_data="next",
+                    callback_data=CallbackData.NEXT,
                 ),
             )
         )
@@ -265,7 +266,7 @@ class CallbackQueryReplySender:
 
         phrase_for_callback_data = {
             option: PHRASES[f"option_{option}"][context.user_data.locale]
-            for option in ("yes", "no")
+            for option in (CallbackData.YES, CallbackData.NO)
         }
 
         buttons = [
