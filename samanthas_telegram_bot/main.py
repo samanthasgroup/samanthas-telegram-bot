@@ -239,6 +239,18 @@ async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) 
 
 async def save_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the last name and asks the user how they found out about Samantha's Group."""
+
+    # It is impossible to send an empty message, but if for some reason user edits their previous
+    # message, an update will be issued, but .message attribute will be none.
+    # This will trigger an exception, although the bot won't stop working.  Still we don't want it.
+    # So in this case just wait for user to type in the actual new message by returning him to the
+    # same state again.
+    # This "if" can't be easily factored out because the state returned is different in every
+    # callback.
+    # TODO an enhancement could be to store the information from the edited message
+    if update.message is None:
+        return State.SOURCE
+
     context.user_data.last_name = update.message.text
     await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
     return State.CHECK_USERNAME
@@ -248,6 +260,9 @@ async def save_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYP
     """Stores the source of knowledge about SSG, checks Telegram nickname or asks for
     phone number.
     """
+
+    if update.message is None:
+        return State.CHECK_USERNAME
 
     context.user_data.source = update.message.text
 
@@ -313,6 +328,9 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
 async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the phone number and asks for email."""
 
+    if update.message is None:
+        return State.EMAIL
+
     # just in case: deleting spaces and hyphens
     text = (
         update.message.text.replace("-", "").replace(" ", "").strip()
@@ -342,6 +360,9 @@ async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
 
 async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the email and asks for timezone."""
+
+    if update.message is None:
+        return State.TIMEZONE
 
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
