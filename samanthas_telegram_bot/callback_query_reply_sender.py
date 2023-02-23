@@ -1,3 +1,4 @@
+from datetime import timedelta
 from math import ceil
 from typing import Union
 
@@ -216,7 +217,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_with_time_slots(
+    async def ask_time_slot(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
@@ -254,6 +255,87 @@ class CallbackQueryReplySender:
                     callback_data=CallbackData.NEXT,
                 ),
             )
+        )
+
+    @classmethod
+    async def ask_timezone(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks timezone."""
+
+        utc_time = query.message.date
+
+        await query.edit_message_text(
+            PHRASES["ask_timezone"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} ({dlt})",
+                            callback_data=dlt,
+                        )
+                        for dlt in (-8, -7, -6)
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} ({dlt})",
+                            callback_data=dlt,
+                        )
+                        for dlt in (-5, -4, -3)
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=-1)).strftime('%H:%M')} (-1)",
+                            callback_data=-1,
+                        ),
+                        InlineKeyboardButton(
+                            text=f"{utc_time.strftime('%H:%M')} (0)",
+                            callback_data=0,
+                        ),
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=1)).strftime('%H:%M')} (+1)",
+                            callback_data=1,
+                        ),
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=2)).strftime('%H:%M')} (+2)",
+                            callback_data=2,
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=3)).strftime('%H:%M')} (+3)",
+                            callback_data=3,
+                        ),
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=4)).strftime('%H:%M')} (+4)",
+                            callback_data=4,
+                        ),
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=5, minutes=30)).strftime('%H:%M')}"
+                            f" (+5:30)",
+                            callback_data=5.5,
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} "
+                            f"(+{dlt})",
+                            callback_data=dlt,
+                        )
+                        for dlt in (8, 9, 10)
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} "
+                            f"(+{dlt})",
+                            callback_data=dlt,
+                        )
+                        for dlt in (11, 12, 13)
+                    ],
+                ]
+            ),
         )
 
     @classmethod

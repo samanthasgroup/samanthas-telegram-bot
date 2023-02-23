@@ -2,7 +2,6 @@ import logging
 import os
 import re
 from collections import defaultdict
-from datetime import timedelta
 from enum import IntEnum, auto
 
 from telegram import (
@@ -385,78 +384,7 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     if context.user_data.role == Role.STUDENT:
         context.user_data.age = query.data
 
-    timestamp = query.message.date
-
-    await query.edit_message_text(
-        PHRASES["ask_timezone"][context.user_data.locale],
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} ({delta})",
-                        callback_data=delta,
-                    )
-                    for delta in (-8, -7, -6)
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} ({delta})",
-                        callback_data=delta,
-                    )
-                    for delta in (-5, -4, -3)
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=-1)).strftime('%H:%M')} (-1)",
-                        callback_data=-1,
-                    ),
-                    InlineKeyboardButton(
-                        text=f"{timestamp.strftime('%H:%M')} (0)",
-                        callback_data=0,
-                    ),
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=1)).strftime('%H:%M')} (+1)",
-                        callback_data=1,
-                    ),
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=2)).strftime('%H:%M')} (+2)",
-                        callback_data=2,
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=3)).strftime('%H:%M')} (+3)",
-                        callback_data=3,
-                    ),
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=4)).strftime('%H:%M')} (+4)",
-                        callback_data=4,
-                    ),
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=5, minutes=30)).strftime('%H:%M')} "
-                        f"(+5:30)",
-                        callback_data=5.5,
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} "
-                        f"(+{delta})",
-                        callback_data=delta,
-                    )
-                    for delta in (8, 9, 10)
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=f"{(timestamp + timedelta(hours=delta)).strftime('%H:%M')} "
-                        f"(+{delta})",
-                        callback_data=delta,
-                    )
-                    for delta in (11, 12, 13)
-                ],
-            ]
-        ),
-    )
+    await CQReplySender.ask_timezone(context, query)
     return State.TIME_SLOTS_START
 
 
@@ -495,7 +423,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
         context.chat_data["day_idx"] += 1
 
-    await CQReplySender.ask_with_time_slots(context, query)
+    await CQReplySender.ask_time_slot(context, query)
 
     return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
@@ -508,7 +436,7 @@ async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEX
     day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
     context.user_data.time_slots_for_day[day].append(query.data)
 
-    await CQReplySender.ask_with_time_slots(context, query)
+    await CQReplySender.ask_time_slot(context, query)
 
     return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
