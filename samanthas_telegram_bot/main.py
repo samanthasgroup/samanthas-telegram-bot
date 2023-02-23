@@ -46,31 +46,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# TODO menu!
+
 
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
     IS_REGISTERED = auto()
-    FIRST_NAME_OR_BYE = auto()
-    ROLE = auto()
-    AGE = auto()
-    LAST_NAME = auto()
-    SOURCE = auto()
+    ASK_FIRST_NAME_OR_BYE = auto()
+    ASK_ROLE = auto()
+    ASK_AGE = auto()
+    ASK_LAST_NAME = auto()
+    ASK_SOURCE = auto()
     CHECK_USERNAME = auto()
-    PHONE_NUMBER = auto()
-    EMAIL = auto()
-    TIMEZONE = auto()
+    ASK_PHONE_NUMBER = auto()
+    ASK_EMAIL = auto()
+    ASK_TIMEZONE = auto()
     TIME_SLOTS_START = auto()
-    TIME_SLOTS_MENU = auto()
-    TEACHING_LANGUAGE = auto()
-    LEVEL = auto()
-    COMMUNICATION_LANGUAGE_IN_CLASS = auto()
-    NUMBER_OF_GROUPS_OR_FREQUENCY = auto()
-    TEACHING_FREQUENCY = auto()
+    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
+    ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
+    ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
+    ASK_TEACHING_EXPERIENCE = auto()
+    ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
+    ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU = auto()
     ADDITIONAL_SKILLS = auto()
-    COMMENT = auto()
+    ASK_COMMENT = auto()
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -113,7 +115,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return State.IS_REGISTERED
 
 
-async def save_interface_lang_ask_if_already_registered(
+async def store_interface_lang_ask_if_already_registered(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores the interface language and asks the user if they are already registered."""
@@ -128,7 +130,7 @@ async def save_interface_lang_ask_if_already_registered(
         question_phrase_internal_id="ask_already_with_us",
     )
 
-    return State.FIRST_NAME_OR_BYE
+    return State.ASK_FIRST_NAME_OR_BYE
 
 
 async def redirect_to_coordinator_if_registered_ask_first_name(
@@ -151,94 +153,13 @@ async def redirect_to_coordinator_if_registered_ask_first_name(
         PHRASES["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return State.ROLE
+    return State.ASK_LAST_NAME
 
 
-async def save_first_name_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the first name and asks the user if they want to become a student or a teacher.
-    The question about their age will depend on this answer.
-    """
-    context.user_data.first_name = update.message.text
+async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the first name and asks the last name."""
 
-    await update.message.reply_text(
-        PHRASES["ask_role"][context.user_data.locale],
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text=PHRASES[f"option_{role}"][context.user_data.locale],
-                        callback_data=role,
-                    )
-                    for role in (Role.STUDENT, Role.TEACHER)
-                ],
-            ]
-        ),
-    )
-    return State.AGE
-
-
-async def save_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the role and asks the user what their age is (the question depends on role)."""
-
-    query = update.callback_query
-    await query.answer()
-
-    context.user_data.role = query.data
-
-    if context.user_data.role == Role.STUDENT:
-        student_ages = [
-            ["6-8", "9-11", "12-14", "15-17"],
-            ["18-20", "21-25", "26-30", "31-35"],
-            ["36-40", "41-45", "46-50", "51-55"],
-            ["56-60", "61-65", "66-70", "71-75"],
-            ["76-80", "81-65", "86-90", "91-95"],
-        ]
-
-        rows_of_buttons = [
-            [InlineKeyboardButton(text, callback_data=text) for text in row]
-            for row in student_ages
-        ]
-
-        await query.edit_message_text(
-            PHRASES["ask_age"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup(rows_of_buttons),
-        )
-    else:
-        await CQReplySender.ask_yes_no(
-            context,
-            query,
-            question_phrase_internal_id="ask_if_18",
-        )
-
-    return State.LAST_NAME
-
-
-async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """For students, stores age. For teachers, checks if they are above 18. Asks teachers above 18
-    and all students to give their last name.
-    """
-
-    query = update.callback_query
-    await query.answer()
-
-    # end conversation for would-be teachers that are minors
-    if context.user_data.role == Role.TEACHER and query.data == CallbackData.NO:
-        # TODO ask about skills
-        await query.edit_message_text(
-            PHRASES["reply_under_18"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return ConversationHandler.END
-
-    if context.user_data.role == Role.STUDENT:
-        context.user_data.age = query.data
-
-    await query.edit_message_text(PHRASES["ask_last_name"][context.user_data.locale])
-    return State.SOURCE
-
-
-async def save_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the last name and asks the user how they found out about Samantha's Group."""
+    # It is better for less ambiguity to ask first name and last name in separate questions
 
     # It is impossible to send an empty message, but if for some reason user edits their previous
     # message, an update will be issued, but .message attribute will be none.
@@ -249,14 +170,26 @@ async def save_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPE
     # callback.
     # TODO an enhancement could be to store the information from the edited message
     if update.message is None:
-        return State.SOURCE
+        return State.ASK_LAST_NAME
+
+    context.user_data.first_name = update.message.text
+
+    await update.message.reply_text(PHRASES["ask_last_name"][context.user_data.locale])
+    return State.ASK_SOURCE
+
+
+async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the last name and asks the user how they found out about Samantha's Group."""
+
+    if update.message is None:
+        return State.ASK_SOURCE
 
     context.user_data.last_name = update.message.text
     await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
     return State.CHECK_USERNAME
 
 
-async def save_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the source of knowledge about SSG, checks Telegram nickname or asks for
     phone number.
     """
@@ -285,11 +218,15 @@ async def save_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYP
             ),
         )
 
-    return State.PHONE_NUMBER
+    return State.ASK_PHONE_NUMBER
 
 
-async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """If user's username was empty or they chose to provide a phone number, ask for it."""
+async def store_username_if_available_ask_phone_or_email(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If user's username was empty or they chose to provide a phone number, ask for it.
+    If the user provides their username, ask their email (jump over one function).
+    """
 
     username = update.effective_user.username
 
@@ -303,7 +240,7 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
             PHRASES["ask_email"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.TIMEZONE
+        return State.ASK_ROLE
 
     context.user_data.username = None
     await query.delete_message()
@@ -322,14 +259,14 @@ async def save_username_ask_phone(update: Update, context: CUSTOM_CONTEXT_TYPES)
         ),
     )
 
-    return State.EMAIL
+    return State.ASK_EMAIL
 
 
-async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the phone number and asks for email."""
 
     if update.message is None:
-        return State.EMAIL
+        return State.ASK_EMAIL
 
     # just in case: deleting spaces and hyphens
     text = (
@@ -343,7 +280,7 @@ async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
             PHRASES["invalid_phone_number"][context.user_data.locale],
             reply_markup=ReplyKeyboardRemove(),
         )
-        return State.EMAIL
+        return State.ASK_EMAIL
 
     if update.message.contact:
         context.user_data.phone_number = update.message.contact.phone_number
@@ -355,27 +292,102 @@ async def save_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
         reply_markup=ReplyKeyboardRemove(),
     )
     logger.info(f"Phone: {context.user_data.phone_number}")
-    return State.TIMEZONE
+    return State.ASK_ROLE
 
 
-async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the email and asks for timezone."""
+async def store_email_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the email and asks whether the user wants to be a student or a teacher."""
 
     if update.message is None:
-        return State.TIMEZONE
+        return State.ASK_ROLE
+
+    locale = context.user_data.locale
 
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
         await update.message.reply_text(
-            "Please provide a valid email",
+            PHRASES["invalid_email"][locale],
             reply_markup=ReplyKeyboardRemove(),
         )
-        return State.TIMEZONE
+        return State.ASK_ROLE
     context.user_data.email = email
 
-    timestamp = update.message.date
-
     await update.message.reply_text(
+        PHRASES["ask_role"][locale],
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text=PHRASES[f"option_{role}"][locale],
+                        callback_data=role,
+                    )
+                    for role in (Role.STUDENT, Role.TEACHER)
+                ],
+            ]
+        ),
+    )
+    return State.ASK_AGE
+
+
+async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores the role and asks the user what their age is (the question depends on role)."""
+
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.role = query.data
+
+    if context.user_data.role == Role.TEACHER:
+        await CQReplySender.ask_yes_no(
+            context,
+            query,
+            question_phrase_internal_id="ask_if_18",
+        )
+    else:
+        student_ages = [
+            ["6-8", "9-11", "12-14", "15-17"],
+            ["18-20", "21-25", "26-30", "31-35"],
+            ["36-40", "41-45", "46-50", "51-55"],
+            ["56-60", "61-65", "66-70", "71-75"],
+            ["76-80", "81-65", "86-90", "91-95"],
+        ]
+
+        rows_of_buttons = [
+            [InlineKeyboardButton(text, callback_data=text) for text in row]
+            for row in student_ages
+        ]
+
+        await query.edit_message_text(
+            PHRASES["ask_age"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup(rows_of_buttons),
+        )
+
+    return State.ASK_TIMEZONE
+
+
+async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """If user is a teacher under 18, informs that teachers under 18 are not allowed
+    and asks about additional skills. Otherwise, stores age range (for students) and asks timezone.
+    """
+
+    query = update.callback_query
+    await query.answer()
+
+    # end conversation for would-be teachers that are minors
+    if context.user_data.role == Role.TEACHER and query.data == CallbackData.NO:
+        # TODO ask about skills
+        await query.edit_message_text(
+            PHRASES["reply_under_18"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return ConversationHandler.END
+
+    if context.user_data.role == Role.STUDENT:
+        context.user_data.age = query.data
+
+    timestamp = query.message.date
+
+    await query.edit_message_text(
         PHRASES["ask_timezone"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup(
             [
@@ -448,7 +460,7 @@ async def save_email_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES)
     return State.TIME_SLOTS_START
 
 
-async def ask_slots_for_one_day_or_teaching_language(
+async def store_timezone_ask_slots_for_one_day_or_teaching_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """If this function is called for the first time in a conversation, **stores the timezone**
@@ -480,15 +492,15 @@ async def ask_slots_for_one_day_or_teaching_language(
             await CQReplySender.ask_teaching_languages(
                 context, query, show_done_button=show_done_button
             )
-            return State.TEACHING_LANGUAGE
+            return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
         context.chat_data["day_idx"] += 1
 
     await CQReplySender.ask_with_time_slots(context, query)
 
-    return State.TIME_SLOTS_MENU
+    return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
-async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores one time slot and offers to choose another."""
     query = update.callback_query
     await query.answer()
@@ -498,14 +510,14 @@ async def save_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT
 
     await CQReplySender.ask_with_time_slots(context, query)
 
-    return State.TIME_SLOTS_MENU
+    return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
-async def save_teaching_language_ask_another_or_level_or_communication_language(
+async def store_teaching_language_ask_another_or_level_or_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves teaching language, asks for level. If the user is a teacher and is done choosing
-    levels, asks for more languages.
+    """Stores teaching language, asks for level. If the user is a teacher and is done choosing
+    levels, offers to choose another language.
 
     If the user is a teacher and has finished choosing languages, asks about language of
     communication in class.
@@ -518,18 +530,18 @@ async def save_teaching_language_ask_another_or_level_or_communication_language(
     # for a teacher, but we'll keep it explicit here
     if query.data == CallbackData.DONE and context.user_data.role == Role.TEACHER:
         await CQReplySender.ask_student_communication_languages(context, query)
-        return State.COMMUNICATION_LANGUAGE_IN_CLASS
+        return State.ASK_TEACHING_EXPERIENCE
 
     context.user_data.levels_for_teaching_language[query.data] = []
 
     await CQReplySender.ask_language_levels(context, query, show_done_button=False)
-    return State.LEVEL
+    return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
-async def save_level_ask_level_for_next_language_or_communication_language(
+async def store_level_ask_level_for_next_language_or_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves level, asks for another level of the language chosen (for teachers) or for
+    """Stores level, asks for another level of the language chosen (for teachers) or for
     communication language in groups (for students).
     """
 
@@ -539,7 +551,7 @@ async def save_level_ask_level_for_next_language_or_communication_language(
     if query.data == CallbackData.DONE:
         # A teacher has finished selecting levels for this language: ask for another language
         await CQReplySender.ask_teaching_languages(context, query)
-        return State.TEACHING_LANGUAGE
+        return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
     last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
     context.user_data.levels_for_teaching_language[last_language_added].append(query.data)
@@ -552,17 +564,17 @@ async def save_level_ask_level_for_next_language_or_communication_language(
             context,
             query,
         )
-        return State.COMMUNICATION_LANGUAGE_IN_CLASS
+        return State.ASK_TEACHING_EXPERIENCE
 
     # Ask the teacher for another level of the same language
     await CQReplySender.ask_language_levels(context, query)
-    return State.LEVEL
+    return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
-async def save_student_communication_language_start_test_or_ask_teaching_experience(
+async def store_student_communication_language_start_test_or_ask_teaching_experience(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves communication language, starts test for a student (if the teaching language
+    """Stores communication language, starts test for a student (if the teaching language
     chosen was English) or asks teacher about teaching experience.
     """
 
@@ -575,18 +587,18 @@ async def save_student_communication_language_start_test_or_ask_teaching_experie
 
     if context.user_data.role == Role.STUDENT:
         # start test
-        return State.COMMENT  # TODO
+        return State.ASK_COMMENT  # TODO
     else:
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="ask_teacher_experience"
         )
-        return State.NUMBER_OF_GROUPS_OR_FREQUENCY
+        return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY
 
 
-async def save_prior_teaching_experience_ask_groups_or_frequency(
+async def store_prior_teaching_experience_ask_groups_or_frequency(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves information about teaching experience, asks for frequency (inexperienced teachers)
+    """Stores information about teaching experience, asks for frequency (inexperienced teachers)
     or number of groups (for experienced teachers).
     """
 
@@ -615,16 +627,16 @@ async def save_prior_teaching_experience_ask_groups_or_frequency(
             PHRASES["ask_teacher_number_of_groups"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup(buttons),
         )
-        return State.TEACHING_FREQUENCY
+        return State.ASK_TEACHING_FREQUENCY
     else:
         await CQReplySender.ask_teaching_frequency(context, query)
         return State.PREFERRED_STUDENT_AGE_GROUPS_START
 
 
-async def save_number_of_groups_ask_frequency(
+async def store_number_of_groups_ask_frequency(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """For experienced teachers: saves information about number of groups, asks for frequency
+    """For experienced teachers: stores information about number of groups, asks for frequency
     (inexperienced teachers).
     """
     query = update.callback_query
@@ -636,10 +648,10 @@ async def save_number_of_groups_ask_frequency(
     return State.PREFERRED_STUDENT_AGE_GROUPS_START
 
 
-async def save_frequency_ask_student_age_groups(
+async def store_frequency_ask_student_age_groups(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Saves frequency, asks for preferred age groups of students."""
+    """Stores frequency, asks for preferred age groups of students."""
     query = update.callback_query
     await query.answer()
 
@@ -651,20 +663,22 @@ async def save_frequency_ask_student_age_groups(
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
 
 
-async def save_student_age_group_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Saves preferred age group of students, asks another."""
+async def store_student_age_group_ask_another(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores preferred age group of students, asks another."""
     query = update.callback_query
     await query.answer()
 
     if query.data == CallbackData.DONE:
-        return State.COMMENT  # TODO
+        return State.ASK_COMMENT  # TODO
 
     context.user_data.teacher_age_groups_of_students.append(query.data)
 
     if len(context.user_data.teacher_age_groups_of_students) == len(
         STUDENT_AGE_GROUPS_FOR_TEACHER
     ):
-        return State.COMMENT  # TODO
+        return State.ASK_COMMENT  # TODO
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
 
@@ -716,64 +730,70 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             State.IS_REGISTERED: [
-                CallbackQueryHandler(save_interface_lang_ask_if_already_registered)
+                CallbackQueryHandler(store_interface_lang_ask_if_already_registered)
             ],
-            State.FIRST_NAME_OR_BYE: [
+            State.ASK_FIRST_NAME_OR_BYE: [
                 CallbackQueryHandler(redirect_to_coordinator_if_registered_ask_first_name)
             ],
-            State.ROLE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_first_name_ask_role)
+            State.ASK_LAST_NAME: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, store_first_name_ask_last_name)
             ],
-            State.AGE: [CallbackQueryHandler(save_role_ask_age)],
-            State.LAST_NAME: [CallbackQueryHandler(save_age_ask_last_name)],
-            State.SOURCE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_last_name_ask_source)
+            State.ASK_SOURCE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, store_last_name_ask_source)
             ],
             State.CHECK_USERNAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_source_check_username)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, store_source_check_username)
             ],
-            State.PHONE_NUMBER: [CallbackQueryHandler(save_username_ask_phone)],
-            State.EMAIL: [
+            State.ASK_PHONE_NUMBER: [
+                CallbackQueryHandler(store_username_if_available_ask_phone_or_email)
+            ],
+            State.ASK_EMAIL: [
                 MessageHandler(
-                    (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND, save_phone_ask_email
+                    (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND, store_phone_ask_email
                 )
             ],
-            State.TIMEZONE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, save_email_ask_timezone)
+            State.ASK_ROLE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, store_email_ask_role)
             ],
+            State.ASK_AGE: [CallbackQueryHandler(store_role_ask_age)],
+            State.ASK_TIMEZONE: [CallbackQueryHandler(store_age_ask_timezone)],
             State.TIME_SLOTS_START: [
-                CallbackQueryHandler(ask_slots_for_one_day_or_teaching_language)
+                CallbackQueryHandler(store_timezone_ask_slots_for_one_day_or_teaching_language)
             ],
-            State.TIME_SLOTS_MENU: [
-                CallbackQueryHandler(ask_slots_for_one_day_or_teaching_language, pattern="^next$"),
-                CallbackQueryHandler(save_one_time_slot_ask_another),
-            ],
-            State.TEACHING_LANGUAGE: [
+            State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
                 CallbackQueryHandler(
-                    save_teaching_language_ask_another_or_level_or_communication_language
+                    store_timezone_ask_slots_for_one_day_or_teaching_language, pattern="^next$"
+                ),
+                CallbackQueryHandler(store_one_time_slot_ask_another),
+            ],
+            State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(
+                    store_teaching_language_ask_another_or_level_or_communication_language
                 ),
             ],
-            State.LEVEL: [
+            State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
-                    save_level_ask_level_for_next_language_or_communication_language
+                    store_level_ask_level_for_next_language_or_communication_language
                 )
             ],
-            State.COMMUNICATION_LANGUAGE_IN_CLASS: [
+            State.ASK_TEACHING_EXPERIENCE: [
                 CallbackQueryHandler(
-                    save_student_communication_language_start_test_or_ask_teaching_experience
+                    store_student_communication_language_start_test_or_ask_teaching_experience
                 )
             ],
-            State.NUMBER_OF_GROUPS_OR_FREQUENCY: [
-                CallbackQueryHandler(save_prior_teaching_experience_ask_groups_or_frequency)
+            State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY: [
+                CallbackQueryHandler(store_prior_teaching_experience_ask_groups_or_frequency)
             ],
-            State.TEACHING_FREQUENCY: [CallbackQueryHandler(save_number_of_groups_ask_frequency)],
+            State.ASK_TEACHING_FREQUENCY: [
+                CallbackQueryHandler(store_number_of_groups_ask_frequency)
+            ],
             State.PREFERRED_STUDENT_AGE_GROUPS_START: [
-                CallbackQueryHandler(save_frequency_ask_student_age_groups)
+                CallbackQueryHandler(store_frequency_ask_student_age_groups)
             ],
             State.PREFERRED_STUDENT_AGE_GROUPS_MENU: [
-                CallbackQueryHandler(save_student_age_group_ask_another)
+                CallbackQueryHandler(store_student_age_group_ask_another)
             ],
-            State.COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
+            State.ASK_COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
