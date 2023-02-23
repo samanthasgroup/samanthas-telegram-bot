@@ -9,6 +9,7 @@ from samanthas_telegram_bot.constants import (
     LANGUAGE_CODES,
     LEVELS,
     PHRASES,
+    STUDENT_AGE_GROUPS_FOR_TEACHER,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     UTC_TIME_SLOTS,
     CallbackData,
@@ -185,11 +186,8 @@ class CallbackQueryReplySender:
         locale = context.user_data.locale
 
         all_buttons = [
-            InlineKeyboardButton(text=PHRASES["option_children"][locale], callback_data="6-11"),
-            InlineKeyboardButton(
-                text=PHRASES["option_adolescents"][locale], callback_data="12-17"
-            ),
-            InlineKeyboardButton(text=PHRASES["option_adults"][locale], callback_data="18-"),
+            InlineKeyboardButton(text=PHRASES[f"option_{key}"][locale], callback_data=value)
+            for key, value in STUDENT_AGE_GROUPS_FOR_TEACHER.items()
         ]
 
         buttons_to_show = [

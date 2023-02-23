@@ -33,6 +33,7 @@ from samanthas_telegram_bot.constants import (
     LOCALES,
     PHONE_PATTERN,
     PHRASES,
+    STUDENT_AGE_GROUPS_FOR_TEACHER,
     CallbackData,
     Role,
 )
@@ -139,7 +140,6 @@ async def redirect_to_coordinator_if_registered_ask_first_name(
     await query.answer()
 
     if query.data == CallbackData.YES:
-        # TODO actual link to chat
         await query.edit_message_text(
             PHRASES["reply_go_to_other_chat"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -223,7 +223,7 @@ async def save_age_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) 
 
     # end conversation for would-be teachers that are minors
     if context.user_data.role == Role.TEACHER and query.data == CallbackData.NO:
-        # TODO actual link to chat
+        # TODO ask about skills
         await query.edit_message_text(
             PHRASES["reply_under_18"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -597,7 +597,7 @@ async def save_prior_teaching_experience_ask_groups_or_frequency(
     )
 
     logger.info(f"Has teaching experience: {context.user_data.has_prior_teaching_experience}")
-    # TODO modify message if teacher has no experience. "Each" is confusing
+
     if context.user_data.has_prior_teaching_experience:
         numbers_of_groups = (1, 2)
 
@@ -661,8 +661,9 @@ async def save_student_age_group_ask_another(update: Update, context: CUSTOM_CON
 
     context.user_data.teacher_age_groups_of_students.append(query.data)
 
-    # TODO extract constant (all groups are selected)
-    if len(context.user_data.teacher_age_groups_of_students) == 3:
+    if len(context.user_data.teacher_age_groups_of_students) == len(
+        STUDENT_AGE_GROUPS_FOR_TEACHER
+    ):
         return State.COMMENT  # TODO
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
