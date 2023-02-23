@@ -5,9 +5,11 @@ from collections import defaultdict
 from enum import IntEnum, auto
 
 from telegram import (
+    BotCommandScopeAllPrivateChats,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
+    MenuButtonCommands,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
     Update,
@@ -78,6 +80,8 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Starts the conversation and asks the user about the language they want to communicate in."""
 
     logger.info(f"Chat ID: {update.effective_chat.id}")
+
+    await update.effective_chat.set_menu_button(MenuButtonCommands())
 
     context.user_data.days = []
     context.user_data.time = []
@@ -654,6 +658,35 @@ async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES):
     )
 
 
+async def post_init(application: Application):
+    await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
+    await application.bot.set_my_commands(
+        [
+            ("start", "Start registration"),
+            ("cancel", "Cancel registration process"),
+        ],
+        scope=BotCommandScopeAllPrivateChats(),
+        language_code="en",
+    )
+    await application.bot.set_my_commands(
+        [
+            ("start", "Начать регистрацию"),
+            ("cancel", "Прервать процесс регистрации"),
+        ],
+        scope=BotCommandScopeAllPrivateChats(),
+        language_code="ru",
+    )
+    # TODO Ukrainian
+    await application.bot.set_my_commands(
+        [
+            ("start", "Начать регистрацию"),
+            ("cancel", "Прервать процесс регистрации"),
+        ],
+        scope=BotCommandScopeAllPrivateChats(),
+        language_code="ua",
+    )
+
+
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it the bot's token.
@@ -661,6 +694,7 @@ def main() -> None:
         Application.builder()
         .token(os.environ.get("TOKEN"))
         .context_types(ContextTypes(user_data=UserData))
+        .post_init(post_init)
         .build()
     )
 
