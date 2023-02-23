@@ -53,13 +53,13 @@ class State(IntEnum):
 
     IS_REGISTERED = auto()
     ASK_FIRST_NAME_OR_BYE = auto()
-    ASK_ROLE = auto()
-    ASK_AGE = auto()
     ASK_LAST_NAME = auto()
     ASK_SOURCE = auto()
     CHECK_USERNAME = auto()
     ASK_PHONE_NUMBER = auto()
     ASK_EMAIL = auto()
+    ASK_ROLE = auto()
+    ASK_AGE = auto()
     ASK_TIMEZONE = auto()
     TIME_SLOTS_START = auto()
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
@@ -70,8 +70,8 @@ class State(IntEnum):
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU = auto()
-    ADDITIONAL_SKILLS = auto()
-    ASK_COMMENT = auto()
+    ASK_ADDITIONAL_SKILLS = auto()
+    BYE = auto()
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -373,13 +373,16 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     await query.answer()
 
     # end conversation for would-be teachers that are minors
-    if context.user_data.role == Role.TEACHER and query.data == CallbackData.NO:
-        # TODO ask about skills
-        await query.edit_message_text(
-            PHRASES["reply_under_18"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return ConversationHandler.END
+    if context.user_data.role == Role.TEACHER:
+        if query.data == CallbackData.YES:
+            context.user_data.teacher_is_under_18 = False
+        else:
+            context.user_data.teacher_is_under_18 = True
+            await query.edit_message_text(
+                PHRASES["reply_under_18"][context.user_data.locale],
+                reply_markup=InlineKeyboardMarkup([]),
+            )
+            return State.BYE
 
     if context.user_data.role == Role.STUDENT:
         context.user_data.age = query.data
@@ -412,6 +415,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
     elif query.data == CallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
+            logger.info(context.user_data.time_slots_for_day)
             # TODO what if the user chose no slots at all?
             context.user_data.levels_for_teaching_language = {}
             # if the dictionary is empty, it means that no language was chosen yet.
@@ -515,7 +519,7 @@ async def store_student_communication_language_start_test_or_ask_teaching_experi
 
     if context.user_data.role == Role.STUDENT:
         # start test
-        return State.ASK_COMMENT  # TODO
+        return State.BYE  # TODO
     else:
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="ask_teacher_experience"
@@ -532,13 +536,13 @@ async def store_prior_teaching_experience_ask_groups_or_frequency(
 
     query = update.callback_query
     await query.answer()
-    context.user_data.has_prior_teaching_experience = (
+    context.user_data.teacher_has_prior_experience = (
         True if query.data == CallbackData.YES else False
     )
 
-    logger.info(f"Has teaching experience: {context.user_data.has_prior_teaching_experience}")
+    logger.info(f"Has teaching experience: {context.user_data.teacher_has_prior_experience}")
 
-    if context.user_data.has_prior_teaching_experience:
+    if context.user_data.teacher_has_prior_experience:
         numbers_of_groups = (1, 2)
 
         buttons = [
@@ -583,7 +587,7 @@ async def store_frequency_ask_student_age_groups(
     query = update.callback_query
     await query.answer()
 
-    context.user_data.class_frequency = query.data
+    context.user_data.teacher_class_frequency = query.data
     context.user_data.teacher_age_groups_of_students = []
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
@@ -599,14 +603,14 @@ async def store_student_age_group_ask_another(
     await query.answer()
 
     if query.data == CallbackData.DONE:
-        return State.ASK_COMMENT  # TODO
+        return State.BYE  # TODO
 
     context.user_data.teacher_age_groups_of_students.append(query.data)
 
     if len(context.user_data.teacher_age_groups_of_students) == len(
         STUDENT_AGE_GROUPS_FOR_TEACHER
     ):
-        return State.ASK_COMMENT  # TODO
+        return State.BYE  # TODO
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
 
@@ -614,10 +618,17 @@ async def store_student_age_group_ask_another(
 
 
 async def bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the comment and ends the conversation."""
+    """For a would-be teacher that is under 18, store their comment about potential useful skills.
+    For others, store the general comment. End the conversation."""
+    locale = context.user_data.locale
 
-    logger.info(context.user_data.time_slots_for_day)
-    await update.effective_chat.send_message("Thank you! I hope we can talk again some day.")
+    if context.user_data.role == Role.TEACHER and context.user_data.teacher_is_under_18 is True:
+        context.user_data.teacher_additional_skills_comment = update.message.text
+        await update.effective_chat.send_message(PHRASES["bye_teacher_under_18"][locale])
+    else:
+        context.user_data.comment = update.message.text
+        await update.effective_chat.send_message(PHRASES["bye_wait_for_message"][locale])
+
     return ConversationHandler.END
 
 
@@ -721,7 +732,7 @@ def main() -> None:
             State.PREFERRED_STUDENT_AGE_GROUPS_MENU: [
                 CallbackQueryHandler(store_student_age_group_ask_another)
             ],
-            State.ASK_COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
+            State.BYE: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )
