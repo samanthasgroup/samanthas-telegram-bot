@@ -47,8 +47,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# TODO menu!
-
 
 class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
@@ -71,8 +69,10 @@ class State(IntEnum):
     ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
-    PREFERRED_STUDENT_AGE_GROUPS_MENU = auto()
-    ASK_ADDITIONAL_SKILLS = auto()
+    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS = auto()
+    ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
+    PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
+    ASK_COMMENT = auto()
     BYE = auto()
 
 
@@ -522,8 +522,12 @@ async def store_student_communication_language_start_test_or_ask_teaching_experi
     logger.info(context.user_data.communication_language_in_class)
 
     if context.user_data.role == Role.STUDENT:
-        # start test
-        return State.BYE  # TODO
+        # TODO start test instead of asking for final comment
+        await query.edit_message_text(
+            PHRASES["ask_final_comment"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return State.BYE
     else:
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="ask_teacher_experience"
@@ -596,32 +600,115 @@ async def store_frequency_ask_student_age_groups(
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
 
-    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
+    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS
 
 
-async def store_student_age_group_ask_another(
+async def store_student_age_group_ask_another_or_help_for_students(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores preferred age group of students, asks another."""
+    """Stores preferred age group of students, asks another.  If the teacher is done, ask about
+    additional help for students.
+    """
+    query = update.callback_query
+    await query.answer()
+
+    if query.data != CallbackData.DONE:
+        context.user_data.teacher_age_groups_of_students.append(query.data)
+
+    # teacher pressed "Done" or chose all age groups
+    if query.data == CallbackData.DONE or len(
+        context.user_data.teacher_age_groups_of_students
+    ) == len(STUDENT_AGE_GROUPS_FOR_TEACHER):
+        await CQReplySender.ask_teacher_about_help_with_cv_and_speaking_clubs(context, query)
+        return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
+
+    await CQReplySender.ask_student_age_groups_for_teacher(context, query)
+    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS
+
+
+async def store_help_for_students_ask_peer_help_or_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores information about additional help for students. If the teacher has teaching
+    experience, asks about help for less experienced teachers. Otherwise, asks about any other
+    types of help the teacher could provide (for more experienced teachers, this question will be
+    asked at the next stage).
+    """
+    query = update.callback_query
+    await query.answer()
+
+    # callback_data "cv_and_speaking_club" will lead to both attributes being True.
+    # I am not extracting constants to point out that these exact words are present in CSV file
+    # with phrases (where constants are obviously impossible),
+    if "cv" in query.data:
+        context.user_data.teacher_can_help_with_cv = True
+    if "speaking_club" in query.data:
+        context.user_data.teacher_can_help_with_speaking_club = True
+
+    if context.user_data.teacher_has_prior_experience is True:
+        # I will be storing the selected options in boolean flags of TeacherPeerHelp(),
+        # but in order to remove selected options from InlineKeyboard, I have to store exact
+        # callback_data somewhere.
+        context.chat_data["peer_help_callback_data"] = set()
+        await CQReplySender.ask_teacher_peer_help(context, query)
+        return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+
+    await query.edit_message_text(
+        PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
+    )
+    return State.ASK_COMMENT
+
+
+async def store_peer_help_ask_another_or_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores one option of teacher peer help, asks for another.  If the teacher is done,
+    asks for any additional help (in free text)."""
     query = update.callback_query
     await query.answer()
 
     if query.data == CallbackData.DONE:
-        return State.BYE  # TODO
+        await query.edit_message_text(
+            PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return State.ASK_COMMENT
 
-    context.user_data.teacher_age_groups_of_students.append(query.data)
+    if query.data == "consult":
+        context.user_data.teacher_peer_help.can_consult_other_teachers = True
+    elif query.data == "children_group":
+        context.user_data.teacher_peer_help.can_help_with_children_group = True
+    elif query.data == "materials":
+        context.user_data.teacher_peer_help.can_help_with_materials = True
+    elif query.data == "check_syllabus":
+        context.user_data.teacher_peer_help.can_check_syllabus = True
+    elif query.data == "feedback":
+        context.user_data.teacher_peer_help.can_give_feedback = True
+    elif query.data == "invite":
+        context.user_data.teacher_peer_help.can_invite_to_class = True
+    elif query.data == "tandem":
+        context.user_data.teacher_peer_help.can_work_in_tandem = True
 
-    if len(context.user_data.teacher_age_groups_of_students) == len(
-        STUDENT_AGE_GROUPS_FOR_TEACHER
-    ):
-        return State.BYE  # TODO
-
-    await CQReplySender.ask_student_age_groups_for_teacher(context, query)
-
-    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU
+    # to remove this button from the keyboard
+    context.chat_data["peer_help_callback_data"].add(query.data)
+    await CQReplySender.ask_teacher_peer_help(context, query)
+    return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
 
-async def bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def ask_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    if update.message is None:
+        return State.ASK_COMMENT
+
+    context.user_data.teacher_additional_skills_comment = update.message.text
+
+    await update.effective_chat.send_message(
+        PHRASES["ask_final_comment"][context.user_data.locale]
+    )
+    return State.BYE
+
+
+async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """For a would-be teacher that is under 18, store their comment about potential useful skills.
     For others, store the general comment. End the conversation."""
     locale = context.user_data.locale
@@ -763,10 +850,19 @@ def main() -> None:
             State.PREFERRED_STUDENT_AGE_GROUPS_START: [
                 CallbackQueryHandler(store_frequency_ask_student_age_groups)
             ],
-            State.PREFERRED_STUDENT_AGE_GROUPS_MENU: [
-                CallbackQueryHandler(store_student_age_group_ask_another)
+            State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS: [
+                CallbackQueryHandler(store_student_age_group_ask_another_or_help_for_students)
             ],
-            State.BYE: [MessageHandler(filters.TEXT & ~filters.COMMAND, bye)],
+            State.ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
+                CallbackQueryHandler(store_help_for_students_ask_peer_help_or_additional_help)
+            ],
+            State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
+                CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)
+            ],
+            State.ASK_COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_comment)],
+            State.BYE: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, store_comment_end_conversation)
+            ],
         },
         fallbacks=[CommandHandler("cancel", cancel)],
     )

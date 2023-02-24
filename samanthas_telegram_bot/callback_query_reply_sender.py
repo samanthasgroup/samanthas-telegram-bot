@@ -72,6 +72,75 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_teacher_peer_help(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a teacher whether they are able to help their fellow teachers."""
+        # this question is only asked if teacher is experienced, but the check is done in main.py
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"option_teacher_peer_help_{option}"][locale],
+                callback_data=option,
+            )
+            for option in (
+                "consult",
+                "children_group",
+                "materials",
+                "check_syllabus",
+                "feedback",
+                "invite",
+                "tandem",
+            )
+            if option not in context.chat_data["peer_help_callback_data"]
+        ]
+
+        # the done button must be there right from the start because the teacher may not be willing
+        # to provide any kind of peer help
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_peer_help"][locale],
+                buttons=buttons,
+                buttons_per_row=1,
+                bottom_row_button=InlineKeyboardButton(
+                    PHRASES["ask_teacher_peer_help_done"][locale],
+                    callback_data=CallbackData.DONE,
+                ),
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_teacher_about_help_with_cv_and_speaking_clubs(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a teacher whether they are able to help students with CV or host speaking clubs."""
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"option_teacher_help_{option}"][locale],
+                callback_data=option,
+            )
+            for option in ("cv", "speaking_club", "cv_and_speaking_club")
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_help_with_cv_and_speaking_clubs"][locale],
+                buttons=buttons,
+                buttons_per_row=1,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
     async def ask_teaching_frequency(
         cls,
         context: CUSTOM_CONTEXT_TYPES,

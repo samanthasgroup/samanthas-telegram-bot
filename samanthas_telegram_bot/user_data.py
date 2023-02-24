@@ -5,6 +5,21 @@ from samanthas_telegram_bot.constants import Role
 
 
 @dataclass
+class TeacherPeerHelp:
+    """A class that comprises boolean flags for experienced teachers' willingness to help their
+    peers.
+    """
+
+    can_consult_other_teachers: bool = None
+    can_help_with_children_group: bool = None
+    can_help_with_materials: bool = None
+    can_check_syllabus: bool = None
+    can_give_feedback: bool = None
+    can_invite_to_class: bool = None
+    can_work_in_tandem: bool = None
+
+
+@dataclass
 class UserData:
     locale: str = None
     first_name: str = None
@@ -27,5 +42,8 @@ class UserData:
     teacher_number_of_groups: int = None
     teacher_class_frequency: int = None
     teacher_age_groups_of_students: list = None
+    teacher_can_help_with_cv: bool = None
+    teacher_can_help_with_speaking_club: bool = None
+    teacher_peer_help = TeacherPeerHelp()
     teacher_additional_skills: list = None
     teacher_additional_skills_comment: str = None
