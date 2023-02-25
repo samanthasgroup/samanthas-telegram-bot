@@ -25,6 +25,7 @@ from telegram.ext import (
     filters,
 )
 
+from samanthas_telegram_bot.big_messages import compose_message_for_reviewing_user_data
 from samanthas_telegram_bot.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -73,6 +74,7 @@ class State(IntEnum):
     ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
     ASK_REVIEW = auto()
+    REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
     BYE = auto()
 
 
@@ -703,79 +705,39 @@ async def store_teachers_additional_skills_ask_review(
     if update.message is None:
         return State.ASK_REVIEW
 
-    u_data = context.user_data
+    if context.user_data.role == Role.TEACHER:
+        context.user_data.teacher_additional_skills_comment = update.message.text
 
-    if u_data.role == Role.TEACHER:
-        u_data.teacher_additional_skills_comment = update.message.text
-
-    locale = u_data.locale
-
-    message = (
-        f"{PHRASES['ask_review'][locale]}\n\n"
-        f"{PHRASES['review_first_name'][locale]}: {u_data.first_name}\n"
-        f"{PHRASES['review_last_name'][locale]}: {u_data.last_name}\n"
-        f"{PHRASES['review_email'][locale]}: {u_data.email}\n"
-    )
-
-    if u_data.role == Role.STUDENT:
-        message += f"{PHRASES['review_student_age_group'][locale]}: {u_data.student_age_from}-"
-        f"{u_data.student_age_from}\n"
-
-    if context.user_data.tg_username:
-        message += f"{PHRASES['review_username'][locale]} (@{u_data.tg_username})\n"
-    if context.user_data.phone_number:
-        message += f"{PHRASES['review_phone_number'][locale]} ({u_data.phone_number})\n"
-
-    if context.user_data.utc_offset > 0:
-        message += f"{PHRASES['review_timezone'][locale]}: UTC+{u_data.utc_offset}\n"
-    elif context.user_data.utc_offset < 0:
-        message += f"{PHRASES['review_timezone'][locale]}: UTC{u_data.utc_offset}\n"
-    else:
-        message += f"\n{PHRASES['review_timezone'][locale]}: UTC\n"
-
-    message += f"\n{PHRASES['review_availability'][locale]}:\n"
-    # The dictionary of days contains keys for all days of week. Only display the days to the user
-    # that they have chosen slots for:
-    for idx, day in enumerate(u_data.time_slots_for_day):
-        slots = u_data.time_slots_for_day[day]
-        if slots:
-            message += f"{PHRASES['ask_slots_' + str(idx)][locale]}: "
-        for slot in sorted(slots):
-            # user must see their slots in their chosen timezone
-            hour_from, hour_to = slot.split("-")
-            message += (
-                f" {int(hour_from) + u_data.utc_offset}:00-{int(hour_to) + u_data.utc_offset}:00;"
-            )
-        else:  # remove last semicolon, end day with line break
-            message = message[:-1] + "\n"
-    message += "\n"
-
-    message += f"{PHRASES['review_languages_levels'][locale]}:\n"
-    for language in u_data.levels_for_teaching_language:
-        message += f"{PHRASES[language][locale]}: "
-        message += ", ".join(sorted(u_data.levels_for_teaching_language[language])) + "\n"
-    message += "\n"
-
-    message += f"{PHRASES['review_communication_language'][locale]}: "
-    message += (
-        PHRASES[f"class_communication_language_option_{u_data.communication_language_in_class}"][
-            locale
-        ]
-        + "\n"
-    )
+    buttons = [
+        InlineKeyboardButton(
+            text=PHRASES["review_reaction_" + option][context.user_data.locale],
+            callback_data=option,
+        )
+        for option in ("yes", "no")
+    ]
 
     await update.effective_chat.send_message(
-        message,
+        text=compose_message_for_reviewing_user_data(update, context),
+        # each button in a separate list to make them show in one column
+        reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
     )
-    return State.BYE
+    return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
 
-async def review_ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def review_menu_or_ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Lets user review their basic info, then asks for final comment."""
-    await update.effective_chat.send_message(
-        PHRASES["ask_final_comment"][context.user_data.locale]
-    )
-    return State.BYE
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == CallbackData.YES:
+        # I don't want to do edit_message_text. Let user info remain in the chat for user to see.
+        await update.effective_chat.send_message(
+            PHRASES["ask_final_comment"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return State.BYE
+    else:
+        return State.BYE  # TODO
 
 
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -940,6 +902,9 @@ def main() -> None:
                     filters.TEXT & ~filters.COMMAND,
                     store_teachers_additional_skills_ask_review,
                 )
+            ],
+            State.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
+                CallbackQueryHandler(review_menu_or_ask_final_comment)
             ],
             State.BYE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, store_comment_end_conversation)

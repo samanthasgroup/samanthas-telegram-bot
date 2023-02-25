@@ -214,6 +214,7 @@ class CallbackQueryReplySender:
         """Asks a user to choose language level(s)."""
 
         # if the user has already chosen one level, add "Next" button
+        # TODO this button makes the levels go up, user might mistap
         done_button = None
 
         if show_done_button:
