@@ -10,7 +10,7 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.constants import PHRASES, Role
+from samanthas_telegram_bot.constants import PHRASES, ChatMode, Role
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
@@ -37,7 +37,7 @@ async def send_message_for_reviewing_user_data(
     """Sends a to the user for them to review their basic info."""
     u_data = context.user_data
 
-    if u_data.role == Role.TEACHER:
+    if u_data.role == Role.TEACHER and context.chat_data["mode"] == ChatMode.NORMAL:
         u_data.teacher_additional_skills_comment = update.message.text
 
     locale = u_data.locale

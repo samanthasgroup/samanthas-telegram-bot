@@ -68,7 +68,7 @@ class State(IntEnum):
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
     ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
-    ASK_TEACHING_EXPERIENCE = auto()
+    ASK_TEACHING_EXPERIENCE_OR_START_TEST = auto()
     ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
@@ -186,6 +186,7 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
     context.user_data.first_name = update.message.text
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
+        await update.message.delete()
         await send_message_for_reviewing_user_data(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -202,6 +203,7 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
     context.user_data.last_name = update.message.text
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
+        await update.message.delete()
         await send_message_for_reviewing_user_data(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -299,6 +301,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         context.user_data.phone_number = text
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
+        await update.message.delete()
         await send_message_for_reviewing_user_data(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -329,6 +332,7 @@ async def store_email_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
     context.user_data.email = email
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
+        await update.message.delete()
         await send_message_for_reviewing_user_data(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -429,15 +433,27 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
     if re.match(r"^[+-]?\d{1,2}$", query.data):  # this is a UTC offset
         context.user_data.utc_offset = int(query.data)
+
+        if context.chat_data["mode"] == ChatMode.REVIEW:
+            await query.delete_message()
+            await send_message_for_reviewing_user_data(update, context)
+            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
         context.user_data.time_slots_for_day = defaultdict(list)
 
-        # setting day of week to Monday.  This is temporary, so won't mix it with user_data
+        # set day of week to Monday to start asking about slots for each day
         context.chat_data["day_idx"] = 0
 
     elif query.data == CallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
             logger.info(context.user_data.time_slots_for_day)
             # TODO what if the user chose no slots at all?
+
+            if context.chat_data["mode"] == ChatMode.REVIEW:
+                await query.delete_message()
+                await send_message_for_reviewing_user_data(update, context)
+                return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
             context.user_data.levels_for_teaching_language = {}
             # if the dictionary is empty, it means that no language was chosen yet.
             # In this case no "done" button must be shown.
@@ -482,8 +498,13 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     # for now students can only choose one language, so callback_data == "done" is only possible
     # for a teacher, but we'll keep it explicit here
     if query.data == CallbackData.DONE and context.user_data.role == Role.TEACHER:
+        if context.chat_data["mode"] == ChatMode.REVIEW:
+            await query.delete_message()
+            await send_message_for_reviewing_user_data(update, context)
+            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE
+        return State.ASK_TEACHING_EXPERIENCE_OR_START_TEST
 
     context.user_data.levels_for_teaching_language[query.data] = []
 
@@ -513,11 +534,16 @@ async def store_level_ask_level_for_next_language_or_communication_language(
 
     # move on for a student (they can only choose one language and one level)
     if context.user_data.role == Role.STUDENT:
+        if context.chat_data["mode"] == ChatMode.REVIEW:
+            await query.delete_message()
+            await send_message_for_reviewing_user_data(update, context)
+            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
         await CQReplySender.ask_class_communication_languages(
             context,
             query,
         )
-        return State.ASK_TEACHING_EXPERIENCE
+        return State.ASK_TEACHING_EXPERIENCE_OR_START_TEST
 
     # Ask the teacher for another level of the same language
     await CQReplySender.ask_language_levels(context, query)
@@ -535,6 +561,11 @@ async def store_class_communication_language_start_test_or_ask_teaching_experien
     await query.answer()
 
     context.user_data.communication_language_in_class = query.data
+
+    if context.chat_data["mode"] == ChatMode.REVIEW:
+        await query.delete_message()
+        await send_message_for_reviewing_user_data(update, context)
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     logger.info(context.user_data.communication_language_in_class)
 
@@ -735,6 +766,7 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
     await query.answer()
 
     if query.data == CallbackData.YES:
+        context.chat_data["mode"] = ChatMode.NORMAL  # set explicitly to normal just in case
         # I don't want to do edit_message_text. Let user info remain in the chat for user to see.
         await update.effective_chat.send_message(
             PHRASES["ask_final_comment"][context.user_data.locale],
@@ -750,10 +782,11 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
 
 
 async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Reads callback data, asks a corresponding question about the item they want to review,
-    redirects to the corresponding state of the conversation.
+    """Reads callback data, asks corresponding question about the item they want to review,
+    redirects to the corresponding state of the conversation (the state right after the moment when
+    this question was asked in normal conversation flow).
 
-    Note: since chat is in review mode, the user will return straight back to review menu after
+    Note: since chat is in review mode now, the user will return straight back to review menu after
     they give amended information "upstream" in the conversation.
     """
     query = update.callback_query
@@ -791,6 +824,27 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             reply_markup=InlineKeyboardMarkup([]),
         )
         return State.ASK_ROLE
+    elif data == UserDataReviewCategory.TIMEZONE:
+        await CQReplySender.ask_timezone(context, query)
+        return State.TIME_SLOTS_START
+    elif data == UserDataReviewCategory.AVAILABILITY:
+        # set day of week to Monday to start asking about slots for each day
+        context.chat_data["day_idx"] = 0
+        context.user_data.time_slots_for_day = defaultdict(list)
+        await CQReplySender.ask_time_slot(context, query)
+        return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+    elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:
+        context.user_data.levels_for_teaching_language = {}
+        show_done_button = True if context.user_data.levels_for_teaching_language else False
+        await CQReplySender.ask_teaching_languages(
+            context, query, show_done_button=show_done_button
+        )
+        return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+    elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
+        await CQReplySender.ask_class_communication_languages(context, query)
+        return State.ASK_TEACHING_EXPERIENCE_OR_START_TEST
+    else:
+        raise NotImplementedError(f"Cannot handle review of {data}")
 
 
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -927,7 +981,7 @@ def main() -> None:
                     store_level_ask_level_for_next_language_or_communication_language
                 )
             ],
-            State.ASK_TEACHING_EXPERIENCE: [
+            State.ASK_TEACHING_EXPERIENCE_OR_START_TEST: [
                 CallbackQueryHandler(
                     store_class_communication_language_start_test_or_ask_teaching_experience
                 )
