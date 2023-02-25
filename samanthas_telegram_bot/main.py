@@ -696,11 +696,15 @@ async def store_peer_help_ask_another_or_additional_help(
     return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
 
-async def ask_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_teachers_additional_skills_ask_final_comment(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores teacher's additional skills and asks for final comment."""
     if update.message is None:
         return State.ASK_COMMENT
 
-    context.user_data.teacher_additional_skills_comment = update.message.text
+    if context.user_data.role == Role.TEACHER:
+        context.user_data.teacher_additional_skills_comment = update.message.text
 
     await update.effective_chat.send_message(
         PHRASES["ask_final_comment"][context.user_data.locale]
@@ -865,7 +869,12 @@ def main() -> None:
             State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
                 CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)
             ],
-            State.ASK_COMMENT: [MessageHandler(filters.TEXT & ~filters.COMMAND, ask_comment)],
+            State.ASK_COMMENT: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    store_teachers_additional_skills_ask_final_comment,
+                )
+            ],
             State.BYE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, store_comment_end_conversation)
             ],
