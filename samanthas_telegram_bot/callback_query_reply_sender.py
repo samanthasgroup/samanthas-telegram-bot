@@ -261,22 +261,22 @@ class CallbackQueryReplySender:
                 text=PHRASES[f"review_option_{option}"][locale], callback_data=option
             )
             for option in (
-                UserDataReviewCategory.FIRST_NAME.value,
-                UserDataReviewCategory.LAST_NAME.value,
-                UserDataReviewCategory.EMAIL.value,
-                UserDataReviewCategory.TIMEZONE.value,
-                UserDataReviewCategory.AVAILABILITY.value,
-                UserDataReviewCategory.LANGUAGE_AND_LEVEL.value,
-                UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE.value,
+                # Without f-strings they will produce something like <Enum: "name">.
+                # An alternative is to use .value attribute.
+                f"{UserDataReviewCategory.FIRST_NAME}",
+                f"{UserDataReviewCategory.LAST_NAME}",
+                f"{UserDataReviewCategory.EMAIL}",
+                f"{UserDataReviewCategory.TIMEZONE}",
+                f"{UserDataReviewCategory.AVAILABILITY}",
+                f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}",
+                f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
             )
         ]
 
         if context.user_data.phone_number:
             buttons.append(
                 InlineKeyboardButton(
-                    text=PHRASES[f"review_option_{UserDataReviewCategory.PHONE_NUMBER.value}"][
-                        locale
-                    ],
+                    text=PHRASES[f"review_option_{UserDataReviewCategory.PHONE_NUMBER}"][locale],
                     callback_data=UserDataReviewCategory.PHONE_NUMBER,
                 )
             )
@@ -284,9 +284,9 @@ class CallbackQueryReplySender:
         if context.user_data.role == Role.STUDENT:
             buttons.append(
                 InlineKeyboardButton(
-                    text=PHRASES[
-                        f"review_option_{UserDataReviewCategory.STUDENT_AGE_GROUP.value}"
-                    ][locale],
+                    text=PHRASES[f"review_option_{UserDataReviewCategory.STUDENT_AGE_GROUP}"][
+                        locale
+                    ],
                     callback_data=UserDataReviewCategory.STUDENT_AGE_GROUP,
                 )
             )
