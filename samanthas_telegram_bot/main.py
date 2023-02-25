@@ -72,7 +72,7 @@ class State(IntEnum):
     PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS = auto()
     ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
-    ASK_COMMENT = auto()
+    ASK_REVIEW = auto()
     BYE = auto()
 
 
@@ -237,7 +237,7 @@ async def store_username_if_available_ask_phone_or_email(
     await query.answer()
 
     if query.data == "store_username_yes" and username:
-        context.user_data.username = username
+        context.user_data.tg_username = username
         logger.info(f"Username: {username}. Will be stored in the database.")
         await query.edit_message_text(
             PHRASES["ask_email"][context.user_data.locale],
@@ -245,7 +245,7 @@ async def store_username_if_available_ask_phone_or_email(
         )
         return State.ASK_ROLE
 
-    context.user_data.username = None
+    context.user_data.tg_username = None
     await query.delete_message()
 
     await update.effective_chat.send_message(
@@ -465,7 +465,7 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     # for now students can only choose one language, so callback_data == "done" is only possible
     # for a teacher, but we'll keep it explicit here
     if query.data == CallbackData.DONE and context.user_data.role == Role.TEACHER:
-        await CQReplySender.ask_student_communication_languages(context, query)
+        await CQReplySender.ask_class_communication_languages(context, query)
         return State.ASK_TEACHING_EXPERIENCE
 
     context.user_data.levels_for_teaching_language[query.data] = []
@@ -496,7 +496,7 @@ async def store_level_ask_level_for_next_language_or_communication_language(
 
     # move on for a student (they can only choose one language and one level)
     if context.user_data.role == Role.STUDENT:
-        await CQReplySender.ask_student_communication_languages(
+        await CQReplySender.ask_class_communication_languages(
             context,
             query,
         )
@@ -507,7 +507,7 @@ async def store_level_ask_level_for_next_language_or_communication_language(
     return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
-async def store_student_communication_language_start_test_or_ask_teaching_experience(
+async def store_class_communication_language_start_test_or_ask_teaching_experience(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores communication language, starts test for a student (if the teaching language
@@ -522,7 +522,7 @@ async def store_student_communication_language_start_test_or_ask_teaching_experi
     logger.info(context.user_data.communication_language_in_class)
 
     if context.user_data.role == Role.STUDENT:
-        # TODO start test instead of asking for final comment
+        # TODO start test instead of asking for final comment, make sure student gets to review too
         await query.edit_message_text(
             PHRASES["ask_final_comment"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -657,7 +657,7 @@ async def store_help_for_students_ask_peer_help_or_additional_help(
         PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return State.ASK_COMMENT
+    return State.ASK_REVIEW
 
 
 async def store_peer_help_ask_another_or_additional_help(
@@ -673,7 +673,7 @@ async def store_peer_help_ask_another_or_additional_help(
             PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.ASK_COMMENT
+        return State.ASK_REVIEW
 
     if query.data == "consult":
         context.user_data.teacher_peer_help.can_consult_other_teachers = True
@@ -696,16 +696,82 @@ async def store_peer_help_ask_another_or_additional_help(
     return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
 
-async def store_teachers_additional_skills_ask_final_comment(
+async def store_teachers_additional_skills_ask_review(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores teacher's additional skills and asks for final comment."""
+    """Stores teacher's additional skills and asks to review main user data."""
     if update.message is None:
-        return State.ASK_COMMENT
+        return State.ASK_REVIEW
 
-    if context.user_data.role == Role.TEACHER:
-        context.user_data.teacher_additional_skills_comment = update.message.text
+    u_data = context.user_data
 
+    if u_data.role == Role.TEACHER:
+        u_data.teacher_additional_skills_comment = update.message.text
+
+    locale = u_data.locale
+
+    message = (
+        f"{PHRASES['ask_review'][locale]}\n\n"
+        f"{PHRASES['review_first_name'][locale]}: {u_data.first_name}\n"
+        f"{PHRASES['review_last_name'][locale]}: {u_data.last_name}\n"
+        f"{PHRASES['review_email'][locale]}: {u_data.email}\n"
+    )
+
+    if u_data.role == Role.STUDENT:
+        message += f"{PHRASES['review_student_age_group'][locale]}: {u_data.student_age_from}-"
+        f"{u_data.student_age_from}\n"
+
+    if context.user_data.tg_username:
+        message += f"{PHRASES['review_username'][locale]} (@{u_data.tg_username})\n"
+    if context.user_data.phone_number:
+        message += f"{PHRASES['review_phone_number'][locale]} ({u_data.phone_number})\n"
+
+    if context.user_data.utc_offset > 0:
+        message += f"{PHRASES['review_timezone'][locale]}: UTC+{u_data.utc_offset}\n"
+    elif context.user_data.utc_offset < 0:
+        message += f"{PHRASES['review_timezone'][locale]}: UTC{u_data.utc_offset}\n"
+    else:
+        message += f"\n{PHRASES['review_timezone'][locale]}: UTC\n"
+
+    message += f"\n{PHRASES['review_availability'][locale]}:\n"
+    # The dictionary of days contains keys for all days of week. Only display the days to the user
+    # that they have chosen slots for:
+    for idx, day in enumerate(u_data.time_slots_for_day):
+        slots = u_data.time_slots_for_day[day]
+        if slots:
+            message += f"{PHRASES['ask_slots_' + str(idx)][locale]}: "
+        for slot in sorted(slots):
+            # user must see their slots in their chosen timezone
+            hour_from, hour_to = slot.split("-")
+            message += (
+                f" {int(hour_from) + u_data.utc_offset}:00-{int(hour_to) + u_data.utc_offset}:00;"
+            )
+        else:  # remove last semicolon, end day with line break
+            message = message[:-1] + "\n"
+    message += "\n"
+
+    message += f"{PHRASES['review_languages_levels'][locale]}:\n"
+    for language in u_data.levels_for_teaching_language:
+        message += f"{PHRASES[language][locale]}: "
+        message += ", ".join(sorted(u_data.levels_for_teaching_language[language])) + "\n"
+    message += "\n"
+
+    message += f"{PHRASES['review_communication_language'][locale]}: "
+    message += (
+        PHRASES[f"class_communication_language_option_{u_data.communication_language_in_class}"][
+            locale
+        ]
+        + "\n"
+    )
+
+    await update.effective_chat.send_message(
+        message,
+    )
+    return State.BYE
+
+
+async def review_ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Lets user review their basic info, then asks for final comment."""
     await update.effective_chat.send_message(
         PHRASES["ask_final_comment"][context.user_data.locale]
     )
@@ -848,7 +914,7 @@ def main() -> None:
             ],
             State.ASK_TEACHING_EXPERIENCE: [
                 CallbackQueryHandler(
-                    store_student_communication_language_start_test_or_ask_teaching_experience
+                    store_class_communication_language_start_test_or_ask_teaching_experience
                 )
             ],
             State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY: [
@@ -869,10 +935,10 @@ def main() -> None:
             State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
                 CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)
             ],
-            State.ASK_COMMENT: [
+            State.ASK_REVIEW: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
-                    store_teachers_additional_skills_ask_final_comment,
+                    store_teachers_additional_skills_ask_review,
                 )
             ],
             State.BYE: [

@@ -34,7 +34,7 @@ class CallbackQueryReplySender:
     """
 
     @classmethod
-    async def ask_student_communication_languages(
+    async def ask_class_communication_languages(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
@@ -52,7 +52,7 @@ class CallbackQueryReplySender:
             language_codes = [c for c in STUDENT_COMMUNICATION_LANGUAGE_CODES if c != "l2_only"]
 
         language_for_callback_data = {
-            code: PHRASES[f"student_communication_language_option_{code}"][locale]
+            code: PHRASES[f"class_communication_language_option_{code}"][locale]
             for code in language_codes
         }
 
@@ -64,7 +64,7 @@ class CallbackQueryReplySender:
 
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=PHRASES[f"ask_student_communication_language_{role}"][locale],
+                message_text=PHRASES[f"ask_class_communication_language_{role}"][locale],
                 buttons=language_buttons,
                 buttons_per_row=1,
                 parse_mode=None,

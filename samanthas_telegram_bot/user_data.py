@@ -21,11 +21,12 @@ class TeacherPeerHelp:
 
 @dataclass
 class UserData:
+    # TODO sets instead of lists?
     locale: str = None
     first_name: str = None
     last_name: str = None
     source: str = None
-    username: str = None
+    tg_username: str = None
     phone_number: str = None
     email: str = None
     role: Role = None
