@@ -730,8 +730,14 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     logger.info("User %s canceled the conversation.", user.first_name)
 
+    # the /cancel command could come even before the user chooses the locale
+    if context.user_data.locale:
+        locale = context.user_data.locale
+    else:
+        locale = update.effective_user.language_code
+
     await update.message.reply_text(
-        "Bye! I hope we can talk again some day.", reply_markup=ReplyKeyboardRemove()
+        PHRASES["bye_cancel"][locale], reply_markup=InlineKeyboardMarkup([])
     )
 
     return ConversationHandler.END
