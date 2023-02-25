@@ -15,6 +15,13 @@ class CallbackData(str, Enum):
     YES = "yes"
 
 
+class ChatMode(str, Enum):
+    """Enumeration for chat modes: normal or review mode (when user reviews personal info)."""
+
+    NORMAL = "normal"
+    REVIEW = "review"
+
+
 class UserDataReviewCategory(str, Enum):
     """Enumeration for names of options that user can choose when reviewing their data at the end
     of the registration process. Members of this enum can be treated as strings.

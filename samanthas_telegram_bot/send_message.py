@@ -1,11 +1,40 @@
-from telegram import Update
+# This module contains some send_message operations that are too complex to be included in the main
+# code, and at the same time need to run multiple times.
+
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
+    Update,
+)
+from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.constants import PHRASES, Role
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
-def compose_message_for_reviewing_user_data(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
-    """Composes the message to be shown to the user for them to review their basic info."""
+async def send_message_for_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    """Sends a message to ask for phone number."""
+    await update.effective_chat.send_message(
+        PHRASES["ask_phone"][context.user_data.locale],
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=ReplyKeyboardMarkup(
+            [
+                [
+                    KeyboardButton(
+                        text=PHRASES["share_phone"][context.user_data.locale], request_contact=True
+                    )
+                ]
+            ]
+        ),
+    )
+
+
+async def send_message_for_reviewing_user_data(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> None:
+    """Sends a to the user for them to review their basic info."""
     u_data = context.user_data
 
     if u_data.role == Role.TEACHER:
@@ -43,7 +72,8 @@ def compose_message_for_reviewing_user_data(update: Update, context: CUSTOM_CONT
         slots = u_data.time_slots_for_day[day]
         if slots:
             message += f"{PHRASES['ask_slots_' + str(idx)][locale]}: "
-        for slot in sorted(slots):
+        # sort by first part of slot as a number (otherwise "8:00" will be after "11:00")
+        for slot in sorted(slots, key=lambda s: int(s.split("-")[0])):
             # user must see their slots in their chosen timezone
             hour_from, hour_to = slot.split("-")
             message += (
@@ -67,4 +97,16 @@ def compose_message_for_reviewing_user_data(update: Update, context: CUSTOM_CONT
         + "\n"
     )
 
-    return message
+    buttons = [
+        InlineKeyboardButton(
+            text=PHRASES["review_reaction_" + option][context.user_data.locale],
+            callback_data=option,
+        )
+        for option in ("yes", "no")
+    ]
+
+    await update.effective_chat.send_message(
+        text=message,
+        # each button in a separate list to make them show in one column
+        reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
+    )

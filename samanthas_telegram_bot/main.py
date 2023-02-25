@@ -8,13 +8,10 @@ from telegram import (
     BotCommandScopeAllPrivateChats,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    KeyboardButton,
     MenuButtonCommands,
-    ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
     Update,
 )
-from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -25,7 +22,6 @@ from telegram.ext import (
     filters,
 )
 
-from samanthas_telegram_bot.big_messages import compose_message_for_reviewing_user_data
 from samanthas_telegram_bot.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -37,9 +33,15 @@ from samanthas_telegram_bot.constants import (
     PHRASES,
     STUDENT_AGE_GROUPS_FOR_TEACHER,
     CallbackData,
+    ChatMode,
     Role,
+    UserDataReviewCategory,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.send_message import (
+    send_message_for_phone_number,
+    send_message_for_reviewing_user_data,
+)
 from samanthas_telegram_bot.user_data import UserData
 
 # Enable logging
@@ -75,13 +77,17 @@ class State(IntEnum):
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
     ASK_REVIEW = auto()
     REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
+    REVIEW_REQUESTED_ITEM = auto()
     BYE = auto()
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Starts the conversation and asks the user about the language they want to communicate in."""
 
+    # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
+
+    context.chat_data["mode"] = ChatMode.NORMAL
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
@@ -179,6 +185,10 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
 
     context.user_data.first_name = update.message.text
 
+    if context.chat_data["mode"] == ChatMode.REVIEW:
+        await send_message_for_reviewing_user_data(update, context)
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
     await update.message.reply_text(PHRASES["ask_last_name"][context.user_data.locale])
     return State.ASK_SOURCE
 
@@ -190,6 +200,11 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
         return State.ASK_SOURCE
 
     context.user_data.last_name = update.message.text
+
+    if context.chat_data["mode"] == ChatMode.REVIEW:
+        await send_message_for_reviewing_user_data(update, context)
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
     await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
     return State.CHECK_USERNAME
 
@@ -239,6 +254,7 @@ async def store_username_if_available_ask_phone_or_email(
     await query.answer()
 
     if query.data == "store_username_yes" and username:
+        context.user_data.phone_number = None  # in case it was entered at previous run of the bot
         context.user_data.tg_username = username
         logger.info(f"Username: {username}. Will be stored in the database.")
         await query.edit_message_text(
@@ -250,20 +266,7 @@ async def store_username_if_available_ask_phone_or_email(
     context.user_data.tg_username = None
     await query.delete_message()
 
-    await update.effective_chat.send_message(
-        PHRASES["ask_phone"][context.user_data.locale],
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=ReplyKeyboardMarkup(
-            [
-                [
-                    KeyboardButton(
-                        text=PHRASES["share_phone"][context.user_data.locale], request_contact=True
-                    )
-                ]
-            ]
-        ),
-    )
-
+    await send_message_for_phone_number(update, context)
     return State.ASK_EMAIL
 
 
@@ -289,8 +292,15 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
 
     if update.message.contact:
         context.user_data.phone_number = update.message.contact.phone_number
+        # when I share my contact from my Android phone, it is passed without leading +
+        if not context.user_data.phone_number.startswith("+"):
+            context.user_data.phone_number = f"+{context.user_data.phone_number}"
     else:
         context.user_data.phone_number = text
+
+    if context.chat_data["mode"] == ChatMode.REVIEW:
+        await send_message_for_reviewing_user_data(update, context)
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
         PHRASES["ask_email"][context.user_data.locale],
@@ -315,7 +325,12 @@ async def store_email_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
             reply_markup=ReplyKeyboardRemove(),
         )
         return State.ASK_ROLE
+
     context.user_data.email = email
+
+    if context.chat_data["mode"] == ChatMode.REVIEW:
+        await send_message_for_reviewing_user_data(update, context)
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
         PHRASES["ask_role"][locale],
@@ -698,7 +713,7 @@ async def store_peer_help_ask_another_or_additional_help(
     return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
 
-async def store_teachers_additional_skills_ask_review(
+async def store_teachers_additional_skills_ask_if_review_needed(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores teacher's additional skills and asks to review main user data."""
@@ -708,24 +723,14 @@ async def store_teachers_additional_skills_ask_review(
     if context.user_data.role == Role.TEACHER:
         context.user_data.teacher_additional_skills_comment = update.message.text
 
-    buttons = [
-        InlineKeyboardButton(
-            text=PHRASES["review_reaction_" + option][context.user_data.locale],
-            callback_data=option,
-        )
-        for option in ("yes", "no")
-    ]
-
-    await update.effective_chat.send_message(
-        text=compose_message_for_reviewing_user_data(update, context),
-        # each button in a separate list to make them show in one column
-        reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
-    )
+    await send_message_for_reviewing_user_data(update, context)
     return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
 
-async def review_menu_or_ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Lets user review their basic info, then asks for final comment."""
+async def check_if_review_needed_give_review_menu_or_ask_final_comment(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If the user requested a review, gives a review menu. Otherwise, asks for final comment."""
     query = update.callback_query
     await query.answer()
 
@@ -737,8 +742,55 @@ async def review_menu_or_ask_final_comment(update: Update, context: CUSTOM_CONTE
         )
         return State.BYE
     else:
+        # Switch into review mode to let other callbacks know that they should return user
+        # back to the review callback instead of moving him normally along the conversation line
+        context.chat_data["mode"] = ChatMode.REVIEW
         await CQReplySender.ask_review_category(context, query)
-        return State.BYE  # TODO
+        return State.REVIEW_REQUESTED_ITEM
+
+
+async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Reads callback data, asks a corresponding question about the item they want to review,
+    redirects to the corresponding state of the conversation.
+
+    Note: since chat is in review mode, the user will return straight back to review menu after
+    they give amended information "upstream" in the conversation.
+    """
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+    locale = context.user_data.locale
+
+    if data == UserDataReviewCategory.FIRST_NAME:
+        await query.edit_message_text(
+            PHRASES["ask_first_name"][locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        # Return state that is right after asking for the first name.
+        # This state corresponds to the callback where the first name is stored.
+        # This callback contains a check for a chat mode and will return the user
+        # back to the review if chat is in review mode.
+        # Same for other cases below.
+        return State.ASK_LAST_NAME
+    elif data == UserDataReviewCategory.LAST_NAME:
+        await query.edit_message_text(
+            PHRASES["ask_last_name"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return State.ASK_SOURCE
+    elif data == UserDataReviewCategory.PHONE_NUMBER:
+        # no need to check user_data here since the user couldn't have selected this option
+        # if it wasn't there.
+        # edit_message_text not possible here because of a button for sharing phone number
+        await send_message_for_phone_number(update, context)
+        return State.ASK_EMAIL
+    elif data == UserDataReviewCategory.EMAIL:
+        await query.edit_message_text(
+            PHRASES["ask_email"][locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return State.ASK_ROLE
 
 
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -901,12 +953,13 @@ def main() -> None:
             State.ASK_REVIEW: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
-                    store_teachers_additional_skills_ask_review,
+                    store_teachers_additional_skills_ask_if_review_needed,
                 )
             ],
             State.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
-                CallbackQueryHandler(review_menu_or_ask_final_comment)
+                CallbackQueryHandler(check_if_review_needed_give_review_menu_or_ask_final_comment)
             ],
+            State.REVIEW_REQUESTED_ITEM: [CallbackQueryHandler(review_requested_item)],
             State.BYE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, store_comment_end_conversation)
             ],
