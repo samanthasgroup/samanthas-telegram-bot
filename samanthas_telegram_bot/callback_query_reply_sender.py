@@ -215,7 +215,6 @@ class CallbackQueryReplySender:
         """Asks a user to choose language level(s)."""
 
         # if the user has already chosen one level, add "Next" button
-        # TODO this button makes the levels go up, user might mistap
         done_button = None
 
         if show_done_button:
@@ -243,7 +242,7 @@ class CallbackQueryReplySender:
                 message_text=text,
                 buttons=level_buttons,
                 buttons_per_row=3,
-                bottom_row_button=done_button,
+                top_row_button=done_button,
                 parse_mode=None,
             )
         )
@@ -494,6 +493,7 @@ class CallbackQueryReplySender:
         buttons: list[InlineKeyboardButton],
         buttons_per_row,
         bottom_row_button: InlineKeyboardButton = None,
+        top_row_button: InlineKeyboardButton = None,
         parse_mode: Union[ParseMode, None] = ParseMode.MARKDOWN_V2,
     ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
         """Makes a message with an inline keyboard, the number of rows in which depends on how many
@@ -509,6 +509,10 @@ class CallbackQueryReplySender:
             number_of_rows = 1
 
         rows = []
+
+        if top_row_button:
+            rows.append([top_row_button])
+
         copied_buttons = buttons[:]
         for _ in range(number_of_rows):
             rows += [
