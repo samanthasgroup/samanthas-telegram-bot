@@ -737,6 +737,7 @@ async def review_menu_or_ask_final_comment(update: Update, context: CUSTOM_CONTE
         )
         return State.BYE
     else:
+        await CQReplySender.ask_review_category(context, query)
         return State.BYE  # TODO
 
 

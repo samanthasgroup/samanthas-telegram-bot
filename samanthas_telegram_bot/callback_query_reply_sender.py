@@ -15,6 +15,7 @@ from samanthas_telegram_bot.constants import (
     UTC_TIME_SLOTS,
     CallbackData,
     Role,
+    UserDataReviewCategory,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
@@ -244,6 +245,58 @@ class CallbackQueryReplySender:
                 buttons_per_row=3,
                 bottom_row_button=done_button,
                 parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_review_category(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks what info the user wants to change during the review."""
+
+        locale = context.user_data.locale
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"review_option_{option}"][locale], callback_data=option
+            )
+            for option in (
+                UserDataReviewCategory.FIRST_NAME.value,
+                UserDataReviewCategory.LAST_NAME.value,
+                UserDataReviewCategory.EMAIL.value,
+                UserDataReviewCategory.TIMEZONE.value,
+                UserDataReviewCategory.AVAILABILITY.value,
+                UserDataReviewCategory.LANGUAGE_AND_LEVEL.value,
+                UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE.value,
+            )
+        ]
+
+        if context.user_data.phone_number:
+            buttons.append(
+                InlineKeyboardButton(
+                    text=PHRASES[f"review_option_{UserDataReviewCategory.PHONE_NUMBER.value}"][
+                        locale
+                    ],
+                    callback_data=UserDataReviewCategory.PHONE_NUMBER,
+                )
+            )
+
+        if context.user_data.role == Role.STUDENT:
+            buttons.append(
+                InlineKeyboardButton(
+                    text=PHRASES[
+                        f"review_option_{UserDataReviewCategory.STUDENT_AGE_GROUP.value}"
+                    ][locale],
+                    callback_data=UserDataReviewCategory.STUDENT_AGE_GROUP,
+                )
+            )
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["review_ask_category"][locale],
+                buttons=buttons,
+                buttons_per_row=1,
             )
         )
 

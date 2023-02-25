@@ -15,6 +15,22 @@ class CallbackData(str, Enum):
     YES = "yes"
 
 
+class UserDataReviewCategory(str, Enum):
+    """Enumeration for names of options that user can choose when reviewing their data at the end
+    of the registration process. Members of this enum can be treated as strings.
+    """
+
+    FIRST_NAME = "first_name"
+    LAST_NAME = "last_name"
+    EMAIL = "email"
+    PHONE_NUMBER = "phone_number"
+    STUDENT_AGE_GROUP = "student_age_group"
+    TIMEZONE = "timezone"
+    AVAILABILITY = "availability"
+    LANGUAGE_AND_LEVEL = "language_and_level"
+    CLASS_COMMUNICATION_LANGUAGE = "class_communication_language"
+
+
 class Role(str, Enum):
     """Role of a person. Members of this enum can be treated as strings."""
 

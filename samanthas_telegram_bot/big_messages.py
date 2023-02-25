@@ -27,7 +27,7 @@ def compose_message_for_reviewing_user_data(update: Update, context: CUSTOM_CONT
     if context.user_data.tg_username:
         message += f"{PHRASES['review_username'][locale]} (@{u_data.tg_username})\n"
     if context.user_data.phone_number:
-        message += f"{PHRASES['review_phone_number'][locale]} ({u_data.phone_number})\n"
+        message += f"{PHRASES['review_phone_number'][locale]}: {u_data.phone_number}\n"
 
     if context.user_data.utc_offset > 0:
         message += f"{PHRASES['review_timezone'][locale]}: UTC+{u_data.utc_offset}\n"
