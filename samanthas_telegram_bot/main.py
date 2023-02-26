@@ -611,7 +611,7 @@ async def assessment_store_answer_ask_question(
     data = query.data
 
     if context.chat_data["current_question_idx"] == len(questions) - 1:
-        # TODO message
+        # TODO store and send message
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     if data in ("1", "2", "3", "4", CallbackData.DONT_KNOW):
