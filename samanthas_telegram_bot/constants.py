@@ -1,5 +1,6 @@
 import re
 from enum import Enum
+from pathlib import Path
 
 from data.read_phrases import read_phrases
 
@@ -10,8 +11,10 @@ class CallbackData(str, Enum):
     """
 
     DONE = "done"
+    DONT_KNOW = "don't know"
     NEXT = "next"
     NO = "no"
+    OK = "ok"
     YES = "yes"
 
 
@@ -45,6 +48,9 @@ class Role(str, Enum):
     TEACHER = "teacher"
 
 
+# for some strange reason another ".parent" doesn't work, but ".." does
+DATA_DIR = Path(__name__).parent / ".." / "data"
+
 DAY_OF_WEEK_FOR_INDEX = {
     0: "Monday",
     1: "Tuesday",
@@ -62,8 +68,9 @@ LANGUAGE_CODES = ("en", "fr", "de", "es", "it", "pl", "cz", "se")
 LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1")
 LOCALES = ("ua", "en", "ru")
 PHONE_PATTERN = re.compile(r"^(\+)|(00)[1-9][0-9]{1,14}$")
-PHRASES = read_phrases()
+PHRASES = read_phrases()  # TODO move function to this package
 # Teacher-oriented age groups are in here because they are used in several modules
+# TODO so will be the student-oriented ones, move them here as well
 STUDENT_AGE_GROUPS_FOR_TEACHER = {
     "children": "6-11",
     "adolescents": "12-17",

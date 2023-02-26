@@ -12,6 +12,7 @@ from telegram import (
     ReplyKeyboardRemove,
     Update,
 )
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -22,6 +23,7 @@ from telegram.ext import (
     filters,
 )
 
+from samanthas_telegram_bot.assessment import get_questions
 from samanthas_telegram_bot.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -68,7 +70,8 @@ class State(IntEnum):
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
     ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
-    ASK_TEACHING_EXPERIENCE_OR_START_TEST = auto()
+    ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT = auto()
+    ASK_ASSESSMENT_QUESTION = auto()
     ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
@@ -504,7 +507,7 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE_OR_START_TEST
+        return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
 
     context.user_data.levels_for_teaching_language[query.data] = []
 
@@ -543,7 +546,7 @@ async def store_level_ask_level_for_next_language_or_communication_language(
             context,
             query,
         )
-        return State.ASK_TEACHING_EXPERIENCE_OR_START_TEST
+        return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
 
     # Ask the teacher for another level of the same language
     await CQReplySender.ask_language_levels(context, query)
@@ -569,18 +572,86 @@ async def store_class_communication_language_start_test_or_ask_teaching_experien
 
     logger.info(context.user_data.communication_language_in_class)
 
+    locale = context.user_data.locale
+
     if context.user_data.role == Role.STUDENT:
+        context.chat_data["current_question_idx"] = 0
         # TODO start test instead of asking for final comment, make sure student gets to review too
         await query.edit_message_text(
-            PHRASES["ask_final_comment"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
+            PHRASES["ask_student_start_assessment"][locale],
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text=PHRASES["assessment_option_start"][locale],
+                            callback_data=CallbackData.OK,
+                        )
+                    ]
+                ]
+            ),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
-        return State.BYE
+        return State.ASK_ASSESSMENT_QUESTION
     else:
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="ask_teacher_experience"
         )
         return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY
+
+
+async def assessment_store_answer_ask_question(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores answer to the question (unless this is the beginning of the test), asks next one."""
+    questions = get_questions("en", "A1")  # TODO for now
+
+    query = update.callback_query
+    await query.answer()
+
+    data = query.data
+
+    if context.chat_data["current_question_idx"] == len(questions) - 1:
+        # TODO message
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
+    if data in ("1", "2", "3", "4", CallbackData.DONT_KNOW):
+        # TODO store
+        context.chat_data["current_question_idx"] += 1
+
+    await query.edit_message_text(
+        text=questions[context.chat_data["current_question_idx"]]["question"],
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        text=questions[context.chat_data["current_question_idx"]]["option_1"],
+                        callback_data="1",
+                    ),
+                    InlineKeyboardButton(
+                        text=questions[context.chat_data["current_question_idx"]]["option_2"],
+                        callback_data="2",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=questions[context.chat_data["current_question_idx"]]["option_3"],
+                        callback_data="3",
+                    ),
+                    InlineKeyboardButton(
+                        text=questions[context.chat_data["current_question_idx"]]["option_4"],
+                        callback_data="4",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
+                        callback_data=CallbackData.DONT_KNOW,
+                    )
+                ],
+            ]
+        ),
+    )
+    return State.ASK_ASSESSMENT_QUESTION
 
 
 async def store_prior_teaching_experience_ask_groups_or_frequency(
@@ -842,7 +913,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
     elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE_OR_START_TEST
+        return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
     else:
         raise NotImplementedError(f"Cannot handle review of {data}")
 
@@ -981,10 +1052,13 @@ def main() -> None:
                     store_level_ask_level_for_next_language_or_communication_language
                 )
             ],
-            State.ASK_TEACHING_EXPERIENCE_OR_START_TEST: [
+            State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
                     store_class_communication_language_start_test_or_ask_teaching_experience
                 )
+            ],
+            State.ASK_ASSESSMENT_QUESTION: [
+                CallbackQueryHandler(assessment_store_answer_ask_question)
             ],
             State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY: [
                 CallbackQueryHandler(store_prior_teaching_experience_ask_groups_or_frequency)
