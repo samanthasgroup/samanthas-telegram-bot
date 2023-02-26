@@ -575,7 +575,10 @@ async def store_class_communication_language_start_test_or_ask_teaching_experien
     locale = context.user_data.locale
 
     if context.user_data.role == Role.STUDENT:
+        # prepare questions and set index to 0
+        context.chat_data["assessment_questions"] = get_questions("en", "A1")  # TODO for now
         context.chat_data["current_question_idx"] = 0
+
         # TODO start test instead of asking for final comment, make sure student gets to review too
         await query.edit_message_text(
             PHRASES["ask_student_start_assessment"][locale],
@@ -603,14 +606,17 @@ async def assessment_store_answer_ask_question(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores answer to the question (unless this is the beginning of the test), asks next one."""
-    questions = get_questions("en", "A1")  # TODO for now
 
     query = update.callback_query
     await query.answer()
 
     data = query.data
+    # TODO store number of correct answers? How to determine level?
 
-    if context.chat_data["current_question_idx"] == len(questions) - 1:
+    if (
+        context.chat_data["current_question_idx"]
+        == len(context.chat_data["assessment_questions"]) - 1
+    ):
         # TODO store and send message
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -618,39 +624,7 @@ async def assessment_store_answer_ask_question(
         # TODO store
         context.chat_data["current_question_idx"] += 1
 
-    await query.edit_message_text(
-        text=questions[context.chat_data["current_question_idx"]]["question"],
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text=questions[context.chat_data["current_question_idx"]]["option_1"],
-                        callback_data="1",
-                    ),
-                    InlineKeyboardButton(
-                        text=questions[context.chat_data["current_question_idx"]]["option_2"],
-                        callback_data="2",
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=questions[context.chat_data["current_question_idx"]]["option_3"],
-                        callback_data="3",
-                    ),
-                    InlineKeyboardButton(
-                        text=questions[context.chat_data["current_question_idx"]]["option_4"],
-                        callback_data="4",
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
-                        callback_data=CallbackData.DONT_KNOW,
-                    )
-                ],
-            ]
-        ),
-    )
+    await CQReplySender.asks_next_assessment_question(context, query)
     return State.ASK_ASSESSMENT_QUESTION
 
 

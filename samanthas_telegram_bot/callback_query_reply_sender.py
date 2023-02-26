@@ -35,6 +35,36 @@ class CallbackQueryReplySender:
     """
 
     @classmethod
+    async def asks_next_assessment_question(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks user the next assessment question."""
+        questions = context.chat_data["assessment_questions"]
+
+        buttons = [
+            InlineKeyboardButton(
+                text=questions[context.chat_data["current_question_idx"]][f"option_{option_idx}"],
+                callback_data=option_idx,
+            )
+            for option_idx in ("1", "2", "3", "4")  # TODO different tests have different amount
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=questions[context.chat_data["current_question_idx"]]["question"],
+                buttons=buttons,
+                buttons_per_row=2,  # TODO 4 or variable number
+                bottom_row_button=InlineKeyboardButton(
+                    text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
+                    callback_data=CallbackData.DONT_KNOW,
+                ),
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
     async def ask_class_communication_languages(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
