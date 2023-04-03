@@ -67,7 +67,6 @@ EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 LANGUAGE_CODES = ("en", "fr", "de", "es", "it", "pl", "cz", "se")
 LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1")
 LOCALES = ("ua", "en", "ru")
-PHONE_PATTERN = re.compile(r"^(\+)|(00)[1-9][0-9]{1,14}$")
 PHRASES = read_phrases()  # TODO move function to this package
 # Teacher-oriented age groups are in here because they are used in several modules
 # TODO so will be the student-oriented ones, move them here as well

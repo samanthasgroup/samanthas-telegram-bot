@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from enum import IntEnum, auto
 
+import phonenumbers
 from telegram import (
     BotCommandScopeAllPrivateChats,
     InlineKeyboardButton,
@@ -31,7 +32,6 @@ from samanthas_telegram_bot.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
     LOCALES,
-    PHONE_PATTERN,
     PHRASES,
     STUDENT_AGE_GROUPS_FOR_TEACHER,
     CallbackData,
@@ -281,27 +281,29 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     if update.message is None:
         return State.ASK_EMAIL
 
-    # just in case: deleting spaces and hyphens
-    text = (
-        update.message.text.replace("-", "").replace(" ", "").strip()
-        if update.message.text
-        else ""
+    # 1. Read phone number
+    phone_number_to_parse = (
+        update.message.contact.phone_number if update.message.contact else update.message.text
     )
 
-    if not (update.message.contact or PHONE_PATTERN.match(text)):
+    # 2. Parse phone number
+    try:
+        parsed_phone_number = phonenumbers.parse(phone_number_to_parse)
+    except phonenumbers.phonenumberutil.NumberParseException:
+        logger.info(f"Could not parse phone number {phone_number_to_parse}")
+        parsed_phone_number = None
+
+    # 3. Check validity and return user to same state if phone number not valid
+    if parsed_phone_number and phonenumbers.is_valid_number(parsed_phone_number):
+        context.user_data.phone_number = phonenumbers.format_number(
+            parsed_phone_number, phonenumbers.PhoneNumberFormat.E164
+        )
+    else:
         await update.message.reply_text(
             PHRASES["invalid_phone_number"][context.user_data.locale],
             reply_markup=ReplyKeyboardRemove(),
         )
         return State.ASK_EMAIL
-
-    if update.message.contact:
-        context.user_data.phone_number = update.message.contact.phone_number
-        # when I share my contact from my Android phone, it is passed without leading +
-        if not context.user_data.phone_number.startswith("+"):
-            context.user_data.phone_number = f"+{context.user_data.phone_number}"
-    else:
-        context.user_data.phone_number = text
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await update.message.delete()
