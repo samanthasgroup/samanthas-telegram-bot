@@ -24,6 +24,7 @@ from telegram.ext import (
     filters,
 )
 
+from samanthas_telegram_bot.api_queries import chat_id_is_registered
 from samanthas_telegram_bot.assessment import get_questions
 from samanthas_telegram_bot.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -57,7 +58,8 @@ class State(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
     IS_REGISTERED = auto()
-    ASK_FIRST_NAME_OR_BYE = auto()
+    CHECK_CHAT_ID_ASK_FIRST_NAME = auto()
+    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME = auto()
     ASK_LAST_NAME = auto()
     ASK_SOURCE = auto()
     CHECK_USERNAME = auto()
@@ -144,13 +146,21 @@ async def store_interface_lang_ask_if_already_registered(
         question_phrase_internal_id="ask_already_with_us",
     )
 
-    return State.ASK_FIRST_NAME_OR_BYE
+    return State.CHECK_CHAT_ID_ASK_FIRST_NAME
 
 
-async def redirect_to_coordinator_if_registered_ask_first_name(
+async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If user is already registered, redirect to coordinator. Otherwise, ask for first name."""
+    """Checks user's answer if they are registered, checks chat ID, asks for first name,
+
+    If user is already registered (as per their answer), redirects to coordinator.
+    Otherwise, checks if Telegram chat ID is already present in the back end.
+    If it is, asks the user if they still want to proceed with registration.
+
+    If the user said they were not registered and chat ID was not found,
+    asks for first name.
+    """
 
     query = update.callback_query
     await query.answer()
@@ -162,8 +172,35 @@ async def redirect_to_coordinator_if_registered_ask_first_name(
         )
         return ConversationHandler.END
 
+    if await chat_id_is_registered(chat_id=update.effective_chat.id, logger=logger):
+        await CQReplySender.ask_yes_no(
+            context, query, question_phrase_internal_id="reply_chat_id_found"
+        )
+        return State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME
+
     await query.edit_message_text(
-        # the message is the same for it to look like an interactive menu
+        PHRASES["ask_first_name"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
+    )
+    return State.ASK_LAST_NAME
+
+
+async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If user does not want to register another person, says bye. Otherwise, asks first name."""
+
+    query = update.callback_query
+    await query.answer()
+
+    if query.data == CallbackData.NO:
+        await query.edit_message_text(
+            PHRASES["bye_wait_for_message"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return ConversationHandler.END
+
+    await query.edit_message_text(
         PHRASES["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
@@ -984,8 +1021,15 @@ def main() -> None:
             State.IS_REGISTERED: [
                 CallbackQueryHandler(store_interface_lang_ask_if_already_registered)
             ],
-            State.ASK_FIRST_NAME_OR_BYE: [
-                CallbackQueryHandler(redirect_to_coordinator_if_registered_ask_first_name)
+            State.CHECK_CHAT_ID_ASK_FIRST_NAME: [
+                CallbackQueryHandler(
+                    redirect_to_coordinator_if_registered_check_chat_id_ask_first_name
+                )
+            ],
+            State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME: [
+                CallbackQueryHandler(
+                    say_bye_if_does_not_want_to_register_another_or_ask_first_name
+                )
             ],
             State.ASK_LAST_NAME: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, store_first_name_ask_last_name)
