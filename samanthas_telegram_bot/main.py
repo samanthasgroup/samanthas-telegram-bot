@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from enum import IntEnum, auto
 
-import phonenumbers
+import phonenumbers  # TODO 00
 from telegram import (
     BotCommandScopeAllPrivateChats,
     InlineKeyboardButton,
