@@ -24,7 +24,10 @@ from telegram.ext import (
     filters,
 )
 
-from samanthas_telegram_bot.api_queries import chat_id_is_registered
+from samanthas_telegram_bot.api_queries import (
+    chat_id_is_registered,
+    person_with_first_name_last_name_email_exists_in_database,
+)
 from samanthas_telegram_bot.assessment import get_questions
 from samanthas_telegram_bot.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -359,8 +362,14 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     return State.ASK_ROLE
 
 
-async def store_email_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the email and asks whether the user wants to be a student or a teacher."""
+async def store_email_check_existence_ask_role(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores the email, checks existence and asks whether user wants to be student or teacher.
+
+    Stores the email. If the user with these contact details exists, redirects to goodbye.
+    Otherwise, asks whether the user wants to be a student or a teacher.
+    """
 
     if update.message is None:
         return State.ASK_ROLE
@@ -376,6 +385,16 @@ async def store_email_ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
         return State.ASK_ROLE
 
     context.user_data.email = email
+
+    # terminate conversation if the person with these personal data already exists
+    if await person_with_first_name_last_name_email_exists_in_database(
+        first_name=context.user_data.first_name,
+        last_name=context.user_data.last_name,
+        email=context.user_data.email,
+        logger=logger,
+    ):
+        await update.message.reply_text(PHRASES["user_already_exists"][locale])
+        return ConversationHandler.END
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await update.message.delete()
@@ -1053,7 +1072,9 @@ def main() -> None:
                 )
             ],
             State.ASK_ROLE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, store_email_ask_role)
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND, store_email_check_existence_ask_role
+                )
             ],
             State.ASK_AGE: [CallbackQueryHandler(store_role_ask_age)],
             State.ASK_TIMEZONE: [CallbackQueryHandler(store_age_ask_timezone)],
