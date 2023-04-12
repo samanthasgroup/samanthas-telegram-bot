@@ -330,6 +330,34 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_student_age(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a student to choose their age group."""
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=f"{d['age_from']}-{d['age_to']}",
+                callback_data=f"{d['age_from']}-{d['age_to']}",  # can't just leave this arg out
+            )
+            for d in context.chat_data["age_ranges"]["student"]
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=(
+                    f"{PHRASES['student_ukraine_disclaimer'][locale]}\n\n"
+                    f"{PHRASES['ask_age'][locale]}"
+                ),
+                buttons=buttons,
+                buttons_per_row=4,
+            )
+        )
+
+    @classmethod
     async def ask_student_age_groups_for_teacher(
         cls,
         context: CUSTOM_CONTEXT_TYPES,

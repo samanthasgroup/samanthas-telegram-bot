@@ -26,6 +26,7 @@ from telegram.ext import (
 
 from samanthas_telegram_bot.api_queries import (
     chat_id_is_registered,
+    get_age_ranges,
     person_with_first_name_last_name_email_exists_in_database,
 )
 from samanthas_telegram_bot.assessment import get_questions
@@ -95,6 +96,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
+    context.chat_data["age_ranges"] = await get_age_ranges(logger=logger)
     context.chat_data["mode"] = ChatMode.NORMAL
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
@@ -423,7 +425,6 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
 
     query = update.callback_query
     await query.answer()
-    locale = context.user_data.locale
 
     context.user_data.role = query.data
 
@@ -434,23 +435,7 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
             question_phrase_internal_id="ask_if_18",
         )
     else:
-        student_ages = [
-            ["6-8", "9-11", "12-14", "15-17"],
-            ["18-20", "21-25", "26-30", "31-35"],
-            ["36-40", "41-45", "46-50", "51-55"],
-            ["56-60", "61-65", "66-70", "71-75"],
-            ["76-80", "81-65", "86-90", "91-95"],
-        ]
-
-        rows_of_buttons = [
-            [InlineKeyboardButton(text, callback_data=text) for text in row]
-            for row in student_ages
-        ]
-
-        await query.edit_message_text(
-            f"{PHRASES['student_ukraine_disclaimer'][locale]}\n\n{PHRASES['ask_age'][locale]}",
-            reply_markup=InlineKeyboardMarkup(rows_of_buttons),
-        )
+        await CQReplySender.ask_student_age(context, query)
 
     return State.ASK_TIMEZONE
 
