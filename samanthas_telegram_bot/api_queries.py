@@ -17,6 +17,6 @@ async def person_with_first_name_last_name_email_exists_in_database(
 ) -> bool:
     """Checks whether user with given first and last name and email already exists in database."""
     logger.info(
-        f"Checking with the backend if user {first_name} {last_name} ({email}) already exists."
+        f"Checking with the backend if user {first_name} {last_name} ({email}) already exists..."
     )
     return False

@@ -423,6 +423,7 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
 
     query = update.callback_query
     await query.answer()
+    locale = context.user_data.locale
 
     context.user_data.role = query.data
 
@@ -447,7 +448,7 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
         ]
 
         await query.edit_message_text(
-            PHRASES["ask_age"][context.user_data.locale],
+            f"{PHRASES['student_ukraine_disclaimer'][locale]}\n\n{PHRASES['ask_age'][locale]}",
             reply_markup=InlineKeyboardMarkup(rows_of_buttons),
         )
 
