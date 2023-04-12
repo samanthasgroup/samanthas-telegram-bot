@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from enum import IntEnum, auto
 
-import phonenumbers  # TODO 00
+import phonenumbers
 from telegram import (
     BotCommandScopeAllPrivateChats,
     InlineKeyboardButton,
@@ -319,13 +319,17 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return State.ASK_EMAIL
 
     # 1. Read phone number
+    # (hyphens, spaces, parentheses are no problem for `phonenumbers`, so no pre-processing needed)
     phone_number_to_parse = (
         update.message.contact.phone_number if update.message.contact else update.message.text
     )
 
     # 2. Parse phone number
     try:
-        parsed_phone_number = phonenumbers.parse(phone_number_to_parse)
+        # Specifying a European region (Ireland in this case) will allow for both
+        # "+<country_code><number>" and "00<country_code><number>" to be parsed correctly.
+        # Any European region would work (GB, DE, etc.).  Ireland is used for sentimental reasons.
+        parsed_phone_number = phonenumbers.parse(number=phone_number_to_parse, region="IE")
     except phonenumbers.phonenumberutil.NumberParseException:
         logger.info(f"Could not parse phone number {phone_number_to_parse}")
         parsed_phone_number = None

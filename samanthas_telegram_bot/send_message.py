@@ -18,6 +18,7 @@ async def send_message_for_phone_number(update: Update, context: CUSTOM_CONTEXT_
     """Sends a message to ask for phone number."""
     await update.effective_chat.send_message(
         PHRASES["ask_phone"][context.user_data.locale],
+        disable_web_page_preview=True,  # the message contains link to site with country codes
         parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=ReplyKeyboardMarkup(
             [
