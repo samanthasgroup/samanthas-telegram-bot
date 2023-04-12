@@ -1,4 +1,4 @@
-# TODO for now this module only contains dummy functions
+# FIXME for now this module only contains dummy functions
 #  for the conversation flow to work.
 import logging
 
