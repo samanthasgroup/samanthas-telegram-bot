@@ -480,9 +480,9 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
     """
 
     query = update.callback_query
-    await query.answer()
 
     if re.match(r"^[+-]?\d{1,2}$", query.data):  # this is a UTC offset
+        await query.answer()
         context.user_data.utc_offset = int(query.data)
 
         if context.chat_data["mode"] == ChatMode.REVIEW:
@@ -498,7 +498,17 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
     elif query.data == CallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
             logger.info(context.user_data.time_slots_for_day)
-            # TODO what if the user chose no slots at all?
+
+            if not any(context.user_data.time_slots_for_day.values()):
+                await query.answer(
+                    PHRASES["no_slots_selected"][context.user_data.locale], show_alert=True
+                )
+                logger.info("User has selected no slots at all")
+                context.chat_data["day_idx"] = 0
+                await CQReplySender.ask_time_slot(context, query)
+                return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+
+            await query.answer()
 
             if context.chat_data["mode"] == ChatMode.REVIEW:
                 await query.delete_message()
@@ -515,6 +525,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
         context.chat_data["day_idx"] += 1
 
+    await query.answer()
     await CQReplySender.ask_time_slot(context, query)
 
     return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
