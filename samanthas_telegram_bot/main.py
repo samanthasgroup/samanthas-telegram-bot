@@ -36,6 +36,7 @@ from samanthas_telegram_bot.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
     LOCALES,
+    NON_TEACHING_HELP_TYPES,
     PHRASES,
     STUDENT_AGE_GROUPS_FOR_TEACHER,
     CallbackData,
@@ -82,7 +83,8 @@ class State(IntEnum):
     ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
-    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS = auto()
+    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
+    NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT = auto()
     ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
     ASK_REVIEW = auto()
@@ -871,10 +873,10 @@ async def store_frequency_ask_student_age_groups(
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
 
-    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS
+    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
 
-async def store_student_age_group_ask_another_or_help_for_students(
+async def store_student_age_group_ask_another_or_non_teaching_help(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores preferred age group of students, asks another.  If the teacher is done, ask about
@@ -894,10 +896,36 @@ async def store_student_age_group_ask_another_or_help_for_students(
         return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
-    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS
+    return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
 
-async def store_help_for_students_ask_peer_help_or_additional_help(
+async def store_non_teaching_help_ask_another_or_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    query = update.callback_query
+    await query.answer()
+    data = query.data
+
+    # protection against coding error
+    if data not in NON_TEACHING_HELP_TYPES + [CallbackData.DONE]:
+        raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
+
+    if context.user_data.non_teaching_help_types is None:
+        context.user_data.non_teaching_help_types = []
+
+    # teacher pressed "Done" or chose all types of help
+    if data == CallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
+        NON_TEACHING_HELP_TYPES
+    ):
+        await CQReplySender.ask_teacher_peer_help(context, query)
+        return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
+
+    context.user_data.non_teaching_help_types.append(data)
+    await CQReplySender.ask_non_teaching_help(context, query)
+    return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
+
+
+async def store_non_teaching_help_ask_peer_help_or_additional_help(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores information about additional help for students. If the teacher has teaching
@@ -1240,11 +1268,14 @@ def main() -> None:
             State.PREFERRED_STUDENT_AGE_GROUPS_START: [
                 CallbackQueryHandler(store_frequency_ask_student_age_groups)
             ],
-            State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS: [
-                CallbackQueryHandler(store_student_age_group_ask_another_or_help_for_students)
+            State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
+                CallbackQueryHandler(store_student_age_group_ask_another_or_non_teaching_help)
+            ],
+            State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT: [
+                CallbackQueryHandler(store_non_teaching_help_ask_another_or_additional_help)
             ],
             State.ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
-                CallbackQueryHandler(store_help_for_students_ask_peer_help_or_additional_help)
+                CallbackQueryHandler(store_non_teaching_help_ask_peer_help_or_additional_help)
             ],
             State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
                 CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)

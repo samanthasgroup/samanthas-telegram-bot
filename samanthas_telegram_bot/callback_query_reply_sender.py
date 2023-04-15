@@ -9,6 +9,7 @@ from samanthas_telegram_bot.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
     LEVELS,
+    NON_TEACHING_HELP_TYPES,
     PHRASES,
     STUDENT_AGE_GROUPS_FOR_TEACHER,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
@@ -166,22 +167,32 @@ class CallbackQueryReplySender:
         """
         locale = context.user_data.locale
 
+        # These options match IDs in data migration in django_webapps.  We can leave it like this
+        # for now, because bot phrases have to be stored in bot anyway, which means the names
+        # also need to be controlled manually even if the types of non-teaching help are received
+        # from the back-end.  To completely eliminate the need for manual editing in two places,
+        # the bot should receive the bot phrases from there too.
         buttons = [
             InlineKeyboardButton(
-                text=PHRASES[f"option_teacher_help_{option}"][locale],
+                text=PHRASES[f"option_non_teaching_help_{option}"][locale],
                 callback_data=option,
             )
-            # FIXME
-            for option in ("cv", "speaking_club", "cv_and_speaking_club")
+            for option in NON_TEACHING_HELP_TYPES
+            if option not in context.user_data.non_teaching_help_types
         ]
 
-        # FIXME "none" for teacher
+        # "Done" button must be there right from the start because the teacher may not be willing
+        # to provide any kind help or a student may not need any help
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=PHRASES[f"ask_non_teaching_help_{context.user_data.role}"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
                 parse_mode=None,
+                bottom_row_button=InlineKeyboardButton(
+                    text=PHRASES["option_non_teaching_help_done"][locale],
+                    callback_data=CallbackData.NONE,
+                ),
             )
         )
 
@@ -212,9 +223,8 @@ class CallbackQueryReplySender:
             if option not in context.chat_data["peer_help_callback_data"]
         ]
 
-        # the done button must be there right from the start because the teacher may not be willing
+        # "Done" button must be there right from the start because the teacher may not be willing
         # to provide any kind of peer help
-
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=PHRASES["ask_teacher_peer_help"][locale],

@@ -34,7 +34,11 @@ class UserData:
     time_slots_for_day: dict = None
     levels_for_teaching_language: dict[str, list[str]] = None
     communication_language_in_class: Literal["en", "ru", "ua"] = None
+    # This will be a list as opposed to peer help that is a bunch of boolean flags, because IDs of
+    # help types are fixed between back-end and bot anyway (they are used for bot phrases).
+    non_teaching_help_types: list[str] = None
     comment: str = None
+
     # role-specific attributes:
     student_age_from: int = None
     student_age_to: int = None
@@ -48,7 +52,7 @@ class UserData:
     teacher_number_of_groups: int = None
     teacher_class_frequency: int = None
     teacher_age_groups_of_students: list = None
-    teacher_can_help_with_cv: bool = None
+    teacher_can_help_with_cv: bool = None  # FIXME remove
     teacher_can_help_with_speaking_club: bool = None
     teacher_peer_help = TeacherPeerHelp()
     teacher_additional_skills: list = None

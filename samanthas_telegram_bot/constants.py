@@ -14,6 +14,7 @@ class CallbackData(str, Enum):
     DONT_KNOW = "don't know"
     NEXT = "next"
     NO = "no"
+    NONE = "none"
     OK = "ok"
     YES = "yes"
 
@@ -67,9 +68,26 @@ EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 LANGUAGE_CODES = ("en", "fr", "de", "es", "it", "pl", "cz", "se")
 LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1")
 LOCALES = ("ua", "en", "ru")
+
+# these could come from the backend, but that would mean the bot phrases will have to be stored
+# in the backend too (since these types are used to identify the phrases)
+NON_TEACHING_HELP_TYPES = (
+    "cv_write_edit",
+    "cv_proofread",
+    "mock_interview",
+    "job_search",
+    "career_strategy",
+    "linkedin",
+    "career_switch",
+    "portfolio",
+    "uni_abroad",
+    "translate_docs",
+)
+
 PHRASES = read_phrases()  # TODO move function to this package
+
 # Teacher-oriented age groups are in here because they are used in several modules
-# TODO so will be the student-oriented ones, move them here as well
+# FIXME everything should come from the backend?
 STUDENT_AGE_GROUPS_FOR_TEACHER = {
     "children": "6-11",
     "adolescents": "12-17",
