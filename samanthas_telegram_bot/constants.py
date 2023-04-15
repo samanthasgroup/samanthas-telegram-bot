@@ -14,7 +14,6 @@ class CallbackData(str, Enum):
     DONT_KNOW = "don't know"
     NEXT = "next"
     NO = "no"
-    NONE = "none"
     OK = "ok"
     YES = "yes"
 
