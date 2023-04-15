@@ -104,8 +104,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
-    context.user_data.days = []
-    context.user_data.time = []
+    context.user_data.non_teaching_help_types = []
 
     greeting = ""
     for locale in LOCALES:
@@ -909,9 +908,6 @@ async def store_non_teaching_help_ask_another_or_additional_help(
     # protection against coding error
     if data not in NON_TEACHING_HELP_TYPES + [CallbackData.DONE]:
         raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
-
-    if context.user_data.non_teaching_help_types is None:
-        context.user_data.non_teaching_help_types = []
 
     # teacher pressed "Done" or chose all types of help
     if data == CallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
