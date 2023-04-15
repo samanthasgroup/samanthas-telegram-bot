@@ -83,8 +83,8 @@ class State(IntEnum):
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS = auto()
-    ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
-    PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
+    ASK_PEER_HELP_OR_NON_TEACHING_HELP = auto()
+    PEER_HELP_MENU_OR_ASK_NON_TEACHING_HELP = auto()
     ASK_REVIEW = auto()
     REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
     REVIEW_REQUESTED_ITEM = auto()
@@ -891,7 +891,7 @@ async def store_student_age_group_ask_another_or_help_for_students(
         context.user_data.teacher_age_groups_of_students
     ) == len(STUDENT_AGE_GROUPS_FOR_TEACHER):
         await CQReplySender.ask_non_teaching_help(context, query)
-        return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
+        return State.ASK_PEER_HELP_OR_NON_TEACHING_HELP
 
     await CQReplySender.ask_student_age_groups_for_teacher(context, query)
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS
@@ -922,7 +922,7 @@ async def store_help_for_students_ask_peer_help_or_additional_help(
         # callback_data somewhere.
         context.chat_data["peer_help_callback_data"] = set()
         await CQReplySender.ask_teacher_peer_help(context, query)
-        return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+        return State.PEER_HELP_MENU_OR_ASK_NON_TEACHING_HELP
 
     await query.edit_message_text(
         PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
@@ -964,7 +964,7 @@ async def store_peer_help_ask_another_or_additional_help(
     # to remove this button from the keyboard
     context.chat_data["peer_help_callback_data"].add(query.data)
     await CQReplySender.ask_teacher_peer_help(context, query)
-    return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+    return State.PEER_HELP_MENU_OR_ASK_NON_TEACHING_HELP
 
 
 async def store_teachers_additional_skills_ask_if_review_needed(
@@ -1243,10 +1243,10 @@ def main() -> None:
             State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_HELP_FOR_STUDENTS: [
                 CallbackQueryHandler(store_student_age_group_ask_another_or_help_for_students)
             ],
-            State.ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
+            State.ASK_PEER_HELP_OR_NON_TEACHING_HELP: [
                 CallbackQueryHandler(store_help_for_students_ask_peer_help_or_additional_help)
             ],
-            State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
+            State.PEER_HELP_MENU_OR_ASK_NON_TEACHING_HELP: [
                 CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)
             ],
             State.ASK_REVIEW: [
