@@ -77,6 +77,7 @@ class State(IntEnum):
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT = auto()
     ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT = auto()
+    ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW = auto()
     ASK_ASSESSMENT_QUESTION = auto()
     ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
     ASK_TEACHING_FREQUENCY = auto()
@@ -643,8 +644,7 @@ async def store_data_ask_level_for_next_language_or_communication_language(
                     context,
                     query,
                 )
-                # FIXME return state that stores communication language and asks for support
-                return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
+                return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
             elif context.user_data.student_age_to < 18:
                 # students of age 13 through 17 are asked how long they have been learning English
                 await CQReplySender.ask_how_long_been_learning_english(
@@ -671,7 +671,7 @@ async def store_data_ask_level_for_next_language_or_communication_language(
                 context,
                 query,
             )
-            pass  # FIXME return state that stores communication language and asks for support
+            return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
     # If this is a teacher or a student that had chosen another language, query.data is
     # language level.
@@ -735,14 +735,35 @@ async def store_communication_language_start_assessment_or_ask_teaching_experien
         return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY
 
 
-async def ask_non_teaching_help_or_start_assessment_depending_on_how_long_been_learning_english(
+async def store_communication_language_ask_non_teaching_help_or_start_review(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Starts assessment or asks for additional help the student requires.
+    """Stores communication language, asks about non-teaching help or starts review.
 
-    For students that have been learning English for 1 year or more, starts assessment.
-    For students that have been learning English for less than 1 year, stores that they
-    need an oral interview and asks about additional help (skipping the assessment).
+    This callback is intended for students only.
+    If a student is 15 or older, asks about additional help. Otherwise, proceeds to review.
+    """
+    query = update.callback_query
+    await query.answer()
+    context.user_data.communication_language_in_class = query.data
+
+    if context.user_data.student_age_from >= 15:
+        await CQReplySender.ask_non_teaching_help(context, query)
+        # FIXME return state: non_teaching_help_menu
+    else:
+        await CQReplySender.ask_review_category(context, query)
+        return State.REVIEW_REQUESTED_ITEM
+
+
+async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experience(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Starts assessment or asks for additional help the student requires. No data is stored here.
+
+    * For students that have been learning English for 1 year or more, starts assessment.
+    * For students that have been learning English for less than 1 year, stores that they
+      need an oral interview (skipping the assessment). Then, depending on their age,
+      asks for non-teaching help or proceeds to the review.
     """
     query = update.callback_query
     await query.answer()
@@ -752,15 +773,18 @@ async def ask_non_teaching_help_or_start_assessment_depending_on_how_long_been_l
         return State.ASK_ASSESSMENT_QUESTION
     else:
         context.user_data.student_needs_oral_interview = True
-        # FIXME ask about additional help
-        pass
+        if context.user_data.student_age_from >= 15:
+            await CQReplySender.ask_non_teaching_help(context, query)
+            # FIXME return state: non_teaching_help_menu
+        else:
+            await CQReplySender.ask_review_category(context, query)
+            return State.REVIEW_REQUESTED_ITEM
 
 
 async def assessment_store_answer_ask_question(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores answer to the question (unless this is the beginning of the test), asks next one."""
-
     query = update.callback_query
     await query.answer()
 
@@ -1196,7 +1220,12 @@ def main() -> None:
             ],
             State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
-                    ask_non_teaching_help_or_start_assessment_depending_on_how_long_been_learning_english
+                    ask_non_teaching_help_or_start_assessment_depending_on_learning_experience
+                )
+            ],
+            State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW: [
+                CallbackQueryHandler(
+                    store_communication_language_ask_non_teaching_help_or_start_review
                 )
             ],
             State.ASK_ASSESSMENT_QUESTION: [
