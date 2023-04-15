@@ -48,7 +48,7 @@ no_slots_selected,"You've selected no slots at all! Let's try again","Вы не 
 ask_teaching_language_student,What language do you want to learn\? Please note that you can only choose *one* language right now\. You can add a second language later on through our coordinator\.,Какой язык Вы хотите учить\? Сейчас Вы можете выбрать *только один язык*\. Вы можете затем добавить ещё один язык через нашего координатора\.,
 ask_teaching_language_teacher,What language(s) do you want to teach\?,Какие языки Вы готовы преподавать\?,
 ask_student_if_can_read_in_english,Can you read in English\?,Вы можете читать по\-английски\?,
-ask_student_how_long_been_learning_english,How long have you been learning English\?,Сколько по времени Вы уже изучаете английский\?,
+ask_student_how_long_been_learning_english,How long have you been learning English?,Сколько по времени Вы уже изучаете английский?,
 option_less_than_year,Less than a year,Меньше года,
 option_year_or_more,One year or more,Год или больше,
 ask_language_level_student,What is your level of,На каком уровне Вы знаете,(нужен винительный падеж)
