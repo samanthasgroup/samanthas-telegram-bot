@@ -750,7 +750,7 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
 
     if context.user_data.student_age_from >= 15:
         await CQReplySender.ask_non_teaching_help(context, query)
-        # FIXME return state: non_teaching_help_menu
+        return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
     else:
         await CQReplySender.ask_review_category(context, query)
         return State.REVIEW_REQUESTED_ITEM
@@ -776,7 +776,7 @@ async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experi
         context.user_data.student_needs_oral_interview = True
         if context.user_data.student_age_from >= 15:
             await CQReplySender.ask_non_teaching_help(context, query)
-            # FIXME return state: non_teaching_help_menu
+            return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
         else:
             await CQReplySender.ask_review_category(context, query)
             return State.REVIEW_REQUESTED_ITEM
