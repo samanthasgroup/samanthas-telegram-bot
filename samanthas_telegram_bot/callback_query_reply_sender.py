@@ -191,7 +191,7 @@ class CallbackQueryReplySender:
                 parse_mode=None,
                 bottom_row_button=InlineKeyboardButton(
                     text=PHRASES["option_non_teaching_help_done"][locale],
-                    callback_data=CallbackData.NONE,
+                    callback_data=CallbackData.DONE,
                 ),
             )
         )

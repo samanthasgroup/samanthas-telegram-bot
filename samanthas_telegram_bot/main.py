@@ -906,7 +906,7 @@ async def store_non_teaching_help_ask_another_or_additional_help(
     data = query.data
 
     # protection against coding error
-    if data not in NON_TEACHING_HELP_TYPES + [CallbackData.DONE]:
+    if data not in NON_TEACHING_HELP_TYPES + (CallbackData.DONE,):
         raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
 
     # teacher pressed "Done" or chose all types of help
