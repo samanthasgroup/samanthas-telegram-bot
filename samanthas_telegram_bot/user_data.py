@@ -38,6 +38,11 @@ class UserData:
     # role-specific attributes:
     student_age_from: int = None
     student_age_to: int = None
+    student_can_read_in_english: bool = None
+    # False instead of None is intended, because the value is set based on other answers.
+    # By default, the student doesn't need an oral interview before they are included
+    # in a waiting list for the group matching algorithm.
+    student_needs_oral_interview: bool = False
     teacher_is_under_18: bool = None
     teacher_has_prior_experience: bool = None
     teacher_number_of_groups: int = None

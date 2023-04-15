@@ -19,6 +19,8 @@ from samanthas_telegram_bot.constants import (
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
+# TODO mark parse mode in phrases.csv so that I don't have to escape full stops etc. everywhere
+
 
 class CallbackQueryReplySender:
     """A helper class that send a reply to user by executing
@@ -35,7 +37,33 @@ class CallbackQueryReplySender:
     """
 
     @classmethod
-    async def asks_next_assessment_question(
+    async def ask_how_long_been_learning_english(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a student how long they have been learning English."""
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"option_{name}"][locale],
+                callback_data=name,
+            )
+            for name in ("less_than_year", "year_or_more")
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_student_how_long_been_learning_english"][locale],
+                buttons=buttons,
+                buttons_per_row=2,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_next_assessment_question(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
@@ -62,6 +90,29 @@ class CallbackQueryReplySender:
                 ),
                 parse_mode=None,
             )
+        )
+
+    @classmethod
+    async def ask_start_assessment(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        locale = context.user_data.locale
+
+        await query.edit_message_text(
+            PHRASES["ask_student_start_assessment"][locale],
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text=PHRASES["assessment_option_start"][locale],
+                            callback_data=CallbackData.OK,
+                        )
+                    ]
+                ]
+            ),
+            parse_mode=ParseMode.MARKDOWN_V2,
         )
 
     @classmethod
@@ -97,6 +148,38 @@ class CallbackQueryReplySender:
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=PHRASES[f"ask_class_communication_language_{role}"][locale],
                 buttons=language_buttons,
+                buttons_per_row=1,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_non_teaching_help(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks about additional (non-teaching) help.
+
+        If this is a student, asks them what additional help they need.
+        If this is a teacher, asks them what additional help they can provide.
+        """
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"option_teacher_help_{option}"][locale],
+                callback_data=option,
+            )
+            # FIXME
+            for option in ("cv", "speaking_club", "cv_and_speaking_club")
+        ]
+
+        # FIXME "none" for teacher
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES[f"ask_non_teaching_help_{context.user_data.role}"][locale],
+                buttons=buttons,
                 buttons_per_row=1,
                 parse_mode=None,
             )
@@ -141,32 +224,6 @@ class CallbackQueryReplySender:
                     PHRASES["ask_teacher_peer_help_done"][locale],
                     callback_data=CallbackData.DONE,
                 ),
-                parse_mode=None,
-            )
-        )
-
-    @classmethod
-    async def ask_teacher_about_help_with_cv_and_speaking_clubs(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks a teacher whether they are able to help students with CV or host speaking clubs."""
-        locale = context.user_data.locale
-
-        buttons = [
-            InlineKeyboardButton(
-                text=PHRASES[f"option_teacher_help_{option}"][locale],
-                callback_data=option,
-            )
-            for option in ("cv", "speaking_club", "cv_and_speaking_club")
-        ]
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=PHRASES["ask_teacher_help_with_cv_and_speaking_clubs"][locale],
-                buttons=buttons,
-                buttons_per_row=1,
                 parse_mode=None,
             )
         )
