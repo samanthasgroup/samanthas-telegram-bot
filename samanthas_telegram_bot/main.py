@@ -78,11 +78,11 @@ class State(IntEnum):
     ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_TEACHING_EXPERIENCE = auto()
-    ASK_CAN_HOST_SPEAKING_CLUB = auto()
+    ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = auto()
     ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT = auto()
     ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW = auto()
     ASK_ASSESSMENT_QUESTION = auto()
-    ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY = auto()
+    ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP = auto()
     ASK_TEACHING_FREQUENCY = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
@@ -751,13 +751,13 @@ async def store_communication_language_ask_teaching_experience(
     await CQReplySender.ask_yes_no(
         context, query, question_phrase_internal_id="ask_teacher_experience"
     )
-    return State.ASK_CAN_HOST_SPEAKING_CLUB
+    return State.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB
 
 
-async def store_experience_ask_about_hosting_speaking_clubs(
+async def store_experience_ask_about_groups_or_speaking_clubs(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores whether teacher has experience, asks about hosting speaking clubs."""
+    """Stores if teacher has experience, asks teaching preferences (groups vs speaking clubs)."""
 
     query = update.callback_query
     await query.answer()
@@ -767,7 +767,7 @@ async def store_experience_ask_about_hosting_speaking_clubs(
     )
 
     await CQReplySender.ask_teacher_can_teach_regular_groups_speaking_clubs(context, query)
-    return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP  # FIXME
+    return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP
 
 
 async def store_communication_language_ask_non_teaching_help_or_start_review(
@@ -841,42 +841,35 @@ async def assessment_store_answer_ask_question(
     return State.ASK_ASSESSMENT_QUESTION
 
 
-async def store_prior_teaching_experience_ask_groups_or_frequency(
+async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores information about teaching experience, asks for frequency (inexperienced teachers)
-    or number of groups (for experienced teachers).
+    """Stores information about teaching preferences, next action depends on several factors:
+
+    * If teacher only wants to host speaking clubs, asks about preferred student age groups
+    * If teacher can teach regular groups but has no experience, asks about frequency
+    * If teacher can teach regular groups and has experience, asks about number of groups
     """
 
     query = update.callback_query
     await query.answer()
-    context.user_data.teacher_has_prior_experience = (
-        True if query.data == CallbackData.YES else False
+
+    context.user_data.teacher_can_host_speaking_club = (
+        True if query.data in ("speaking_club", "both") else False
     )
 
-    logger.info(f"Has teaching experience: {context.user_data.teacher_has_prior_experience}")
+    if query.data == "speaking_club":  # teacher does not want to teach regular groups
+        await CQReplySender.ask_student_age_groups_for_teacher(context, query)
+        return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP  # FIXME check
 
     if context.user_data.teacher_has_prior_experience:
-        numbers_of_groups = (1, 2)
-
-        buttons = [
-            [
-                InlineKeyboardButton(
-                    PHRASES[f"option_number_of_groups_{number}"][context.user_data.locale],
-                    callback_data=number,
-                )
-                for number in numbers_of_groups
-            ]
-        ]
-
-        await query.edit_message_text(
-            PHRASES["ask_teacher_number_of_groups"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup(buttons),
-        )
+        await CQReplySender.ask_teacher_number_of_groups(context, query)
         return State.ASK_TEACHING_FREQUENCY
-    else:
-        await CQReplySender.ask_teaching_frequency(context, query)
-        return State.PREFERRED_STUDENT_AGE_GROUPS_START
+
+    # inexperienced teacher only get one group
+    context.user_data.teacher_number_of_groups = 1
+    await CQReplySender.ask_teaching_frequency(context, query)
+    return State.PREFERRED_STUDENT_AGE_GROUPS_START
 
 
 async def store_number_of_groups_ask_frequency(
@@ -1298,8 +1291,8 @@ def main() -> None:
             State.ASK_TEACHING_EXPERIENCE: [
                 CallbackQueryHandler(store_communication_language_ask_teaching_experience)
             ],
-            State.ASK_CAN_HOST_SPEAKING_CLUB: [
-                CallbackQueryHandler(store_experience_ask_about_hosting_speaking_clubs)
+            State.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
+                CallbackQueryHandler(store_experience_ask_about_groups_or_speaking_clubs)
             ],
             State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
@@ -1314,8 +1307,10 @@ def main() -> None:
             State.ASK_ASSESSMENT_QUESTION: [
                 CallbackQueryHandler(assessment_store_answer_ask_question)
             ],
-            State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY: [
-                CallbackQueryHandler(store_prior_teaching_experience_ask_groups_or_frequency)
+            State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP: [
+                CallbackQueryHandler(
+                    store_teaching_preference_ask_groups_or_frequency_or_student_age
+                )
             ],
             State.ASK_TEACHING_FREQUENCY: [
                 CallbackQueryHandler(store_number_of_groups_ask_frequency)

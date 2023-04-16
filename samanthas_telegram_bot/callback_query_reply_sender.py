@@ -424,6 +424,31 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_teacher_number_of_groups(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a teacher how many groups they want to take."""
+        locale = context.user_data.locale
+        buttons = [
+            InlineKeyboardButton(
+                PHRASES[f"option_number_of_groups_{number}"][locale],
+                callback_data=number,
+            )
+            for number in (1, 2)
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_number_of_groups"][locale],
+                buttons=buttons,
+                buttons_per_row=2,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
     async def ask_teacher_peer_help(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
