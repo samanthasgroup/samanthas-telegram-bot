@@ -677,7 +677,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
         await CQReplySender.ask_class_communication_languages(context, query)
         return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
-    # If this is a teacher or a student that had chosen another language than Englihs,
+    # If this is a teacher or a student that had chosen another language than English,
     # query.data is language level.
     user_data.levels_for_teaching_language[last_language_added].append(query.data)
 
