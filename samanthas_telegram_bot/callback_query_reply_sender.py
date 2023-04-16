@@ -319,7 +319,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_student_age_groups_for_teacher(
+    async def ask_teacher_age_groups_of_students(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,

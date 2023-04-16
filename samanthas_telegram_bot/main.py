@@ -859,7 +859,7 @@ async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
     )
 
     if query.data == "speaking_club":  # teacher does not want to teach regular groups
-        await CQReplySender.ask_student_age_groups_for_teacher(context, query)
+        await CQReplySender.ask_teacher_age_groups_of_students(context, query)
         return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP  # FIXME check
 
     if context.user_data.teacher_has_prior_experience:
@@ -897,7 +897,7 @@ async def store_frequency_ask_student_age_groups(
     context.user_data.teacher_class_frequency = query.data
     context.user_data.teacher_age_groups_of_students = []
 
-    await CQReplySender.ask_student_age_groups_for_teacher(context, query)
+    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
 
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
@@ -921,7 +921,7 @@ async def store_student_age_group_ask_another_or_non_teaching_help(
         await CQReplySender.ask_non_teaching_help(context, query)
         return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
 
-    await CQReplySender.ask_student_age_groups_for_teacher(context, query)
+    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
 
