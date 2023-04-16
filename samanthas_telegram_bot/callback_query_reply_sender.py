@@ -358,6 +358,37 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_teacher_can_teach_regular_groups_speaking_clubs(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks adult teacher whether can teach regular groups and/or host speaking clubs."""
+        # It is possible that an adult teacher only joins the project to host speaking clubs
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"option_teach_{option}"][locale],
+                callback_data=option,
+            )
+            for option in (
+                "group",
+                "speaking_club",
+                "both",
+            )
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_group_speaking_club"][locale],
+                buttons=buttons,
+                buttons_per_row=1,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
     async def ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
         cls,
         context: CUSTOM_CONTEXT_TYPES,

@@ -78,6 +78,7 @@ class State(IntEnum):
     ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_TEACHING_EXPERIENCE = auto()
+    ASK_CAN_HOST_SPEAKING_CLUB = auto()
     ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT = auto()
     ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW = auto()
     ASK_ASSESSMENT_QUESTION = auto()
@@ -735,10 +736,6 @@ async def store_communication_language_ask_teaching_experience(
 ) -> int:
     """Callback for teachers. Stores communication language, asks about teaching experience."""
 
-    # just some protection against algorithmic error
-    if context.user_data.role == Role.STUDENT:
-        raise TypeError("A student shouldn't get into this callback")
-
     query = update.callback_query
     await query.answer()
 
@@ -754,7 +751,23 @@ async def store_communication_language_ask_teaching_experience(
     await CQReplySender.ask_yes_no(
         context, query, question_phrase_internal_id="ask_teacher_experience"
     )
-    return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY
+    return State.ASK_CAN_HOST_SPEAKING_CLUB
+
+
+async def store_experience_ask_about_hosting_speaking_clubs(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores whether teacher has experience, asks about hosting speaking clubs."""
+
+    query = update.callback_query
+    await query.answer()
+
+    context.user_data.teacher_has_prior_experience = (
+        True if query.data == CallbackData.YES else False
+    )
+
+    await CQReplySender.ask_teacher_can_teach_regular_groups_speaking_clubs(context, query)
+    return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP  # FIXME
 
 
 async def store_communication_language_ask_non_teaching_help_or_start_review(
@@ -1284,6 +1297,9 @@ def main() -> None:
             ],
             State.ASK_TEACHING_EXPERIENCE: [
                 CallbackQueryHandler(store_communication_language_ask_teaching_experience)
+            ],
+            State.ASK_CAN_HOST_SPEAKING_CLUB: [
+                CallbackQueryHandler(store_experience_ask_about_hosting_speaking_clubs)
             ],
             State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
