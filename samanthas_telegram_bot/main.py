@@ -7,6 +7,7 @@ from enum import IntEnum, auto
 import phonenumbers
 from telegram import (
     BotCommandScopeAllPrivateChats,
+    CallbackQuery,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     MenuButtonCommands,
@@ -601,10 +602,18 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
-async def store_data_ask_level_for_next_language_or_communication_language(
+async def _prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery) -> None:
+    """Performs necessary preparatory operations and sends reply with CallbackQueryReplySender."""
+    # prepare questions and set index to 0
+    context.chat_data["assessment_questions"] = get_questions("en", "A1")  # TODO for now
+    context.chat_data["current_question_idx"] = 0
+    await CQReplySender.ask_start_assessment(context, query)
+
+
+async def store_data_ask_another_level_or_communication_language_or_start_assessment(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores data, asks for another level of the language or communication language.
+    """Stores data, asks another level of the language or communication language or starts test.
 
     Stores data:
 
@@ -615,7 +624,10 @@ async def store_data_ask_level_for_next_language_or_communication_language(
     Asks:
 
     * asks teacher for another level of this teaching language
-    * asks students that want to learn English and are aged 13-17, how long they've been learning
+    * asks students aged 5-12 that want to learn English about communication language, mark that
+      they need oral interview
+    * asks students aged 13-17 that want to learn English how long they've been learning
+    * for adult students that want to learn English, start assessment
     * asks students of other ages that want to learn English about communication language
     * asks students that want to learn other languages about communication language in groups
     """
@@ -654,12 +666,9 @@ async def store_data_ask_level_for_next_language_or_communication_language(
                 )
                 return State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT
             else:
-                # adult students: ask about communication language, start assessment
-                await CQReplySender.ask_class_communication_languages(
-                    context,
-                    query,
-                )
-                return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
+                # adult students: start assessment
+                await _prepare_assessment(context, query)
+                return State.ASK_ASSESSMENT_QUESTION
         else:
             # if a student can NOT read in English: no assessment.  Adult students get A0...
             if context.user_data.student_age_from > 18:
@@ -723,11 +732,7 @@ async def store_communication_language_start_assessment_or_ask_teaching_experien
     logger.info(context.user_data.communication_language_in_class)
 
     if context.user_data.role == Role.STUDENT:
-        # prepare questions and set index to 0
-        context.chat_data["assessment_questions"] = get_questions("en", "A1")  # TODO for now
-        context.chat_data["current_question_idx"] = 0
-
-        await CQReplySender.ask_start_assessment(context, query)
+        await _prepare_assessment(context, query)
         return State.ASK_ASSESSMENT_QUESTION
     else:
         await CQReplySender.ask_yes_no(
@@ -769,8 +774,8 @@ async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experi
     query = update.callback_query
     await query.answer()
 
-    if query.data == CallbackData.YES:
-        await CQReplySender.ask_start_assessment(context, query)
+    if query.data == "year_or_more":
+        await _prepare_assessment(context, query)
         return State.ASK_ASSESSMENT_QUESTION
     else:
         context.user_data.student_needs_oral_interview = True
@@ -1234,7 +1239,7 @@ def main() -> None:
             ],
             State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
-                    store_data_ask_level_for_next_language_or_communication_language
+                    store_data_ask_another_level_or_communication_language_or_start_assessment
                 )
             ],
             State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT: [
