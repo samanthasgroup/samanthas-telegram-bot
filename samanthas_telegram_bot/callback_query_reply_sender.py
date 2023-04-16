@@ -179,10 +179,10 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks about additional (non-teaching) help.
+        """Asks about non-teaching help.
 
-        If this is a student, asks them what additional help they need.
-        If this is a teacher, asks them what additional help they can provide.
+        If this is a student, asks them what help they need.
+        If this is a teacher, asks them what help they can provide.
         """
         locale = context.user_data.locale
 
@@ -354,6 +354,41 @@ class CallbackQueryReplySender:
                 buttons=buttons_to_show,
                 buttons_per_row=1,
                 bottom_row_button=done_button,
+            )
+        )
+
+    @classmethod
+    async def ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks young teacher whether they are over 16 and ready to host speaking clubs."""
+        # This is intended for teachers that are under 18 years old and hence can't teach in
+        # regular groups.  The check is done in main.py.
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES["option_young_teacher_under_16"][locale],
+                callback_data=CallbackData.NO,
+            ),
+            InlineKeyboardButton(
+                text=PHRASES["option_young_teacher_over_16_but_no_speaking_club"][locale],
+                callback_data=CallbackData.NO,
+            ),
+            InlineKeyboardButton(
+                text=PHRASES["option_young_teacher_over_16_and_ready_for_speaking_club"][locale],
+                callback_data=CallbackData.YES,
+            ),
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_if_over_16_and_can_host_speaking_clubs"][locale],
+                buttons=buttons,
+                buttons_per_row=1,
+                parse_mode=None,
             )
         )
 

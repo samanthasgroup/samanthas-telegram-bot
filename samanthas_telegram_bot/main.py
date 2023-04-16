@@ -88,6 +88,7 @@ class State(IntEnum):
     NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT = auto()
     ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
+    ASK_YOUNG_TEACHER_ADDITIONAL_HELP = auto()
     ASK_REVIEW = auto()
     REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
     REVIEW_REQUESTED_ITEM = auto()
@@ -444,24 +445,24 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
 
 
 async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """If user is a teacher under 18, informs that teachers under 18 are not allowed
-    and asks about additional skills. Otherwise, stores age range (for students) and asks timezone.
+    """Stores age group for student, asks timezone. Action for teacher depends on their age.
+
+    If user is a teacher under 18, informs that teachers under 18 are not allowed and asks
+    whether they are at least 16, in which case they can host speaking clubs.
     """
 
     query = update.callback_query
     await query.answer()
 
-    # end conversation for would-be teachers that are minors
     if context.user_data.role == Role.TEACHER:
-        if query.data == CallbackData.YES:
+        if query.data == CallbackData.YES:  # yes, the teacher is 18 or older
             context.user_data.teacher_is_under_18 = False
         else:
             context.user_data.teacher_is_under_18 = True
-            await query.edit_message_text(
-                PHRASES["reply_under_18"][context.user_data.locale],
-                reply_markup=InlineKeyboardMarkup([]),
+            await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+                context, query
             )
-            return State.BYE
+            return State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
 
     if context.user_data.role == Role.STUDENT:
         context.user_data.student_age_from, context.user_data.student_age_to = (
@@ -473,6 +474,29 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
 
     await CQReplySender.ask_timezone(context, query)
     return State.TIME_SLOTS_START
+
+
+async def store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If teacher is ready to host speaking clubs, asks for additional skills, else says bye.
+
+    This callback is for young teachers only.
+    """
+    query = update.callback_query
+    await query.answer()
+    locale = context.user_data.locale
+
+    await query.delete_message()
+
+    if query.data == CallbackData.YES:  # yes, I can host speaking clubs
+        await update.effective_chat.send_message(
+            PHRASES["ask_teacher_any_additional_help"][locale]
+        )
+        return State.ASK_REVIEW  # FIXME send_message_for_reviewing_user_data will fail
+
+    await update.effective_chat.send_message(PHRASES["reply_cannot_work"][locale])
+    return ConversationHandler.END
 
 
 async def store_timezone_ask_slots_for_one_day_or_teaching_language(
@@ -1212,6 +1236,11 @@ def main() -> None:
                 )
             ],
             State.ASK_AGE: [CallbackQueryHandler(store_role_ask_age)],
+            State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
+                CallbackQueryHandler(
+                    store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye
+                )
+            ],
             State.ASK_TIMEZONE: [CallbackQueryHandler(store_age_ask_timezone)],
             State.TIME_SLOTS_START: [
                 CallbackQueryHandler(store_timezone_ask_slots_for_one_day_or_teaching_language)
