@@ -92,6 +92,7 @@ class State(IntEnum):
     ASK_REVIEW = auto()
     REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
     REVIEW_REQUESTED_ITEM = auto()
+    ASK_FINAL_COMMENT = auto()  # standalone, not after review
     BYE = auto()
 
 
@@ -493,7 +494,7 @@ async def store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye(
         await update.effective_chat.send_message(
             PHRASES["ask_teacher_any_additional_help"][locale]
         )
-        return State.ASK_REVIEW  # FIXME send_message_for_reviewing_user_data will fail
+        return State.ASK_FINAL_COMMENT
 
     await update.effective_chat.send_message(PHRASES["reply_cannot_work"][locale])
     return ConversationHandler.END
@@ -1113,6 +1114,25 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         raise NotImplementedError(f"Cannot handle review of {data}")
 
 
+async def store_additional_help_comment_ask_final_comment(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """For young teachers: stores comment on additional help, asks for final comment."""
+    if update.message is None:
+        return State.ASK_FINAL_COMMENT
+    locale = context.user_data.locale
+
+    context.user_data.teacher_additional_skills_comment = update.message.text
+
+    # We want to give the young teacher the opportunity to double-check their email
+    # without starting a full-fledged review
+    await update.message.reply_text(
+        f"{PHRASES['young_teacher_we_will_email_you'][locale]} {context.user_data.email}\n\n"
+        f"{PHRASES['ask_final_comment'][locale]}"
+    )
+    return State.BYE
+
+
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """For a would-be teacher that is under 18, store their comment about potential useful skills.
     For others, store the general comment. End the conversation."""
@@ -1306,6 +1326,12 @@ def main() -> None:
             ],
             State.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
                 CallbackQueryHandler(check_if_review_needed_give_review_menu_or_ask_final_comment)
+            ],
+            State.ASK_FINAL_COMMENT: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    store_additional_help_comment_ask_final_comment,
+                )
             ],
             State.REVIEW_REQUESTED_ITEM: [CallbackQueryHandler(review_requested_item)],
             State.BYE: [
