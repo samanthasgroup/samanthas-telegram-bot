@@ -640,57 +640,60 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
         await CQReplySender.ask_teaching_languages(context, query)
         return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
-    last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
+    user_data = context.user_data
+    last_language_added = tuple(user_data.levels_for_teaching_language.keys())[-1]
+    role = user_data.role
 
     # If this is a student that had chosen English, query.data is their ability to read in English.
-    if context.user_data.role == Role.STUDENT and last_language_added == "en":
-        context.user_data.student_can_read_in_english = (
-            True if query.data == CallbackData.YES else False
-        )
-        logger.info(f"User can read in English: {context.user_data.student_can_read_in_english}")
+    if role == Role.STUDENT and last_language_added == "en":
+        user_data.student_can_read_in_english = True if query.data == CallbackData.YES else False
 
-        if context.user_data.student_can_read_in_english:
-            if context.user_data.student_age_to <= 12:
-                # young students: mark as requiring interview, ask about communication language
-                context.user_data.student_needs_oral_interview = True
-                await CQReplySender.ask_class_communication_languages(
-                    context,
-                    query,
-                )
-                return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
-            elif context.user_data.student_age_to < 18:
-                # students of age 13 through 17 are asked how long they have been learning English
-                await CQReplySender.ask_how_long_been_learning_english(
-                    context,
-                    query,
-                )
-                return State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT
-            else:
-                # adult students: start assessment
-                await _prepare_assessment(context, query)
-                return State.ASK_ASSESSMENT_QUESTION
-        else:
-            # if a student can NOT read in English: no assessment.  Adult students get A0...
-            if context.user_data.student_age_from > 18:
-                context.user_data.levels_for_teaching_language["en"] = ["A0"]
-            else:
-                # ...while young students get no level and are marked to require oral interview.
-                context.user_data.student_needs_oral_interview = True
+        can_read = user_data.student_can_read_in_english
+        logger.info(f"User can read in English: {can_read}")
 
+        if can_read and user_data.student_age_to <= 12:
+            # young students: mark as requiring interview, ask about communication language
+            user_data.student_needs_oral_interview = True
             await CQReplySender.ask_class_communication_languages(
                 context,
                 query,
             )
             return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
-    # If this is a teacher or a student that had chosen another language, query.data is
-    # language level.
-    context.user_data.levels_for_teaching_language[last_language_added].append(query.data)
+        if can_read and user_data.student_age_to < 18:
+            # students of age 13 through 17 are asked how long they have been learning English
+            await CQReplySender.ask_how_long_been_learning_english(
+                context,
+                query,
+            )
+            return State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT
 
-    logger.info(context.user_data.levels_for_teaching_language)
+        if can_read and user_data.student_age_from >= 18:
+            # adult students: start assessment
+            await _prepare_assessment(context, query)
+            return State.ASK_ASSESSMENT_QUESTION
 
-    # move on for a student (they can only choose one language and one level)
-    if context.user_data.role == Role.STUDENT:
+        # if a student can NOT read in English: no assessment.  Adult students get A0...
+        if user_data.student_age_from > 18:
+            user_data.levels_for_teaching_language["en"] = ["A0"]
+        else:
+            # ...while young students get no level and are marked to require oral interview.
+            user_data.student_needs_oral_interview = True
+
+        await CQReplySender.ask_class_communication_languages(
+            context,
+            query,
+        )
+        return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
+
+    # If this is a teacher or a student that had chosen another language than Englihs,
+    # query.data is language level.
+    user_data.levels_for_teaching_language[last_language_added].append(query.data)
+
+    logger.info(user_data.levels_for_teaching_language)
+
+    # Students can only choose one language and one level
+    if role == Role.STUDENT:
         # FIXME the logic becomes complex for the review: if the language is English,
         #  we don't want to show the student their level.  Maybe in review mode only show
         #  the language?
@@ -705,7 +708,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
         )
         return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
-    # Ask the teacher for another level of the same language
+    # Teacher can choose another level of the same language
     await CQReplySender.ask_language_levels(context, query)
     return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
@@ -752,9 +755,9 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
     if context.user_data.student_age_from >= 15:
         await CQReplySender.ask_non_teaching_help(context, query)
         return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
-    else:
-        await CQReplySender.ask_review_category(context, query)
-        return State.REVIEW_REQUESTED_ITEM
+
+    await CQReplySender.ask_review_category(context, query)
+    return State.REVIEW_REQUESTED_ITEM
 
 
 async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experience(
@@ -773,14 +776,14 @@ async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experi
     if query.data == "year_or_more":
         await _prepare_assessment(context, query)
         return State.ASK_ASSESSMENT_QUESTION
-    else:
-        context.user_data.student_needs_oral_interview = True
-        if context.user_data.student_age_from >= 15:
-            await CQReplySender.ask_non_teaching_help(context, query)
-            return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
-        else:
-            await CQReplySender.ask_review_category(context, query)
-            return State.REVIEW_REQUESTED_ITEM
+
+    context.user_data.student_needs_oral_interview = True
+    if context.user_data.student_age_from >= 15:
+        await CQReplySender.ask_non_teaching_help(context, query)
+        return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
+
+    await CQReplySender.ask_review_category(context, query)
+    return State.REVIEW_REQUESTED_ITEM
 
 
 async def assessment_store_answer_ask_question(
