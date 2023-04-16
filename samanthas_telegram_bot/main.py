@@ -674,7 +674,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
             return State.ASK_ASSESSMENT_QUESTION
 
         # if a student can NOT read in English: no assessment.  Adult students get A0...
-        if user_data.student_age_from > 18:
+        if user_data.student_age_from >= 18:
             user_data.levels_for_teaching_language["en"] = ["A0"]
         else:
             # ...while young students get no level and are marked to require oral interview.
