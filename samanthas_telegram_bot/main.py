@@ -77,7 +77,7 @@ class State(IntEnum):
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
     ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
-    ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT = auto()
+    ASK_TEACHING_EXPERIENCE = auto()
     ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT = auto()
     ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW = auto()
     ASK_ASSESSMENT_QUESTION = auto()
@@ -583,7 +583,7 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
+        return State.ASK_TEACHING_EXPERIENCE
 
     context.user_data.levels_for_teaching_language[query.data] = []
 
@@ -703,21 +703,21 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
             context,
             query,
         )
-        return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
+        return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
     # Ask the teacher for another level of the same language
     await CQReplySender.ask_language_levels(context, query)
     return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
-async def store_communication_language_start_assessment_or_ask_teaching_experience(
+async def store_communication_language_ask_teaching_experience(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores communication language, next action depends on role and teaching language.
+    """Callback for teachers. Stores communication language, asks about teaching experience."""
 
-    If this is a teacher, asks about teaching experience.
-    If this is a student that has chosen English, starts assessment for a student.
-    """
+    # just some protection against algorithmic error
+    if context.user_data.role == Role.STUDENT:
+        raise TypeError("A student shouldn't get into this callback")
 
     query = update.callback_query
     await query.answer()
@@ -731,14 +731,10 @@ async def store_communication_language_start_assessment_or_ask_teaching_experien
 
     logger.info(context.user_data.communication_language_in_class)
 
-    if context.user_data.role == Role.STUDENT:
-        await _prepare_assessment(context, query)
-        return State.ASK_ASSESSMENT_QUESTION
-    else:
-        await CQReplySender.ask_yes_no(
-            context, query, question_phrase_internal_id="ask_teacher_experience"
-        )
-        return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY
+    await CQReplySender.ask_yes_no(
+        context, query, question_phrase_internal_id="ask_teacher_experience"
+    )
+    return State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY
 
 
 async def store_communication_language_ask_non_teaching_help_or_start_review(
@@ -1094,7 +1090,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
     elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT
+        return State.ASK_TEACHING_EXPERIENCE
     else:
         raise NotImplementedError(f"Cannot handle review of {data}")
 
@@ -1242,10 +1238,8 @@ def main() -> None:
                     store_data_ask_another_level_or_communication_language_or_start_assessment
                 )
             ],
-            State.ASK_TEACHING_EXPERIENCE_OR_START_ASSESSMENT: [
-                CallbackQueryHandler(
-                    store_communication_language_start_assessment_or_ask_teaching_experience
-                )
+            State.ASK_TEACHING_EXPERIENCE: [
+                CallbackQueryHandler(store_communication_language_ask_teaching_experience)
             ],
             State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
