@@ -38,85 +38,6 @@ class CallbackQueryReplySender:
     """
 
     @classmethod
-    async def ask_how_long_been_learning_english(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks a student how long they have been learning English."""
-        locale = context.user_data.locale
-
-        buttons = [
-            InlineKeyboardButton(
-                text=PHRASES[f"option_{name}"][locale],
-                callback_data=name,
-            )
-            for name in ("less_than_year", "year_or_more")
-        ]
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=PHRASES["ask_student_how_long_been_learning_english"][locale],
-                buttons=buttons,
-                buttons_per_row=2,
-                parse_mode=None,
-            )
-        )
-
-    @classmethod
-    async def ask_next_assessment_question(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks user the next assessment question."""
-        questions = context.chat_data["assessment_questions"]
-
-        buttons = [
-            InlineKeyboardButton(
-                text=questions[context.chat_data["current_question_idx"]][f"option_{option_idx}"],
-                callback_data=option_idx,
-            )
-            for option_idx in ("1", "2", "3", "4")  # TODO different tests have different amount
-        ]
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=questions[context.chat_data["current_question_idx"]]["question"],
-                buttons=buttons,
-                buttons_per_row=2,  # TODO 4 or variable number
-                bottom_row_button=InlineKeyboardButton(
-                    text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
-                    callback_data=CallbackData.DONT_KNOW,
-                ),
-                parse_mode=None,
-            )
-        )
-
-    @classmethod
-    async def ask_start_assessment(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        locale = context.user_data.locale
-
-        await query.edit_message_text(
-            PHRASES["ask_student_start_assessment"][locale],
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            text=PHRASES["assessment_option_start"][locale],
-                            callback_data=CallbackData.OK,
-                        )
-                    ]
-                ]
-            ),
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
-
-    @classmethod
     async def ask_class_communication_languages(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
@@ -150,6 +71,104 @@ class CallbackQueryReplySender:
                 message_text=PHRASES[f"ask_class_communication_language_{role}"][locale],
                 buttons=language_buttons,
                 buttons_per_row=1,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_how_long_been_learning_english(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a student how long they have been learning English."""
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"option_{name}"][locale],
+                callback_data=name,
+            )
+            for name in ("less_than_year", "year_or_more")
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_student_how_long_been_learning_english"][locale],
+                buttons=buttons,
+                buttons_per_row=2,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_language_levels(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+        show_done_button: bool = True,
+    ) -> None:
+        """Asks a user to choose language level(s)."""
+
+        # if the user has already chosen one level, add "Next" button
+        done_button = None
+
+        if show_done_button:
+            done_button = InlineKeyboardButton(
+                text=PHRASES["ask_teaching_language_level_done"][context.user_data.locale],
+                callback_data=CallbackData.DONE,
+            )
+
+        last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
+        language_name = PHRASES[last_language_added][context.user_data.locale]
+
+        text = (
+            f"{PHRASES[f'ask_language_level_{context.user_data.role}'][context.user_data.locale]} "
+            f"{language_name}?"
+        )
+
+        level_buttons = [
+            InlineKeyboardButton(text=level, callback_data=level)
+            for level in LEVELS
+            if level not in context.user_data.levels_for_teaching_language[last_language_added]
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=text,
+                buttons=level_buttons,
+                buttons_per_row=3,
+                top_row_button=done_button,
+                parse_mode=None,
+            )
+        )
+
+    @classmethod
+    async def ask_next_assessment_question(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks user the next assessment question."""
+        questions = context.chat_data["assessment_questions"]
+
+        buttons = [
+            InlineKeyboardButton(
+                text=questions[context.chat_data["current_question_idx"]][f"option_{option_idx}"],
+                callback_data=option_idx,
+            )
+            for option_idx in ("1", "2", "3", "4")  # TODO different tests have different amount
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=questions[context.chat_data["current_question_idx"]]["question"],
+                buttons=buttons,
+                buttons_per_row=2,  # TODO 4 or variable number
+                bottom_row_button=InlineKeyboardButton(
+                    text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
+                    callback_data=CallbackData.DONT_KNOW,
+                ),
                 parse_mode=None,
             )
         )
@@ -193,6 +212,148 @@ class CallbackQueryReplySender:
                     text=PHRASES["option_non_teaching_help_done"][locale],
                     callback_data=CallbackData.DONE,
                 ),
+            )
+        )
+
+    @classmethod
+    async def ask_review_category(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks what info the user wants to change during the review."""
+
+        locale = context.user_data.locale
+        buttons = [
+            InlineKeyboardButton(
+                text=PHRASES[f"review_option_{option}"][locale], callback_data=option
+            )
+            for option in (
+                # Without f-strings they will produce something like <Enum: "name">.
+                # An alternative is to use .value attribute.
+                f"{UserDataReviewCategory.FIRST_NAME}",
+                f"{UserDataReviewCategory.LAST_NAME}",
+                f"{UserDataReviewCategory.EMAIL}",
+                f"{UserDataReviewCategory.TIMEZONE}",
+                f"{UserDataReviewCategory.AVAILABILITY}",
+                f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}",
+                f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
+            )
+        ]
+
+        if context.user_data.phone_number:
+            buttons.append(
+                InlineKeyboardButton(
+                    text=PHRASES[f"review_option_{UserDataReviewCategory.PHONE_NUMBER}"][locale],
+                    callback_data=UserDataReviewCategory.PHONE_NUMBER,
+                )
+            )
+
+        if context.user_data.role == Role.STUDENT:
+            buttons.append(
+                InlineKeyboardButton(
+                    text=PHRASES[f"review_option_{UserDataReviewCategory.STUDENT_AGE_GROUP}"][
+                        locale
+                    ],
+                    callback_data=UserDataReviewCategory.STUDENT_AGE_GROUP,
+                )
+            )
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["review_ask_category"][locale],
+                buttons=buttons,
+                buttons_per_row=1,
+            )
+        )
+
+    @classmethod
+    async def ask_start_assessment(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        locale = context.user_data.locale
+
+        await query.edit_message_text(
+            PHRASES["ask_student_start_assessment"][locale],
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text=PHRASES["assessment_option_start"][locale],
+                            callback_data=CallbackData.OK,
+                        )
+                    ]
+                ]
+            ),
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
+
+    @classmethod
+    async def ask_student_age(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a student to choose their age group."""
+        locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=f"{d['age_from']}-{d['age_to']}",
+                callback_data=f"{d['age_from']}-{d['age_to']}",  # can't just leave this arg out
+            )
+            for d in context.chat_data["age_ranges"]["student"]
+        ]
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=(
+                    f"{PHRASES['student_ukraine_disclaimer'][locale]}\n\n"
+                    f"{PHRASES['ask_age'][locale]}"
+                ),
+                buttons=buttons,
+                buttons_per_row=4,
+            )
+        )
+
+    @classmethod
+    async def ask_student_age_groups_for_teacher(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a teacher to choose age groups of students."""
+        locale = context.user_data.locale
+
+        all_buttons = [
+            InlineKeyboardButton(text=PHRASES[f"option_{key}"][locale], callback_data=value)
+            for key, value in STUDENT_AGE_GROUPS_FOR_TEACHER.items()
+        ]
+
+        buttons_to_show = [
+            b
+            for b in all_buttons
+            if b.callback_data not in context.user_data.teacher_age_groups_of_students
+        ]
+
+        # only show "Done" button if the user has selected something on the previous step
+        done_button = (
+            None
+            if buttons_to_show == all_buttons
+            else InlineKeyboardButton(
+                text=PHRASES["ask_teacher_student_age_groups_done"][locale],
+                callback_data=CallbackData.DONE,
+            )
+        )
+
+        await query.edit_message_text(
+            **cls._make_dict_for_message_with_inline_keyboard(
+                message_text=PHRASES["ask_teacher_student_age_groups"][locale],
+                buttons=buttons_to_show,
+                buttons_per_row=1,
+                bottom_row_button=done_button,
             )
         )
 
@@ -298,167 +459,6 @@ class CallbackQueryReplySender:
                 ],
                 buttons=language_buttons,
                 buttons_per_row=3,
-                bottom_row_button=done_button,
-            )
-        )
-
-    @classmethod
-    async def ask_language_levels(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-        show_done_button: bool = True,
-    ) -> None:
-        """Asks a user to choose language level(s)."""
-
-        # if the user has already chosen one level, add "Next" button
-        done_button = None
-
-        if show_done_button:
-            done_button = InlineKeyboardButton(
-                text=PHRASES["ask_teaching_language_level_done"][context.user_data.locale],
-                callback_data=CallbackData.DONE,
-            )
-
-        last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
-        language_name = PHRASES[last_language_added][context.user_data.locale]
-
-        text = (
-            f"{PHRASES[f'ask_language_level_{context.user_data.role}'][context.user_data.locale]} "
-            f"{language_name}?"
-        )
-
-        level_buttons = [
-            InlineKeyboardButton(text=level, callback_data=level)
-            for level in LEVELS
-            if level not in context.user_data.levels_for_teaching_language[last_language_added]
-        ]
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=text,
-                buttons=level_buttons,
-                buttons_per_row=3,
-                top_row_button=done_button,
-                parse_mode=None,
-            )
-        )
-
-    @classmethod
-    async def ask_review_category(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks what info the user wants to change during the review."""
-
-        locale = context.user_data.locale
-        buttons = [
-            InlineKeyboardButton(
-                text=PHRASES[f"review_option_{option}"][locale], callback_data=option
-            )
-            for option in (
-                # Without f-strings they will produce something like <Enum: "name">.
-                # An alternative is to use .value attribute.
-                f"{UserDataReviewCategory.FIRST_NAME}",
-                f"{UserDataReviewCategory.LAST_NAME}",
-                f"{UserDataReviewCategory.EMAIL}",
-                f"{UserDataReviewCategory.TIMEZONE}",
-                f"{UserDataReviewCategory.AVAILABILITY}",
-                f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}",
-                f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
-            )
-        ]
-
-        if context.user_data.phone_number:
-            buttons.append(
-                InlineKeyboardButton(
-                    text=PHRASES[f"review_option_{UserDataReviewCategory.PHONE_NUMBER}"][locale],
-                    callback_data=UserDataReviewCategory.PHONE_NUMBER,
-                )
-            )
-
-        if context.user_data.role == Role.STUDENT:
-            buttons.append(
-                InlineKeyboardButton(
-                    text=PHRASES[f"review_option_{UserDataReviewCategory.STUDENT_AGE_GROUP}"][
-                        locale
-                    ],
-                    callback_data=UserDataReviewCategory.STUDENT_AGE_GROUP,
-                )
-            )
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=PHRASES["review_ask_category"][locale],
-                buttons=buttons,
-                buttons_per_row=1,
-            )
-        )
-
-    @classmethod
-    async def ask_student_age(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks a student to choose their age group."""
-        locale = context.user_data.locale
-
-        buttons = [
-            InlineKeyboardButton(
-                text=f"{d['age_from']}-{d['age_to']}",
-                callback_data=f"{d['age_from']}-{d['age_to']}",  # can't just leave this arg out
-            )
-            for d in context.chat_data["age_ranges"]["student"]
-        ]
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=(
-                    f"{PHRASES['student_ukraine_disclaimer'][locale]}\n\n"
-                    f"{PHRASES['ask_age'][locale]}"
-                ),
-                buttons=buttons,
-                buttons_per_row=4,
-            )
-        )
-
-    @classmethod
-    async def ask_student_age_groups_for_teacher(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks a teacher to choose age groups of students."""
-        locale = context.user_data.locale
-
-        all_buttons = [
-            InlineKeyboardButton(text=PHRASES[f"option_{key}"][locale], callback_data=value)
-            for key, value in STUDENT_AGE_GROUPS_FOR_TEACHER.items()
-        ]
-
-        buttons_to_show = [
-            b
-            for b in all_buttons
-            if b.callback_data not in context.user_data.teacher_age_groups_of_students
-        ]
-
-        # only show "Done" button if the user has selected something on the previous step
-        done_button = (
-            None
-            if buttons_to_show == all_buttons
-            else InlineKeyboardButton(
-                text=PHRASES["ask_teacher_student_age_groups_done"][locale],
-                callback_data=CallbackData.DONE,
-            )
-        )
-
-        await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=PHRASES["ask_teacher_student_age_groups"][locale],
-                buttons=buttons_to_show,
-                buttons_per_row=1,
                 bottom_row_button=done_button,
             )
         )
