@@ -654,18 +654,12 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
         if can_read and user_data.student_age_to <= 12:
             # young students: mark as requiring interview, ask about communication language
             user_data.student_needs_oral_interview = True
-            await CQReplySender.ask_class_communication_languages(
-                context,
-                query,
-            )
+            await CQReplySender.ask_class_communication_languages(context, query)
             return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
         if can_read and user_data.student_age_to < 18:
             # students of age 13 through 17 are asked how long they have been learning English
-            await CQReplySender.ask_how_long_been_learning_english(
-                context,
-                query,
-            )
+            await CQReplySender.ask_how_long_been_learning_english(context, query)
             return State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT
 
         if can_read and user_data.student_age_from >= 18:
@@ -680,10 +674,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
             # ...while young students get no level and are marked to require oral interview.
             user_data.student_needs_oral_interview = True
 
-        await CQReplySender.ask_class_communication_languages(
-            context,
-            query,
-        )
+        await CQReplySender.ask_class_communication_languages(context, query)
         return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
     # If this is a teacher or a student that had chosen another language than Englihs,
