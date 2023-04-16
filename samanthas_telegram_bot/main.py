@@ -491,7 +491,7 @@ async def store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye(
     await query.delete_message()
 
     if query.data == CallbackData.YES:  # yes, I can host speaking clubs
-        context.user_data.teacher_can_help_with_speaking_club = True
+        context.user_data.teacher_can_host_speaking_club = True
         await update.effective_chat.send_message(
             PHRASES["ask_teacher_any_additional_help"][locale]
         )
@@ -959,7 +959,7 @@ async def store_non_teaching_help_ask_peer_help_or_additional_help(
     if "cv" in query.data:
         context.user_data.teacher_can_help_with_cv = True
     if "speaking_club" in query.data:
-        context.user_data.teacher_can_help_with_speaking_club = True
+        context.user_data.teacher_can_host_speaking_club = True
 
     if context.user_data.teacher_has_prior_experience is True:
         # I will be storing the selected options in boolean flags of TeacherPeerHelp(),
