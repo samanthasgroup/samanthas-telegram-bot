@@ -1,6 +1,12 @@
 import csv
 
+from telegram import CallbackQuery
+
+from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
+    CallbackQueryReplySender,
+)
 from samanthas_telegram_bot.constants import DATA_DIR, LANGUAGE_CODES
+from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
 def get_questions(lang_code: str, level: str) -> tuple[dict[str, str], ...]:
@@ -17,6 +23,14 @@ def get_questions(lang_code: str, level: str) -> tuple[dict[str, str], ...]:
         rows = tuple(csv.DictReader(fh))
 
     return rows
+
+
+async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery) -> None:
+    """Performs necessary preparatory operations and sends reply with CallbackQueryReplySender."""
+    # prepare questions and set index to 0
+    context.chat_data["assessment_questions"] = get_questions("en", "A1")  # TODO for now
+    context.chat_data["current_question_idx"] = 0
+    await CallbackQueryReplySender.ask_start_assessment(context, query)
 
 
 if __name__ == "__main__":
