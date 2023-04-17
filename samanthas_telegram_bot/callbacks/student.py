@@ -7,6 +7,7 @@ from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
 from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.callbacks.auxil.utils import answer_callback_query_and_get_data
 from samanthas_telegram_bot.constants import CallbackData, State
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
@@ -21,9 +22,10 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
     This callback is intended for students only.
     If a student is 15 or older, asks about additional help. Otherwise, proceeds to review.
     """
-    query = update.callback_query
-    await query.answer()
-    context.user_data.communication_language_in_class = query.data
+    (
+        query,
+        context.user_data.communication_language_in_class,
+    ) = await answer_callback_query_and_get_data(update)
 
     if context.user_data.student_age_from >= 15:
         await CQReplySender.ask_non_teaching_help(context, query)
@@ -43,10 +45,9 @@ async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experi
       need an oral interview (skipping the assessment). Then, depending on their age,
       asks for non-teaching help or proceeds to the review.
     """
-    query = update.callback_query
-    await query.answer()
+    query, data = await answer_callback_query_and_get_data(update)
 
-    if query.data == "year_or_more":
+    if data == "year_or_more":
         await prepare_assessment(context, query)
         return State.ASK_ASSESSMENT_QUESTION
 
@@ -63,10 +64,8 @@ async def assessment_store_answer_ask_question(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores answer to the question (unless this is the beginning of the test), asks next one."""
-    query = update.callback_query
-    await query.answer()
+    query, data = await answer_callback_query_and_get_data(update)
 
-    data = query.data
     # TODO store number of correct answers? How to determine level?
 
     if (
