@@ -758,8 +758,8 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
         await CQReplySender.ask_non_teaching_help(context, query)
         return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
 
-    await CQReplySender.ask_review_category(context, query)
-    return State.REVIEW_REQUESTED_ITEM
+    await send_message_for_reviewing_user_data(update, context)
+    return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
 
 async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experience(
@@ -907,12 +907,16 @@ async def store_non_teaching_help_ask_another_or_additional_help(
     if data not in NON_TEACHING_HELP_TYPES + (CallbackData.DONE,):
         raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
 
-    # teacher pressed "Done" or chose all types of help
+    # pressed "Done" or chose all types of help
     if data == CallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
         NON_TEACHING_HELP_TYPES
     ):
-        await CQReplySender.ask_teacher_peer_help(context, query)
-        return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+        if context.user_data.role == Role.STUDENT:
+            await send_message_for_reviewing_user_data(update, context)
+            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        else:
+            await CQReplySender.ask_teacher_peer_help(context, query)
+            return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
     context.user_data.non_teaching_help_types.append(data)
     await CQReplySender.ask_non_teaching_help(context, query)

@@ -224,40 +224,35 @@ class CallbackQueryReplySender:
         """Asks what info the user wants to change during the review."""
 
         locale = context.user_data.locale
+
+        options = [
+            # Without f-strings they will produce something like <Enum: "name">.
+            # An alternative is to use .value attribute.
+            f"{UserDataReviewCategory.FIRST_NAME}",
+            f"{UserDataReviewCategory.LAST_NAME}",
+            f"{UserDataReviewCategory.EMAIL}",
+            f"{UserDataReviewCategory.TIMEZONE}",
+            f"{UserDataReviewCategory.AVAILABILITY}",
+            f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
+        ]
+
+        if context.user_data.phone_number:
+            options.append(f"{UserDataReviewCategory.PHONE_NUMBER}")
+
+        if context.user_data.role == Role.STUDENT:
+            options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUP}")
+
+        # Because of complex logic around English, we will not offer the student to review their
+        # language/level for now.  This option will be reserved for teachers.
+        if context.user_data.role == Role.TEACHER:
+            options.append(f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}")
+
         buttons = [
             InlineKeyboardButton(
                 text=PHRASES[f"review_option_{option}"][locale], callback_data=option
             )
-            for option in (
-                # Without f-strings they will produce something like <Enum: "name">.
-                # An alternative is to use .value attribute.
-                f"{UserDataReviewCategory.FIRST_NAME}",
-                f"{UserDataReviewCategory.LAST_NAME}",
-                f"{UserDataReviewCategory.EMAIL}",
-                f"{UserDataReviewCategory.TIMEZONE}",
-                f"{UserDataReviewCategory.AVAILABILITY}",
-                f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}",
-                f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
-            )
+            for option in options
         ]
-
-        if context.user_data.phone_number:
-            buttons.append(
-                InlineKeyboardButton(
-                    text=PHRASES[f"review_option_{UserDataReviewCategory.PHONE_NUMBER}"][locale],
-                    callback_data=UserDataReviewCategory.PHONE_NUMBER,
-                )
-            )
-
-        if context.user_data.role == Role.STUDENT:
-            buttons.append(
-                InlineKeyboardButton(
-                    text=PHRASES[f"review_option_{UserDataReviewCategory.STUDENT_AGE_GROUP}"][
-                        locale
-                    ],
-                    callback_data=UserDataReviewCategory.STUDENT_AGE_GROUP,
-                )
-            )
 
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(

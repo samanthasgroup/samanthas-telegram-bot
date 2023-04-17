@@ -51,8 +51,10 @@ async def send_message_for_reviewing_user_data(
     )
 
     if u_data.role == Role.STUDENT:
-        message += f"{PHRASES['review_student_age_group'][locale]}: {u_data.student_age_from}-"
-        f"{u_data.student_age_from}\n"
+        message += (
+            f"{PHRASES['review_student_age_group'][locale]}: {u_data.student_age_from}-"
+            f"{u_data.student_age_to}\n"
+        )
 
     if context.user_data.tg_username:
         message += f"{PHRASES['review_username'][locale]} (@{u_data.tg_username})\n"
@@ -84,11 +86,14 @@ async def send_message_for_reviewing_user_data(
             message = message[:-1] + "\n"
     message += "\n"
 
-    message += f"{PHRASES['review_languages_levels'][locale]}:\n"
-    for language in u_data.levels_for_teaching_language:
-        message += f"{PHRASES[language][locale]}: "
-        message += ", ".join(sorted(u_data.levels_for_teaching_language[language])) + "\n"
-    message += "\n"
+    # Because of complex logic around English, we will not offer the student to review their
+    # language/level for now.  This option will be reserved for teachers.
+    if context.user_data.role == Role.TEACHER:
+        message += f"{PHRASES['review_languages_levels'][locale]}:\n"
+        for language in u_data.levels_for_teaching_language:
+            message += f"{PHRASES[language][locale]}: "
+            message += ", ".join(sorted(u_data.levels_for_teaching_language[language])) + "\n"
+        message += "\n"
 
     message += f"{PHRASES['review_communication_language'][locale]}: "
     message += (
