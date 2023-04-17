@@ -10,7 +10,7 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.constants import PHRASES, ChatMode, Role
+from samanthas_telegram_bot.constants import PHRASES, CallbackData, ChatMode, Role
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
@@ -127,4 +127,25 @@ class MessageSender:
             text=message,
             # each button in a separate list to make them show in one column
             reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
+        )
+
+    @staticmethod
+    def ask_store_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Asks if user's Telegram username should be stored or they want to give phone number."""
+        username = update.effective_user.username
+
+        await update.effective_chat.send_message(
+            f"{PHRASES['ask_username_1'][context.user_data.locale]} @{username}"
+            f"{PHRASES['ask_username_2'][context.user_data.locale]}",
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            text=PHRASES[f"username_reply_{option}"][context.user_data.locale],
+                            callback_data=f"store_username_{option}",
+                        )
+                        for option in (CallbackData.YES, CallbackData.NO)
+                    ],
+                ]
+            ),
         )

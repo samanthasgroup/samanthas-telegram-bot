@@ -26,8 +26,8 @@ from samanthas_telegram_bot.callbacks.common import (
     store_data_ask_another_level_or_communication_language_or_start_assessment,
     store_email_check_existence_ask_role,
     store_first_name_ask_last_name,
-    store_interface_lang_ask_if_already_registered,
     store_last_name_ask_source,
+    store_locale_ask_if_already_registered,
     store_non_teaching_help_ask_another_or_additional_help,
     store_one_time_slot_ask_another,
     store_phone_ask_email,
@@ -106,9 +106,7 @@ def main() -> None:
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            State.IS_REGISTERED: [
-                CallbackQueryHandler(store_interface_lang_ask_if_already_registered)
-            ],
+            State.IS_REGISTERED: [CallbackQueryHandler(store_locale_ask_if_already_registered)],
             State.CHECK_CHAT_ID_ASK_FIRST_NAME: [
                 CallbackQueryHandler(
                     redirect_to_coordinator_if_registered_check_chat_id_ask_first_name

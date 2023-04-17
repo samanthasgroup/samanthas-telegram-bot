@@ -40,7 +40,10 @@ logger = logging.getLogger(__name__)
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Starts the conversation and asks the user about the language they want to communicate in."""
+    """Starts the conversation and asks the user about the interface language.
+
+    The interface language may not match the interface language of the phone, so better to ask.
+    """
 
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
@@ -94,7 +97,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return State.IS_REGISTERED
 
 
-async def store_interface_lang_ask_if_already_registered(
+async def store_locale_ask_if_already_registered(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores the interface language and asks the user if they are already registered."""
@@ -115,7 +118,7 @@ async def store_interface_lang_ask_if_already_registered(
 async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Checks user's answer if they are registered, checks chat ID, asks for first name,
+    """Checks user's answer if they are registered, checks chat ID, asks for first name.
 
     If user is already registered (as per their answer), redirects to coordinator.
     Otherwise, checks if Telegram chat ID is already present in the back end.
@@ -224,24 +227,8 @@ async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TY
 
     context.user_data.source = update.message.text
 
-    username = update.effective_user.username
-
-    if username:
-        await update.effective_chat.send_message(
-            f"{PHRASES['ask_username_1'][context.user_data.locale]} @{username}"
-            f"{PHRASES['ask_username_2'][context.user_data.locale]}",
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            text=PHRASES[f"username_reply_{option}"][context.user_data.locale],
-                            callback_data=f"store_username_{option}",
-                        )
-                        for option in (CallbackData.YES, CallbackData.NO)
-                    ],
-                ]
-            ),
-        )
+    if update.effective_user.username:
+        MessageSender.ask_store_username(update, context)
 
     return State.ASK_PHONE_NUMBER
 
@@ -249,8 +236,9 @@ async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TY
 async def store_username_if_available_ask_phone_or_email(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If user's username was empty or they chose to provide a phone number, ask for it.
-    If the user provides their username, ask their email (jump over one function).
+    """If user's username was empty, or they chose to provide a phone number, ask for it.
+
+    If the user provides their username, ask their email (skip asking for phone number).
     """
 
     username = update.effective_user.username
@@ -759,7 +747,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
     elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE
+        return State.ASK_TEACHING_EXPERIENCE  # FIXME check
     else:
         raise NotImplementedError(f"Cannot handle review of {data}")
 
