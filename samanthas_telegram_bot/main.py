@@ -108,7 +108,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
+    # set the list-type attributes to empty lists to avoid iterating on None later on
     context.user_data.non_teaching_help_types = []
+    context.user_data.teacher_age_groups_of_students = []
 
     greeting = ""
     for locale in LOCALES:
@@ -860,7 +862,7 @@ async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
 
     if query.data == "speaking_club":  # teacher does not want to teach regular groups
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-        return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP  # FIXME check
+        return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
     if context.user_data.teacher_has_prior_experience:
         await CQReplySender.ask_teacher_number_of_groups(context, query)
@@ -895,7 +897,6 @@ async def store_frequency_ask_student_age_groups(
     await query.answer()
 
     context.user_data.teacher_class_frequency = query.data
-    context.user_data.teacher_age_groups_of_students = []
 
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
 

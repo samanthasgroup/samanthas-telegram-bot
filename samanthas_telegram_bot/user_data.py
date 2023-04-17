@@ -51,7 +51,7 @@ class UserData:
     teacher_has_prior_experience: bool = None
     teacher_number_of_groups: int = None
     teacher_class_frequency: int = None
-    teacher_age_groups_of_students: list = None
+    teacher_age_groups_of_students: list[str] = None
     teacher_can_help_with_cv: bool = None  # FIXME remove
     teacher_can_host_speaking_club: bool = None
     teacher_peer_help = TeacherPeerHelp()
