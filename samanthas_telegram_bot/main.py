@@ -2,7 +2,6 @@ import logging
 import os
 import re
 from collections import defaultdict
-from enum import IntEnum, auto
 
 import phonenumbers
 from telegram import (
@@ -43,6 +42,7 @@ from samanthas_telegram_bot.constants import (
     CallbackData,
     ChatMode,
     Role,
+    State,
     UserDataReviewCategory,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
@@ -57,43 +57,6 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
 logger = logging.getLogger(__name__)
-
-
-class State(IntEnum):
-    """Provides integer keys for the dictionary of states for ConversationHandler."""
-
-    IS_REGISTERED = auto()
-    CHECK_CHAT_ID_ASK_FIRST_NAME = auto()
-    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME = auto()
-    ASK_LAST_NAME = auto()
-    ASK_SOURCE = auto()
-    CHECK_USERNAME = auto()
-    ASK_PHONE_NUMBER = auto()
-    ASK_EMAIL = auto()
-    ASK_ROLE = auto()
-    ASK_AGE = auto()
-    ASK_TIMEZONE = auto()
-    TIME_SLOTS_START = auto()
-    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
-    ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
-    ASK_LEVEL_OR_COMMUNICATION_LANGUAGE = auto()
-    ASK_TEACHING_EXPERIENCE = auto()
-    ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = auto()
-    ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT = auto()
-    ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW = auto()
-    ASK_ASSESSMENT_QUESTION = auto()
-    ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP = auto()
-    ASK_TEACHING_FREQUENCY = auto()
-    PREFERRED_STUDENT_AGE_GROUPS_START = auto()
-    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
-    NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT = auto()
-    PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
-    ASK_YOUNG_TEACHER_ADDITIONAL_HELP = auto()
-    ASK_REVIEW = auto()
-    REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
-    REVIEW_REQUESTED_ITEM = auto()
-    ASK_FINAL_COMMENT = auto()  # standalone, not after review
-    BYE = auto()
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
