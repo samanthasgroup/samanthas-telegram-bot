@@ -87,7 +87,6 @@ class State(IntEnum):
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
     NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT = auto()
-    ASK_PEER_HELP_OR_ADDITIONAL_HELP = auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
     ASK_YOUNG_TEACHER_ADDITIONAL_HELP = auto()
     ASK_REVIEW = auto()
@@ -108,9 +107,17 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
-    # set the list-type attributes to empty lists to avoid iterating on None later on
+    # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
+    # Methods handling these iterables can be called from different callbacks, so better to set
+    # them here, in one place.
     context.user_data.non_teaching_help_types = []
     context.user_data.teacher_age_groups_of_students = []
+
+    # TODO maybe remove this altogether and produce a list like with non-teaching help
+    # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
+    # but in order to remove selected options from InlineKeyboard, I have to store exact
+    # callback_data somewhere.
+    context.chat_data["peer_help_callback_data"] = set()
 
     greeting = ""
     for locale in LOCALES:
@@ -864,7 +871,7 @@ async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
         return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
-    if context.user_data.teacher_has_prior_experience:
+    if context.user_data.teacher_has_prior_experience is True:
         await CQReplySender.ask_teacher_number_of_groups(context, query)
         return State.ASK_TEACHING_FREQUENCY
 
@@ -920,7 +927,7 @@ async def store_student_age_group_ask_another_or_non_teaching_help(
         context.user_data.teacher_age_groups_of_students
     ) == len(STUDENT_AGE_GROUPS_FOR_TEACHER):
         await CQReplySender.ask_non_teaching_help(context, query)
-        return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
+        return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
 
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
     return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
@@ -942,45 +949,11 @@ async def store_non_teaching_help_ask_another_or_additional_help(
         NON_TEACHING_HELP_TYPES
     ):
         await CQReplySender.ask_teacher_peer_help(context, query)
-        return State.ASK_PEER_HELP_OR_ADDITIONAL_HELP
+        return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
     context.user_data.non_teaching_help_types.append(data)
     await CQReplySender.ask_non_teaching_help(context, query)
     return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
-
-
-async def store_non_teaching_help_ask_peer_help_or_additional_help(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores information about additional help for students. If the teacher has teaching
-    experience, asks about help for less experienced teachers. Otherwise, asks about any other
-    types of help the teacher could provide (for more experienced teachers, this question will be
-    asked at the next stage).
-    """
-    query = update.callback_query
-    await query.answer()
-
-    # callback_data "cv_and_speaking_club" will lead to both attributes being True.
-    # I am not extracting constants to point out that these exact words are present in CSV file
-    # with phrases (where constants are obviously impossible),
-    if "cv" in query.data:
-        context.user_data.teacher_can_help_with_cv = True
-    if "speaking_club" in query.data:
-        context.user_data.teacher_can_host_speaking_club = True
-
-    if context.user_data.teacher_has_prior_experience is True:
-        # I will be storing the selected options in boolean flags of TeacherPeerHelp(),
-        # but in order to remove selected options from InlineKeyboard, I have to store exact
-        # callback_data somewhere.
-        context.chat_data["peer_help_callback_data"] = set()
-        await CQReplySender.ask_teacher_peer_help(context, query)
-        return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
-
-    await query.edit_message_text(
-        PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
-        reply_markup=InlineKeyboardMarkup([]),
-    )
-    return State.ASK_REVIEW
 
 
 async def store_peer_help_ask_another_or_additional_help(
@@ -1324,9 +1297,6 @@ def main() -> None:
             ],
             State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT: [
                 CallbackQueryHandler(store_non_teaching_help_ask_another_or_additional_help)
-            ],
-            State.ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
-                CallbackQueryHandler(store_non_teaching_help_ask_peer_help_or_additional_help)
             ],
             State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
                 CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)
