@@ -29,8 +29,12 @@ from samanthas_telegram_bot.api_queries import (
     person_with_first_name_last_name_email_exists_in_database,
 )
 from samanthas_telegram_bot.assessment import get_questions
-from samanthas_telegram_bot.callback_query_reply_sender import (
+from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
+)
+from samanthas_telegram_bot.callbacks.auxil.send_message import (
+    send_message_for_phone_number,
+    send_message_for_reviewing_user_data,
 )
 from samanthas_telegram_bot.constants import (
     DAY_OF_WEEK_FOR_INDEX,
@@ -46,10 +50,6 @@ from samanthas_telegram_bot.constants import (
     UserDataReviewCategory,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.send_message import (
-    send_message_for_phone_number,
-    send_message_for_reviewing_user_data,
-)
 from samanthas_telegram_bot.user_data import UserData
 
 # Enable logging
