@@ -6,9 +6,7 @@ from telegram.ext import ConversationHandler
 from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.callbacks.auxil.send_message import (
-    send_message_for_reviewing_user_data,
-)
+from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.constants import (
     PHRASES,
     STUDENT_AGE_GROUPS_FOR_TEACHER,
@@ -58,7 +56,7 @@ async def store_communication_language_ask_teaching_experience(
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await query.delete_message()
-        await send_message_for_reviewing_user_data(update, context)
+        await MessageSender.ask_review(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     logger.info(context.user_data.communication_language_in_class)
@@ -214,5 +212,5 @@ async def store_teachers_additional_skills_ask_if_review_needed(
     if context.user_data.role == Role.TEACHER:
         context.user_data.teacher_additional_skills_comment = update.message.text
 
-    await send_message_for_reviewing_user_data(update, context)
+    await MessageSender.ask_review(update, context)
     return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT

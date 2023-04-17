@@ -24,7 +24,7 @@ from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
 class CallbackQueryReplySender:
-    """A helper class that send a reply to user by executing
+    """A helper class that sends replies to user by executing
     `telegram.CallbackQuery.edit_message_text()`.
 
     Methods in this class are called several times in the bot's code and/or are complex.

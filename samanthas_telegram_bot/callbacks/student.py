@@ -6,9 +6,7 @@ from samanthas_telegram_bot.assessment import prepare_assessment
 from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.callbacks.auxil.send_message import (
-    send_message_for_reviewing_user_data,
-)
+from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.constants import CallbackData, State
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
@@ -31,7 +29,7 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
         await CQReplySender.ask_non_teaching_help(context, query)
         return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
 
-    await send_message_for_reviewing_user_data(update, context)
+    await MessageSender.ask_review(update, context)
     return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
 

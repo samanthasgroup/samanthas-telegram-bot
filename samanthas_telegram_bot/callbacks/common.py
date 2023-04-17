@@ -21,10 +21,7 @@ from samanthas_telegram_bot.assessment import prepare_assessment
 from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.callbacks.auxil.send_message import (
-    send_message_for_phone_number,
-    send_message_for_reviewing_user_data,
-)
+from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
@@ -193,7 +190,7 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await update.message.delete()
-        await send_message_for_reviewing_user_data(update, context)
+        await MessageSender.ask_review(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(PHRASES["ask_last_name"][context.user_data.locale])
@@ -210,7 +207,7 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await update.message.delete()
-        await send_message_for_reviewing_user_data(update, context)
+        await MessageSender.ask_review(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
@@ -274,7 +271,7 @@ async def store_username_if_available_ask_phone_or_email(
     context.user_data.tg_username = None
     await query.delete_message()
 
-    await send_message_for_phone_number(update, context)
+    await MessageSender.ask_phone_number(update, context)
     return State.ASK_EMAIL
 
 
@@ -314,7 +311,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await update.message.delete()
-        await send_message_for_reviewing_user_data(update, context)
+        await MessageSender.ask_review(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
@@ -361,7 +358,7 @@ async def store_email_check_existence_ask_role(
 
     if context.chat_data["mode"] == ChatMode.REVIEW:
         await update.message.delete()
-        await send_message_for_reviewing_user_data(update, context)
+        await MessageSender.ask_review(update, context)
         return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
@@ -453,7 +450,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
         if context.chat_data["mode"] == ChatMode.REVIEW:
             await query.delete_message()
-            await send_message_for_reviewing_user_data(update, context)
+            await MessageSender.ask_review(update, context)
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         context.user_data.time_slots_for_day = defaultdict(list)
@@ -478,7 +475,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
             if context.chat_data["mode"] == ChatMode.REVIEW:
                 await query.delete_message()
-                await send_message_for_reviewing_user_data(update, context)
+                await MessageSender.ask_review(update, context)
                 return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
             context.user_data.levels_for_teaching_language = {}
@@ -537,7 +534,7 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     if query.data == CallbackData.DONE and context.user_data.role == Role.TEACHER:
         if context.chat_data["mode"] == ChatMode.REVIEW:
             await query.delete_message()
-            await send_message_for_reviewing_user_data(update, context)
+            await MessageSender.ask_review(update, context)
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         await CQReplySender.ask_class_communication_languages(context, query)
@@ -637,7 +634,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
     if role == Role.STUDENT:
         if context.chat_data["mode"] == ChatMode.REVIEW:
             await query.delete_message()
-            await send_message_for_reviewing_user_data(update, context)
+            await MessageSender.ask_review(update, context)
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         await CQReplySender.ask_class_communication_languages(
@@ -667,7 +664,7 @@ async def store_non_teaching_help_ask_another_or_additional_help(
         NON_TEACHING_HELP_TYPES
     ):
         if context.user_data.role == Role.STUDENT:
-            await send_message_for_reviewing_user_data(update, context)
+            await MessageSender.ask_review(update, context)
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
         else:
             await CQReplySender.ask_teacher_peer_help(context, query)
@@ -736,7 +733,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         # no need to check user_data here since the user couldn't have selected this option
         # if it wasn't there.
         # edit_message_text not possible here because of a button for sharing phone number
-        await send_message_for_phone_number(update, context)
+        await MessageSender.ask_phone_number(update, context)
         return State.ASK_EMAIL
     elif data == UserDataReviewCategory.EMAIL:
         await query.edit_message_text(
