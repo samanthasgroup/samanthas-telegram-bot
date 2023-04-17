@@ -130,7 +130,7 @@ class MessageSender:
         )
 
     @staticmethod
-    def ask_store_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    async def ask_store_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         """Asks if user's Telegram username should be stored or they want to give phone number."""
         username = update.effective_user.username
 
