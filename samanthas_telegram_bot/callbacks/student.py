@@ -2,6 +2,7 @@ import logging
 
 from telegram import Update
 
+from samanthas_telegram_bot.api_queries import send_written_answers_get_level
 from samanthas_telegram_bot.assessment import prepare_assessment
 from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -62,14 +63,17 @@ async def assessment_store_answer_ask_question(
     """Stores answer to the question (unless this is the beginning of the test), asks next one."""
     query, data = await answer_callback_query_and_get_data(update)
 
-    # TODO store number of correct answers? How to determine level?
-
     if (
         context.chat_data["current_question_idx"]
         == len(context.chat_data["assessment_questions"]) - 1
     ):
-        # TODO store and send message
-        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        level = await send_written_answers_get_level({}, logger)  # TODO
+        if level == "A2":  # TODO
+            pass
+        else:
+            # TODO add some encouragement message on completing the test?
+            await CQReplySender.ask_class_communication_languages(context, query)
+            return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
     if data in ("1", "2", "3", "4", CallbackData.DONT_KNOW):
         # TODO store
