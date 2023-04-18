@@ -71,7 +71,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES[f"ask_class_communication_language_{role}"][locale],
                 buttons=language_buttons,
                 buttons_per_row=1,
-                parse_mode=None,
             )
         )
 
@@ -97,7 +96,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES["ask_student_how_long_been_learning_english"][locale],
                 buttons=buttons,
                 buttons_per_row=2,
-                parse_mode=None,
             )
         )
 
@@ -139,7 +137,6 @@ class CallbackQueryReplySender:
                 buttons=level_buttons,
                 buttons_per_row=3,
                 top_row_button=done_button,
-                parse_mode=None,
             )
         )
 
@@ -169,7 +166,6 @@ class CallbackQueryReplySender:
                     text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
                     callback_data=CallbackData.DONT_KNOW,
                 ),
-                parse_mode=None,
             )
         )
 
@@ -207,7 +203,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES[f"ask_non_teaching_help_{context.user_data.role}"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
-                parse_mode=None,
                 bottom_row_button=InlineKeyboardButton(
                     text=PHRASES["option_non_teaching_help_done"][locale],
                     callback_data=CallbackData.DONE,
@@ -379,7 +374,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES["ask_teacher_group_speaking_club"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
-                parse_mode=None,
             )
         )
 
@@ -414,7 +408,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES["ask_if_over_16_and_can_host_speaking_clubs"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
-                parse_mode=None,
             )
         )
 
@@ -439,7 +432,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES["ask_teacher_number_of_groups"][locale],
                 buttons=buttons,
                 buttons_per_row=2,
-                parse_mode=None,
             )
         )
 
@@ -481,7 +473,6 @@ class CallbackQueryReplySender:
                     PHRASES["ask_teacher_peer_help_done"][locale],
                     callback_data=CallbackData.DONE,
                 ),
-                parse_mode=None,
             )
         )
 
@@ -506,7 +497,6 @@ class CallbackQueryReplySender:
                 message_text=PHRASES["ask_teacher_frequency"][context.user_data.locale],
                 buttons=buttons,
                 buttons_per_row=1,
-                parse_mode=None,
             )
         )
 
@@ -546,6 +536,7 @@ class CallbackQueryReplySender:
                 buttons=language_buttons,
                 buttons_per_row=3,
                 bottom_row_button=done_button,
+                parse_mode=ParseMode.MARKDOWN_V2,
             )
         )
 
@@ -587,6 +578,7 @@ class CallbackQueryReplySender:
                     text=PHRASES["ask_slots_next"][context.user_data.locale],
                     callback_data=CallbackData.NEXT,
                 ),
+                parse_mode=ParseMode.MARKDOWN_V2,
             )
         )
 
@@ -677,9 +669,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
         question_phrase_internal_id: str,
-        # TODO remove slashes from phrases after taking care of parse_mode.
-        #  Maybe make it None by default. Better asterisks than exceptions.
-        parse_mode: Union[ParseMode, None] = ParseMode.MARKDOWN_V2,
+        parse_mode: Union[ParseMode, None] = None,
     ) -> None:
         """Asks "yes" or "no" (localized)."""
 
@@ -709,7 +699,7 @@ class CallbackQueryReplySender:
         buttons_per_row,
         bottom_row_button: InlineKeyboardButton = None,
         top_row_button: InlineKeyboardButton = None,
-        parse_mode: Union[ParseMode, None] = ParseMode.MARKDOWN_V2,
+        parse_mode: Union[ParseMode, None] = None,
     ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
         """Makes a message with an inline keyboard, the number of rows in which depends on how many
         buttons are passed. The buttons are evenly distributed over the rows. The last row can
