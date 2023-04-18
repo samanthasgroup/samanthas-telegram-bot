@@ -66,7 +66,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # callback_data somewhere.
     context.chat_data["peer_help_callback_data"] = set()
 
-    greeting = ""
+    greeting = "👋 "
     for locale in LOCALES:
         greeting += (
             f"{PHRASES['hello'][locale]} {update.message.from_user.first_name}! "
