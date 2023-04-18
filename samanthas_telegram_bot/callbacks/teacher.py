@@ -15,6 +15,7 @@ from samanthas_telegram_bot.constants import (
     ChatMode,
     Role,
     State,
+    TeachingMode,
 )
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
@@ -93,10 +94,11 @@ async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
     query, data = await answer_callback_query_and_get_data(update)
 
     context.user_data.teacher_can_host_speaking_club = (
-        True if data in ("speaking_club", "both") else False
+        True if data in (TeachingMode.SPEAKING_CLUB_ONLY, TeachingMode.BOTH) else False
     )
 
-    if data == "speaking_club":  # teacher does not want to teach regular groups
+    if data == TeachingMode.SPEAKING_CLUB_ONLY:
+        context.user_data.teacher_number_of_groups = 0
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
         return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 

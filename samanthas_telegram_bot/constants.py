@@ -69,9 +69,21 @@ class State(IntEnum):
     BYE = auto()
 
 
+class TeachingMode(str, Enum):
+    """Enumeration for names of options that teacher can choose for their mode of work.
+
+    Members of this enum can be treated as strings.
+    """
+
+    BOTH = "both"
+    REGULAR_GROUPS_ONLY = "group"
+    SPEAKING_CLUB_ONLY = "speaking_club"
+
+
 class UserDataReviewCategory(str, Enum):
-    """Enumeration for names of options that user can choose when reviewing their data at the end
-    of the registration process. Members of this enum can be treated as strings.
+    """Enumeration for names of options that user can choose when reviewing their data.
+
+    Members of this enum can be treated as strings.
     """
 
     FIRST_NAME = "first_name"
