@@ -406,6 +406,11 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
             f"Age group: {context.user_data.student_age_from}-{context.user_data.student_age_to}"
         )
 
+    if context.chat_data["mode"] == ChatMode.REVIEW:
+        await query.delete_message()
+        await MessageSender.ask_review(update, context)
+        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
     await CQReplySender.ask_timezone(context, query)
     return State.TIME_SLOTS_START
 
@@ -732,6 +737,12 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
         await CQReplySender.ask_class_communication_languages(context, query)
         return State.ASK_TEACHING_EXPERIENCE  # FIXME check
+    elif data == UserDataReviewCategory.STUDENT_AGE_GROUP:
+        if context.user_data.role == Role.STUDENT:
+            await CQReplySender.ask_student_age(context, query)
+            return State.ASK_TIMEZONE
+        await CQReplySender.ask_teacher_age_groups_of_students(context, query)
+        return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
     else:
         raise NotImplementedError(f"Cannot handle review of {data}")
 

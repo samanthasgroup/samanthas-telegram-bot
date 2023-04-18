@@ -57,4 +57,4 @@ async def person_with_first_name_last_name_email_exists_in_database(
 async def send_written_answers_get_level(answers: dict[str, str], logger: logging.Logger) -> str:
     """Sends answers to written assessment to the backend, gets level and returns it."""
     logger.info("Sending the results to the backend and receiving the level...")
-    return "A1"
+    return "A2"
