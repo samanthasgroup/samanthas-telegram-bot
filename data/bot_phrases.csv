@@ -9,7 +9,7 @@ cz,Czech,чешский,
 se,Swedish,шведский,
 option_yes,Yes,Да,Да
 option_no,No,Нет,Нi
-hello,Hello,Здравствуйте,Привіт
+hello,Hello! My name is Sam 😊,Привет! Меня зовут Сэм 😊,Привіт! Мене звати Сем 😊
 choose_language_of_conversation,"In which language do you want to communicate with me? To stop talking to me at, you can send /cancel at any time.","На каком языке мы будем общаться? Для завершения разговора со мной Вы можете в любой момент ввести команду /cancel",
 ask_already_with_us,Are you already teaching or taking classes with us?,Вы занимаетесь или преподаёте у нас прямо сейчас?,
 reply_go_to_other_chat,Please contact your coordinator to get the link to the new chat with coordinators.,Пожалуйста свяжитесь со своим координатором и получите ссылку на новый чат с координаторами.,
