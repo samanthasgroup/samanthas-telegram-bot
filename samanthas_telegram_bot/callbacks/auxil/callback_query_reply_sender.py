@@ -159,7 +159,11 @@ class CallbackQueryReplySender:
 
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=questions[context.chat_data["current_question_idx"]]["question"],
+                message_text=(
+                    f"(Question #{context.chat_data['current_question_idx'] + 1} out of "
+                    f"{len(context.chat_data['assessment_questions'])}) "
+                    f"{questions[context.chat_data['current_question_idx']]['question']}"
+                ),
                 buttons=buttons,
                 buttons_per_row=2,  # TODO 4 or variable number
                 bottom_row_button=InlineKeyboardButton(
