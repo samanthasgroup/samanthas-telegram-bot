@@ -158,7 +158,7 @@ async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
 
     if data == CallbackData.NO:
         await query.edit_message_text(
-            PHRASES["bye_wait_for_message"][context.user_data.locale],
+            PHRASES["bye_wait_for_message_from_bot"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationHandler.END
@@ -756,17 +756,27 @@ async def store_additional_help_comment_ask_final_comment(
 
 
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """For a would-be teacher that is under 18, store their comment about potential useful skills.
-    For others, store the general comment. End the conversation."""
-    locale = context.user_data.locale
+    """Stores comment and ends the conversation.
 
-    if context.user_data.role == Role.TEACHER and context.user_data.teacher_is_under_18 is True:
-        context.user_data.teacher_additional_skills_comment = update.message.text
-        await update.effective_chat.send_message(PHRASES["bye_teacher_under_18"][locale])
+    For a would-be teacher that is under 18, stores their comment about potential useful skills.
+    For others, stores the general comment. Ends the conversation."""
+    data = context.user_data
+    locale = data.locale
+
+    if data.role == Role.TEACHER and data.teacher_is_under_18 is True:
+        data.teacher_additional_skills_comment = update.message.text
     else:
-        context.user_data.comment = update.message.text
-        await update.effective_chat.send_message(PHRASES["bye_wait_for_message"][locale])
+        data.comment = update.message.text
 
+    # number of groups is None for young teachers and 0 for adults that only want speaking club
+    if data.role == Role.TEACHER and not data.teacher_number_of_groups:
+        phrase_id = "bye_wait_for_message_from_coordinator"
+    elif data.role == Role.STUDENT and data.student_needs_oral_interview is True:
+        phrase_id = "bye_go_to_chat_with_coordinator"
+    else:
+        phrase_id = "bye_wait_for_message_from_bot"
+
+    await update.effective_chat.send_message(PHRASES[phrase_id][locale])
     return ConversationHandler.END
 
 
