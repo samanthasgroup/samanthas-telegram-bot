@@ -736,9 +736,9 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
     elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE  # FIXME check
+        return State.ASK_TEACHING_EXPERIENCE
     elif data == UserDataReviewCategory.STUDENT_AGE_GROUP:
-        if context.user_data.role == Role.STUDENT:
+        if context.user_data.role == Role.STUDENT:  # TODO maybe add students' ages for teachers
             await CQReplySender.ask_student_age(context, query)
             return State.ASK_TIMEZONE
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
