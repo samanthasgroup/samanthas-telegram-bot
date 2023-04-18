@@ -677,6 +677,9 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
         question_phrase_internal_id: str,
+        # TODO remove slashes from phrases after taking care of parse_mode.
+        #  Maybe make it None by default. Better asterisks than exceptions.
+        parse_mode: Union[ParseMode, None] = ParseMode.MARKDOWN_V2,
     ) -> None:
         """Asks "yes" or "no" (localized)."""
 
@@ -695,6 +698,7 @@ class CallbackQueryReplySender:
                 message_text=PHRASES[question_phrase_internal_id][context.user_data.locale],
                 buttons=buttons,
                 buttons_per_row=2,
+                parse_mode=parse_mode,
             )
         )
 

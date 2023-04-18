@@ -38,8 +38,10 @@ from samanthas_telegram_bot.callbacks.common import (
     store_username_if_available_ask_phone_or_email,
 )
 from samanthas_telegram_bot.callbacks.student import (
+    ask_communication_language_after_smalltalk,
     ask_communication_language_or_start_assessment_depending_on_learning_experience,
     assessment_store_answer_ask_question,
+    send_smalltalk_url_or_ask_communication_language,
     store_communication_language_ask_non_teaching_help_or_start_review,
 )
 from samanthas_telegram_bot.callbacks.teacher import (
@@ -183,6 +185,12 @@ def main() -> None:
             ],
             State.ASK_ASSESSMENT_QUESTION: [
                 CallbackQueryHandler(assessment_store_answer_ask_question)
+            ],
+            State.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(send_smalltalk_url_or_ask_communication_language)
+            ],
+            State.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
+                CallbackQueryHandler(ask_communication_language_after_smalltalk)
             ],
             State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP: [
                 CallbackQueryHandler(

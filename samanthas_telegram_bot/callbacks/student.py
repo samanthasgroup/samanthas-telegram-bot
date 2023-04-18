@@ -1,15 +1,15 @@
 import logging
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
-from samanthas_telegram_bot.api_queries import send_written_answers_get_level
+from samanthas_telegram_bot.api_queries import get_smalltalk_url, send_written_answers_get_level
 from samanthas_telegram_bot.assessment import prepare_assessment
 from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
 from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.callbacks.auxil.utils import answer_callback_query_and_get_data
-from samanthas_telegram_bot.constants import CallbackData, State
+from samanthas_telegram_bot.constants import PHRASES, CallbackData, State
 from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
@@ -67,11 +67,17 @@ async def assessment_store_answer_ask_question(
         context.chat_data["current_question_idx"]
         == len(context.chat_data["assessment_questions"]) - 1
     ):
-        level = await send_written_answers_get_level({}, logger)  # TODO
-        if level == "A2":  # TODO
-            pass
+        level = await send_written_answers_get_level({})  # TODO
+        if level == "A2":  # TODO A2 or higher
+            await CQReplySender.ask_yes_no(
+                context,
+                query,
+                question_phrase_internal_id="ask_student_start_oral_test",
+                parse_mode=None,
+            )
+            return State.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
         else:
-            # TODO add some encouragement message on completing the test?
+            # TODO add some compliment on completing the test even without oral test?
             await CQReplySender.ask_class_communication_languages(context, query)
             return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
@@ -81,3 +87,46 @@ async def assessment_store_answer_ask_question(
 
     await CQReplySender.ask_next_assessment_question(context, query)
     return State.ASK_ASSESSMENT_QUESTION
+
+
+async def send_smalltalk_url_or_ask_communication_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If student wants to take Smalltalk test, give them URL. Else, ask communication language."""
+    query, data = await answer_callback_query_and_get_data(update)
+    locale = context.user_data.locale
+
+    if data == CallbackData.YES:
+        url = await get_smalltalk_url(
+            first_name=context.user_data.first_name,
+            last_name=context.user_data.last_name,
+            email=context.user_data.email,
+        )
+        await query.edit_message_text(
+            PHRASES["give_smalltalk_url"][locale] + f"\n{url}",  # TODO add link onto a text
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            PHRASES["answer_smalltalk_done"][locale],
+                            callback_data=CallbackData.DONE,
+                        )
+                    ]
+                ]
+            ),
+        )
+        return State.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
+
+    await CQReplySender.ask_class_communication_languages(context, query)
+    return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
+
+
+async def ask_communication_language_after_smalltalk(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores nothing, just asks about communication language in class."""
+    query, _ = await answer_callback_query_and_get_data(update)
+    # TODO store something in user_data to signal that the user passed the test and that
+    #  the backend should try and load results?
+    await CQReplySender.ask_class_communication_languages(context, query)
+    return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW

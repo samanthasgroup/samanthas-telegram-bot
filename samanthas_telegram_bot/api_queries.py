@@ -1,15 +1,17 @@
-# FIXME for now this module only contains dummy functions
+# TODO for now this module only contains dummy functions
 #  for the conversation flow to work.
 import logging
 
+logger = logging.getLogger(__name__)
 
-async def chat_id_is_registered(chat_id: int, logger: logging.Logger) -> bool:
+
+async def chat_id_is_registered(chat_id: int) -> bool:
     """Checks whether the chat ID is already stored in the database."""
     logger.info(f"Checking with the backend if chat ID {chat_id} exists...")
     return False
 
 
-async def get_age_ranges(logger: logging.Logger) -> dict[str, list[dict[str, int]]]:
+async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
     logger.info("Getting age ranges from the backend...")
     return {
         "student": [
@@ -41,11 +43,20 @@ async def get_age_ranges(logger: logging.Logger) -> dict[str, list[dict[str, int
     }
 
 
+async def get_smalltalk_url(
+    first_name: str,
+    last_name: str,
+    email: str,
+) -> str:
+    """Gets Smalltalk test URL from the back-end"""
+    logger.info("Getting Smalltalk URL from backend...")
+    return "(URL)"
+
+
 async def person_with_first_name_last_name_email_exists_in_database(
     first_name: str,
     last_name: str,
     email: str,
-    logger: logging.Logger,
 ) -> bool:
     """Checks whether user with given first and last name and email already exists in database."""
     logger.info(
@@ -54,7 +65,7 @@ async def person_with_first_name_last_name_email_exists_in_database(
     return False
 
 
-async def send_written_answers_get_level(answers: dict[str, str], logger: logging.Logger) -> str:
+async def send_written_answers_get_level(answers: dict[str, str]) -> str:
     """Sends answers to written assessment to the backend, gets level and returns it."""
     logger.info("Sending the results to the backend and receiving the level...")
     return "A2"

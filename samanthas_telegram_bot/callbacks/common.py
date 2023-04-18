@@ -49,7 +49,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
-    context.chat_data["age_ranges"] = await get_age_ranges(logger=logger)
+    context.chat_data["age_ranges"] = await get_age_ranges()
     context.chat_data["mode"] = ChatMode.NORMAL
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
@@ -136,7 +136,7 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
         )
         return ConversationHandler.END
 
-    if await chat_id_is_registered(chat_id=update.effective_chat.id, logger=logger):
+    if await chat_id_is_registered(chat_id=update.effective_chat.id):
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
@@ -335,7 +335,6 @@ async def store_email_check_existence_ask_role(
         first_name=context.user_data.first_name,
         last_name=context.user_data.last_name,
         email=context.user_data.email,
-        logger=logger,
     ):
         await update.message.reply_text(PHRASES["user_already_exists"][locale])
         return ConversationHandler.END
