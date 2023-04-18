@@ -35,15 +35,14 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
     return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
 
-async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experience(
+async def ask_communication_language_or_start_assessment_depending_on_learning_experience(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Starts assessment or asks for additional help the student requires. No data is stored here.
 
     * For students that have been learning English for 1 year or more, starts assessment.
     * For students that have been learning English for less than 1 year, stores that they
-      need an oral interview (skipping the assessment). Then, depending on their age,
-      asks for non-teaching help or proceeds to the review.
+      need an oral interview (skipping the assessment). Then asks about communication language.
     """
     query, data = await answer_callback_query_and_get_data(update)
 
@@ -52,12 +51,9 @@ async def ask_non_teaching_help_or_start_assessment_depending_on_learning_experi
         return State.ASK_ASSESSMENT_QUESTION
 
     context.user_data.student_needs_oral_interview = True
-    if context.user_data.student_age_from >= 15:
-        await CQReplySender.ask_non_teaching_help(context, query)
-        return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
 
-    await CQReplySender.ask_review_category(context, query)
-    return State.REVIEW_REQUESTED_ITEM
+    await CQReplySender.ask_class_communication_languages(context, query)
+    return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
 
 async def assessment_store_answer_ask_question(

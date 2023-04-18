@@ -584,7 +584,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
         if can_read and user_data.student_age_to < 18:
             # students of age 13 through 17 are asked how long they have been learning English
             await CQReplySender.ask_how_long_been_learning_english(context, query)
-            return State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT
+            return State.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT
 
         if can_read and user_data.student_age_from >= 18:
             # adult students: start assessment

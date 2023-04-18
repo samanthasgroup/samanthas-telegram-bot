@@ -38,7 +38,7 @@ from samanthas_telegram_bot.callbacks.common import (
     store_username_if_available_ask_phone_or_email,
 )
 from samanthas_telegram_bot.callbacks.student import (
-    ask_non_teaching_help_or_start_assessment_depending_on_learning_experience,
+    ask_communication_language_or_start_assessment_depending_on_learning_experience,
     assessment_store_answer_ask_question,
     store_communication_language_ask_non_teaching_help_or_start_review,
 )
@@ -171,9 +171,9 @@ def main() -> None:
             State.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
                 CallbackQueryHandler(store_experience_ask_about_groups_or_speaking_clubs)
             ],
-            State.ADOLESCENTS_ASK_NON_TEACHING_HELP_OR_START_ASSESSMENT: [
+            State.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
-                    ask_non_teaching_help_or_start_assessment_depending_on_learning_experience
+                    ask_communication_language_or_start_assessment_depending_on_learning_experience
                 )
             ],
             State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW: [
