@@ -1,7 +1,9 @@
 # This module contains some send_message operations that are too complex to be included in the main
 # code, and at the same time need to run multiple times.
 import datetime
+from contextlib import suppress
 
+import telegram.error
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
@@ -47,6 +49,12 @@ class MessageSender:
     @staticmethod
     async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         """Sends a message to the user for them to review their basic info."""
+
+        # If there was no message immediately before the review message is sent to user,
+        # attempt to delete it will cause BadRequest.
+        # This is fine: we want to delete a message if it exists.
+        with suppress(telegram.error.BadRequest):
+            await update.effective_message.delete()  # remove whatever was before the review
 
         u_data = context.user_data
 
