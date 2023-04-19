@@ -627,24 +627,24 @@ class CallbackQueryReplySender:
                             text=f"{(utc_time + timedelta(hours=1)).strftime('%H:%M')} (+1)",
                             callback_data=1,
                         ),
-                        InlineKeyboardButton(
-                            text=f"{(utc_time + timedelta(hours=2)).strftime('%H:%M')} (+2)",
-                            callback_data=2,
-                        ),
                     ],
                     [
                         InlineKeyboardButton(
-                            text=f"{(utc_time + timedelta(hours=3)).strftime('%H:%M')} (+3)",
-                            callback_data=3,
-                        ),
-                        InlineKeyboardButton(
-                            text=f"{(utc_time + timedelta(hours=4)).strftime('%H:%M')} (+4)",
-                            callback_data=4,
-                        ),
+                            text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} "
+                            f"(+{dlt})",
+                            callback_data=dlt,
+                        )
+                        for dlt in (2, 3, 4)
+                    ],
+                    [
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=5, minutes=30)).strftime('%H:%M')}"
                             f" (+5:30)",
                             callback_data=5.5,
+                        ),
+                        InlineKeyboardButton(
+                            text=f"{(utc_time + timedelta(hours=7)).strftime('%H:%M')} (+7)",
+                            callback_data=7,
                         ),
                     ],
                     [
