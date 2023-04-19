@@ -1,5 +1,6 @@
 # This module contains some send_message operations that are too complex to be included in the main
 # code, and at the same time need to run multiple times.
+import datetime
 
 from telegram import (
     InlineKeyboardButton,
@@ -67,20 +68,26 @@ class MessageSender:
                 f"{u_data.student_age_to}\n"
             )
 
-        if context.user_data.tg_username:
+        if u_data.tg_username:
             message += f"{PHRASES['review_username'][locale]} (@{u_data.tg_username})\n"
-        if context.user_data.phone_number:
+        if u_data.phone_number:
             message += f"{PHRASES['review_phone_number'][locale]}: {u_data.phone_number}\n"
 
         offset_hour = u_data.utc_offset_hour
         offset_minute = str(u_data.utc_offset_minute).zfill(2)  # to produce "00" from 0
 
-        if context.user_data.utc_offset_hour > 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC+{offset_hour}\n"
-        elif context.user_data.utc_offset_hour < 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC{offset_hour}\n"
+        if u_data.utc_offset_hour > 0:
+            message += f"{PHRASES['review_timezone'][locale]}: UTC+{offset_hour}"
+        elif u_data.utc_offset_hour < 0:
+            message += f"{PHRASES['review_timezone'][locale]}: UTC{offset_hour}"
         else:
-            message += f"\n{PHRASES['review_timezone'][locale]}: UTC\n"
+            message += f"\n{PHRASES['review_timezone'][locale]}: UTC"
+
+        utc_time = update.effective_message.date
+        now_with_offset = utc_time + datetime.timedelta(
+            hours=u_data.utc_offset_hour, minutes=u_data.utc_offset_minute
+        )
+        message += f" ({PHRASES['current_time'][locale]} {now_with_offset.strftime('%H:%M')})\n"
 
         message += f"\n{PHRASES['review_availability'][locale]}:\n"
         # The dictionary of days contains keys for all days of week. Only display the days to the
@@ -105,7 +112,7 @@ class MessageSender:
 
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
-        if context.user_data.role == Role.TEACHER:
+        if u_data.role == Role.TEACHER:
             message += f"{PHRASES['review_languages_levels'][locale]}:\n"
             for language in u_data.levels_for_teaching_language:
                 message += f"{PHRASES[language][locale]}: "
@@ -122,7 +129,7 @@ class MessageSender:
 
         buttons = [
             InlineKeyboardButton(
-                text=PHRASES["review_reaction_" + option][context.user_data.locale],
+                text=PHRASES["review_reaction_" + option][u_data.locale],
                 callback_data=option,
             )
             for option in ("yes", "no")
