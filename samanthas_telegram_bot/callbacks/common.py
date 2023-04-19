@@ -436,12 +436,12 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
         context.user_data.time_slots_for_day = defaultdict(list)
 
-        # set day of week to Monday to start asking about slots for each day
-        context.chat_data["day_idx"] = 0
-
     elif query.data == CallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
             logger.info(context.user_data.time_slots_for_day)
+
+            # reset day of week to Monday for possible review
+            context.chat_data["day_idx"] = 0
 
             if not any(context.user_data.time_slots_for_day.values()):
                 await query.answer(
