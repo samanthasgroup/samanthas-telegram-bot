@@ -66,6 +66,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # callback_data somewhere.
     context.chat_data["peer_help_callback_data"] = set()
 
+    # set day of week to Monday to start asking about slots for each day
+    context.chat_data["day_idx"] = 0
+
     greeting = "👋 "
     for locale in LOCALES:
         greeting += (
@@ -713,8 +716,6 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         await CQReplySender.ask_timezone(context, query)
         return State.TIME_SLOTS_START
     elif data == UserDataReviewCategory.AVAILABILITY:
-        # set day of week to Monday to start asking about slots for each day
-        context.chat_data["day_idx"] = 0
         context.user_data.time_slots_for_day = defaultdict(list)
         await CQReplySender.ask_time_slot(context, query)
         return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
