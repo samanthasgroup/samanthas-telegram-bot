@@ -659,7 +659,9 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
 
     if data == CallbackData.YES:
         context.chat_data["mode"] = ChatMode.NORMAL  # set explicitly to normal just in case
-        # I don't want to do edit_message_text. Let user info remain in the chat for user to see.
+        # I don't want to do edit_message_text. Let user info remain in the chat for user to see,
+        # but remove the buttons.
+        await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
         await update.effective_chat.send_message(
             PHRASES["ask_final_comment"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
