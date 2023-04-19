@@ -552,24 +552,27 @@ class CallbackQueryReplySender:
     ) -> None:
         """Asks a user to choose a time slot on one particular day."""
 
+        data = context.user_data
         day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
+
+        hour = data.utc_offset_hour
+        minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
 
         # % 24 is needed to avoid showing 22:00-25:00 to the user
         buttons = [
             InlineKeyboardButton(
-                f"{(pair[0] + context.user_data.utc_offset) % 24}:00-"
-                f"{(pair[1] + context.user_data.utc_offset) % 24}:00",
+                f"{(pair[0] + hour) % 24}:{minute}-" f"{(pair[1] + hour) % 24}:{minute}",
                 callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
             )
             for pair in UTC_TIME_SLOTS
             # exclude slots that user has already selected
-            if f"{pair[0]}-{pair[1]}" not in context.user_data.time_slots_for_day[day]
+            if f"{pair[0]}-{pair[1]}" not in data.time_slots_for_day[day]
         ]
 
         message_text = (
-            PHRASES["ask_timeslots"][context.user_data.locale]
+            PHRASES["ask_timeslots"][data.locale]
             + " *"
-            + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][context.user_data.locale])
+            + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][data.locale])
             + r"*\?"
         )
 
@@ -579,7 +582,7 @@ class CallbackQueryReplySender:
                 buttons=buttons,
                 buttons_per_row=3,
                 bottom_row_button=InlineKeyboardButton(
-                    text=PHRASES["ask_slots_next"][context.user_data.locale],
+                    text=PHRASES["ask_slots_next"][data.locale],
                     callback_data=CallbackData.NEXT,
                 ),
                 parse_mode=ParseMode.MARKDOWN_V2,
@@ -603,36 +606,36 @@ class CallbackQueryReplySender:
                     [
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} ({dlt})",
-                            callback_data=dlt,
+                            callback_data=f"{dlt}:00",
                         )
                         for dlt in (-8, -7, -6)
                     ],
                     [
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} ({dlt})",
-                            callback_data=dlt,
+                            callback_data=f"{dlt}:00",
                         )
                         for dlt in (-5, -4, -3)
                     ],
                     [
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=-1)).strftime('%H:%M')} (-1)",
-                            callback_data=-1,
+                            callback_data="-1:00",
                         ),
                         InlineKeyboardButton(
                             text=f"{utc_time.strftime('%H:%M')} (0)",
-                            callback_data=0,
+                            callback_data="0:00",
                         ),
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=1)).strftime('%H:%M')} (+1)",
-                            callback_data=1,
+                            callback_data="1:00",
                         ),
                     ],
                     [
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} "
                             f"(+{dlt})",
-                            callback_data=dlt,
+                            callback_data=f"{dlt}:00",
                         )
                         for dlt in (2, 3, 4)
                     ],
@@ -640,18 +643,18 @@ class CallbackQueryReplySender:
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=5, minutes=30)).strftime('%H:%M')}"
                             f" (+5:30)",
-                            callback_data=5.5,
+                            callback_data="5:30",
                         ),
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=7)).strftime('%H:%M')} (+7)",
-                            callback_data=7,
+                            callback_data="7:00",
                         ),
                     ],
                     [
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} "
                             f"(+{dlt})",
-                            callback_data=dlt,
+                            callback_data=f"{dlt}:00",
                         )
                         for dlt in (8, 9, 10)
                     ],
@@ -659,7 +662,7 @@ class CallbackQueryReplySender:
                         InlineKeyboardButton(
                             text=f"{(utc_time + timedelta(hours=dlt)).strftime('%H:%M')} "
                             f"(+{dlt})",
-                            callback_data=dlt,
+                            callback_data=f"{dlt}:00",
                         )
                         for dlt in (11, 12, 13)
                     ],

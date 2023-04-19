@@ -423,9 +423,11 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
     query = update.callback_query
 
-    if re.match(r"^[+-]?\d{1,2}$", query.data):  # this is a UTC offset
+    if re.match(r"^[+-]?\d{1,2}:\d{2}$", query.data):  # this is a UTC offset
         await query.answer()
-        context.user_data.utc_offset = int(query.data)
+        context.user_data.utc_offset_hour, context.user_data.utc_offset_minute = (
+            int(item) for item in query.data.split(":")
+        )
 
         if context.chat_data["mode"] == ChatMode.REVIEW:
             await query.delete_message()

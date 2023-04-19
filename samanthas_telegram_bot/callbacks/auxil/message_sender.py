@@ -72,10 +72,13 @@ class MessageSender:
         if context.user_data.phone_number:
             message += f"{PHRASES['review_phone_number'][locale]}: {u_data.phone_number}\n"
 
-        if context.user_data.utc_offset > 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC+{u_data.utc_offset}\n"
-        elif context.user_data.utc_offset < 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC{u_data.utc_offset}\n"
+        offset_hour = u_data.utc_offset_hour
+        offset_minute = str(u_data.utc_offset_minute).zfill(2)  # to produce "00" from 0
+
+        if context.user_data.utc_offset_hour > 0:
+            message += f"{PHRASES['review_timezone'][locale]}: UTC+{offset_hour}\n"
+        elif context.user_data.utc_offset_hour < 0:
+            message += f"{PHRASES['review_timezone'][locale]}: UTC{offset_hour}\n"
         else:
             message += f"\n{PHRASES['review_timezone'][locale]}: UTC\n"
 
@@ -90,9 +93,11 @@ class MessageSender:
             for slot in sorted(slots, key=lambda s: int(s.split("-")[0])):
                 # user must see their slots in their chosen timezone
                 hour_from, hour_to = slot.split("-")
+
+                # % 24 is needed to avoid showing 22:00-25:00 to the user
                 message += (
-                    f" {int(hour_from) + u_data.utc_offset}:00-"
-                    f"{int(hour_to) + u_data.utc_offset}:00;"
+                    f" {(int(hour_from) + offset_hour) % 24}:{offset_minute}-"
+                    f"{(int(hour_to) + offset_hour) % 24}:{offset_minute};"
                 )
             else:  # remove last semicolon, end day with line break
                 message = message[:-1] + "\n"

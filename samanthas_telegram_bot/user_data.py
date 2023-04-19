@@ -30,7 +30,9 @@ class UserData:
     phone_number: str = None
     email: str = None
     role: Role = None
-    utc_offset: int = None
+    # no datetime objects are needed to achieve results needed for the bot
+    utc_offset_hour: int = None
+    utc_offset_minute: int = None
     time_slots_for_day: dict = None
     levels_for_teaching_language: dict[str, list[str]] = None
     communication_language_in_class: Literal["en", "ru", "ua"] = None
