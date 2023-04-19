@@ -308,7 +308,7 @@ class CallbackQueryReplySender:
                     f"{PHRASES['ask_age'][locale]}"
                 ),
                 buttons=buttons,
-                buttons_per_row=4,
+                buttons_per_row=3,
             )
         )
 
@@ -538,7 +538,7 @@ class CallbackQueryReplySender:
                     context.user_data.locale
                 ],
                 buttons=language_buttons,
-                buttons_per_row=3,
+                buttons_per_row=2,
                 bottom_row_button=done_button,
                 parse_mode=ParseMode.MARKDOWN_V2,
             )
