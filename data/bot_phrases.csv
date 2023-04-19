@@ -63,7 +63,7 @@ ask_class_communication_language_student,What language (apart from the language 
 ask_class_communication_language_teacher,"What language (apart from the language you teach) can you communicate in with students during classes? Please note that we are asking about your ability to speak Ukrainian or Russian fluently enough, not about your style of teaching","На каком языке (помимо того, который Вы преподаёте) Вы можете общаться со студентами на занятиях? Обратите внимание: мы спрашиваем о том, знаете ли Вы украинский или русский достаточно хорошо, а не о стиле Вашего преподавания.",
 class_communication_language_option_ru,In Russian only,только на русском,
 class_communication_language_option_ua,In Ukrainian only,только на украинском,
-class_communication_language_option_ru_ua,In any of those two,на любом из них,
+class_communication_language_option_ru_ua,In Ukrainian or Russian,на украинском или русском,
 class_communication_language_option_l2_only,Only in the language I teach,только на изучаемом языке,
 ask_student_start_assessment,"OK, now we're ready to begin your assessment\! It will take around 15 minutes\. Please note that *you will not be able to change your answers*, so pay attention\! This assessment will help our coordinators and teachers pick the most suitable group for you\. Please press the button to proceed\.","Мы готовы начать тестирование\! Оно займёт около 15 минут и поможет нашим координаторам и учителям подобрать для Вас наиболее подходящую группу\. Пожалуйста, учтите, что *Вы не сможете изменить свои ответы*, поэтому хорошо подумайте над каждым вопросом\. Нажмите кнопку, чтобы продолжить\.",
 assessment_option_start,Let's start!,Начинаем!,
