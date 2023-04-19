@@ -77,20 +77,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         greeting,
         reply_markup=InlineKeyboardMarkup(
             [
-                [
-                    InlineKeyboardButton(
-                        text="українською",
-                        callback_data="ua",
-                    ),
-                    InlineKeyboardButton(
-                        text="in English",
-                        callback_data="en",
-                    ),
-                    InlineKeyboardButton(
-                        text="по-русски",
-                        callback_data="ru",
-                    ),
-                ],
+                [InlineKeyboardButton(text="українською", callback_data="ua")],
+                [InlineKeyboardButton(text="in English", callback_data="en")],
+                [InlineKeyboardButton(text="по-русски", callback_data="ru")],
             ]
         ),
     )
