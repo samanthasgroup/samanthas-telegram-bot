@@ -435,7 +435,7 @@ class CallbackQueryReplySender:
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=PHRASES["ask_teacher_number_of_groups"][locale],
                 buttons=buttons,
-                buttons_per_row=2,
+                buttons_per_row=1,
             )
         )
 
