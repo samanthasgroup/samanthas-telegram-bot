@@ -36,7 +36,7 @@ ask_phone,"Please provide your phone number in *international format* \(starting
 share_phone,Tap to share your phone number,"Нажмите, чтобы поделиться своим номером телефона",
 ask_email,Please provide your email,"Пожалуйста, сообщите свой адрес электронной почты",
 invalid_email,This doesn't look like a valid email. Please try again.,"Это не очень похоже на адрес электронной почты. Пожалуйста, попробуйте ещё раз.",
-invalid_phone_number,Please provide a valid phone number,"Пожалуйста, напишите номер телефона в верном формате",
+invalid_phone_number,doesn't seem like a valid phone number. Please try again.,"- это, кажется, недействительный номер телефона. Пожалуйста, попробуйте ещё раз.",
 user_already_exists,"A user with this name and contact details already exists. Please contact your coordinator or, if you are already registered through me, just wait for us to contact you when we find a group for you. I am terminating the registration process. Bye for now!","Пользователь с такими данными уже существует. Пожалуйста, свяжитесь со своим координатором. Если же Вы уже проходили регистрацию здесь, повторно регистрироваться не нужно: надо просто подождать, пока мы найдём для Вас группу и свяжемся с Вами. Я завершаю процесс регистрации. До связи!",
 ask_timezone,What's your timezone? Choose your current time (offset relative to UTC is indicated in parentheses),В каком Вы часовом поясе? Выберите Ваше текущее время (в скобках указана разница в часах относительно UTC),
 ask_timeslots,What time slots suit you,Какие часы Вам подходят,

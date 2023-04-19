@@ -287,8 +287,11 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             parsed_phone_number, phonenumbers.PhoneNumberFormat.E164
         )
     else:
+        logger.info(
+            f"Invalid phone number {parsed_phone_number} (parsed from {phone_number_to_parse})"
+        )
         await update.message.reply_text(
-            PHRASES["invalid_phone_number"][context.user_data.locale],
+            f"{phone_number_to_parse} {PHRASES['invalid_phone_number'][context.user_data.locale]}",
             reply_markup=ReplyKeyboardRemove(),
         )
         return State.ASK_EMAIL
