@@ -630,6 +630,7 @@ async def store_non_teaching_help_ask_another_or_additional_help(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     query, data = await answer_callback_query_and_get_data(update)
+    role = context.user_data.role
 
     # protection against coding error
     if data not in NON_TEACHING_HELP_TYPES + (CallbackData.DONE,):
@@ -639,12 +640,20 @@ async def store_non_teaching_help_ask_another_or_additional_help(
     if data == CallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
         NON_TEACHING_HELP_TYPES
     ):
-        if context.user_data.role == Role.STUDENT:
+        if role == Role.STUDENT:
             await MessageSender.ask_review(update, context)
             return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
-        else:
+
+        if role == Role.TEACHER and context.user_data.teacher_has_prior_experience:
             await CQReplySender.ask_teacher_peer_help(context, query)
             return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+
+        # skip peer help for inexperienced teachers
+        await query.edit_message_text(
+            PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return State.ASK_REVIEW
 
     context.user_data.non_teaching_help_types.append(data)
     await CQReplySender.ask_non_teaching_help(context, query)
