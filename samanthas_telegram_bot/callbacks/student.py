@@ -9,7 +9,8 @@ from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
 )
 from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.callbacks.auxil.utils import answer_callback_query_and_get_data
-from samanthas_telegram_bot.constants import CUSTOM_CONTEXT_TYPES, PHRASES, CallbackData, State
+from samanthas_telegram_bot.constants import PHRASES, CallbackData, State
+from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,6 @@ from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.constants import (
-    CUSTOM_CONTEXT_TYPES,
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
     LEVELS,
@@ -19,6 +18,7 @@ from samanthas_telegram_bot.constants import (
     Role,
     UserDataReviewCategory,
 )
+from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 # TODO mark parse mode in phrases.csv so that I don't have to escape full stops etc. everywhere
 

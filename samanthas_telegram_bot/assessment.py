@@ -5,7 +5,8 @@ from telegram import CallbackQuery
 from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender,
 )
-from samanthas_telegram_bot.constants import CUSTOM_CONTEXT_TYPES, DATA_DIR, LANGUAGE_CODES
+from samanthas_telegram_bot.constants import DATA_DIR, LANGUAGE_CODES
+from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
 def get_questions(lang_code: str, level: str) -> tuple[dict[str, str], ...]:
