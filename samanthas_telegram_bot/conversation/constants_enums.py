@@ -1,11 +1,7 @@
 import re
 from enum import Enum, IntEnum, auto
-from pathlib import Path
 
 from data.read_phrases import read_phrases
-
-# for some strange reason another ".parent" doesn't work, but ".." does
-DATA_DIR = Path(__name__).parent / ".." / "data"
 
 DAY_OF_WEEK_FOR_INDEX = {
     0: "Monday",

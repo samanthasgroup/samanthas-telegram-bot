@@ -1,6 +1,7 @@
-# TODO for now this module only contains dummy functions
-#  for the conversation flow to work.
+# TODO for now this module only contains dummy functions for the conversation flow to work.
+import csv
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,25 @@ async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
         "teacher": [],
         "matching": [],
     }
+
+
+def get_assessment_questions(lang_code: str) -> tuple[dict[str, str], ...]:
+    """Gets assessment questions, based on language and level"""
+
+    # for some strange reason another ".parent" doesn't work, but ".." does
+    DATA_DIR = Path(__name__).parent / ".." / "data"
+
+    if lang_code != "en":
+        # There is a difference between no test being available (that shouldn't raise an error)
+        # and a wrong language code being passed
+        raise ValueError(f"Wrong language code {lang_code}")
+
+    path_to_test = DATA_DIR / "assessment_temp.csv"
+
+    with path_to_test.open(encoding="utf-8", newline="") as fh:
+        rows = tuple(csv.DictReader(fh))
+
+    return rows
 
 
 async def get_smalltalk_url(

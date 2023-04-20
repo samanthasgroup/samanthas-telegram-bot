@@ -3,7 +3,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
 from samanthas_telegram_bot.api_queries import get_smalltalk_url, send_written_answers_get_level
-from samanthas_telegram_bot.assessment import prepare_assessment
+from samanthas_telegram_bot.conversation.callbacks.auxil.assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )

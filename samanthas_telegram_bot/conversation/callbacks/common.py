@@ -17,7 +17,7 @@ from samanthas_telegram_bot.api_queries import (
     get_age_ranges,
     person_with_first_name_last_name_email_exists_in_database,
 )
-from samanthas_telegram_bot.assessment import prepare_assessment
+from samanthas_telegram_bot.conversation.callbacks.auxil.assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
