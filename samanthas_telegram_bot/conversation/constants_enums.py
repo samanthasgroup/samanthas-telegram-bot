@@ -1,7 +1,7 @@
 import re
 from enum import Enum, IntEnum, auto
 
-from data.read_phrases import read_phrases
+from samanthas_telegram_bot.conversation.auxil.read_phrases import read_phrases
 
 DAY_OF_WEEK_FOR_INDEX = {
     0: "Monday",

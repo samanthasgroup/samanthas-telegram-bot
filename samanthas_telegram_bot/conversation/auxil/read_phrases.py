@@ -7,7 +7,10 @@ def read_phrases() -> dict[str, dict[str, str]]:
     and another dictionary as value, matching locales to actual phrases.
     """
 
-    with (Path(__file__).parent / "bot_phrases.csv").open(encoding="utf-8", newline="") as fh:
+    # for some strange reason another ".parent" doesn't work, but ".." does
+    DATA_DIR = Path(__name__).parent / ".." / "data"
+
+    with (DATA_DIR / "bot_phrases.csv").open(encoding="utf-8", newline="") as fh:
         rows = tuple(csv.DictReader(fh))
 
     return {
