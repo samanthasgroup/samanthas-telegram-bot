@@ -1,8 +1,12 @@
 import re
 from enum import Enum, IntEnum, auto
 from pathlib import Path
+from typing import Any
+
+from telegram.ext import CallbackContext, ExtBot
 
 from data.read_phrases import read_phrases
+from samanthas_telegram_bot.user_data import UserData
 
 
 class CallbackData(str, Enum):
@@ -98,6 +102,10 @@ class UserDataReviewCategory(str, Enum):
     LANGUAGE_AND_LEVEL = "language_and_level"
     CLASS_COMMUNICATION_LANGUAGE = "class_communication_language"
 
+
+# include the custom class into ContextTypes to get attribute hinting
+# (replacing standard dict with UserData for "user_data")
+CUSTOM_CONTEXT_TYPES = CallbackContext[ExtBot[None], UserData, dict[Any, Any], dict[Any, Any]]
 
 # for some strange reason another ".parent" doesn't work, but ".." does
 DATA_DIR = Path(__name__).parent / ".." / "data"

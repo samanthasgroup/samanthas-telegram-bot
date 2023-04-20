@@ -13,8 +13,13 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.constants import PHRASES, CallbackData, ChatMode, Role
-from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.constants import (
+    CUSTOM_CONTEXT_TYPES,
+    PHRASES,
+    CallbackData,
+    ChatMode,
+    Role,
+)
 
 
 class MessageSender:
