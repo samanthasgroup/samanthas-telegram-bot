@@ -258,10 +258,12 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return State.ASK_EMAIL
 
     # 1. Read phone number
-    # (hyphens, spaces, parentheses are no problem for `phonenumbers`, so no pre-processing needed)
     phone_number_to_parse = (
         update.message.contact.phone_number if update.message.contact else update.message.text
     )
+    # (hyphens, spaces, parentheses are OK for `phonenumbers`, but some phones leave out the "+")
+    if not (phone_number_to_parse.startswith("00") or phone_number_to_parse.startswith("+")):
+        phone_number_to_parse = f"+{phone_number_to_parse}"
 
     # 2. Parse phone number
     try:
