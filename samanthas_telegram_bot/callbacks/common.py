@@ -261,7 +261,8 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     phone_number_to_parse = (
         update.message.contact.phone_number if update.message.contact else update.message.text
     )
-    # (hyphens, spaces, parentheses are OK for `phonenumbers`, but some phones leave out the "+")
+    # Hyphens, spaces, parentheses are OK for `phonenumbers`, but some devices leave out the "+"
+    # even when sharing the contact
     if not (phone_number_to_parse.startswith("00") or phone_number_to_parse.startswith("+")):
         phone_number_to_parse = f"+{phone_number_to_parse}"
 
