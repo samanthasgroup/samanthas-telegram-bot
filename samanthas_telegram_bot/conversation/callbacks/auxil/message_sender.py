@@ -13,8 +13,13 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.constants import PHRASES, CallbackData, ChatMode, Role
-from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.conversation.constants_enums import (
+    PHRASES,
+    CommonCallbackData,
+    ConversationMode,
+    Role,
+)
+from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 
 class MessageSender:
@@ -58,7 +63,7 @@ class MessageSender:
 
         u_data = context.user_data
 
-        if u_data.role == Role.TEACHER and context.chat_data["mode"] == ChatMode.NORMAL:
+        if u_data.role == Role.TEACHER and context.chat_data["mode"] == ConversationMode.NORMAL:
             u_data.teacher_additional_skills_comment = update.message.text
 
         locale = u_data.locale
@@ -164,7 +169,7 @@ class MessageSender:
                             text=PHRASES[f"username_reply_{option}"][context.user_data.locale],
                             callback_data=f"store_username_{option}",
                         )
-                        for option in (CallbackData.YES, CallbackData.NO)
+                        for option in (CommonCallbackData.YES, CommonCallbackData.NO)
                     ],
                 ]
             ),

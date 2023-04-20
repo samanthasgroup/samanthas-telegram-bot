@@ -5,7 +5,7 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.constants import (
+from samanthas_telegram_bot.conversation.constants_enums import (
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
     LEVELS,
@@ -14,11 +14,11 @@ from samanthas_telegram_bot.constants import (
     STUDENT_AGE_GROUPS_FOR_TEACHER,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     UTC_TIME_SLOTS,
-    CallbackData,
+    CommonCallbackData,
     Role,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 # TODO mark parse mode in phrases.csv so that I don't have to escape full stops etc. everywhere
 
@@ -114,7 +114,7 @@ class CallbackQueryReplySender:
         if show_done_button:
             done_button = InlineKeyboardButton(
                 text=PHRASES["ask_teaching_language_level_done"][context.user_data.locale],
-                callback_data=CallbackData.DONE,
+                callback_data=CommonCallbackData.DONE,
             )
 
         last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
@@ -168,7 +168,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=2,  # TODO 4 or variable number
                 bottom_row_button=InlineKeyboardButton(
                     text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
-                    callback_data=CallbackData.DONT_KNOW,
+                    callback_data=CommonCallbackData.DONT_KNOW,
                 ),
             )
         )
@@ -209,7 +209,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=1,
                 bottom_row_button=InlineKeyboardButton(
                     text=PHRASES["option_non_teaching_help_done"][locale],
-                    callback_data=CallbackData.DONE,
+                    callback_data=CommonCallbackData.DONE,
                 ),
             )
         )
@@ -276,7 +276,7 @@ class CallbackQueryReplySender:
                     [
                         InlineKeyboardButton(
                             text=PHRASES["assessment_option_start"][locale],
-                            callback_data=CallbackData.OK,
+                            callback_data=CommonCallbackData.OK,
                         )
                     ]
                 ]
@@ -338,7 +338,7 @@ class CallbackQueryReplySender:
             if buttons_to_show == all_buttons
             else InlineKeyboardButton(
                 text=PHRASES["ask_teacher_student_age_groups_done"][locale],
-                callback_data=CallbackData.DONE,
+                callback_data=CommonCallbackData.DONE,
             )
         )
 
@@ -395,15 +395,15 @@ class CallbackQueryReplySender:
         buttons = [
             InlineKeyboardButton(
                 text=PHRASES["option_young_teacher_under_16"][locale],
-                callback_data=CallbackData.NO,
+                callback_data=CommonCallbackData.NO,
             ),
             InlineKeyboardButton(
                 text=PHRASES["option_young_teacher_over_16_but_no_speaking_club"][locale],
-                callback_data=CallbackData.NO,
+                callback_data=CommonCallbackData.NO,
             ),
             InlineKeyboardButton(
                 text=PHRASES["option_young_teacher_over_16_and_ready_for_speaking_club"][locale],
-                callback_data=CallbackData.YES,
+                callback_data=CommonCallbackData.YES,
             ),
         ]
 
@@ -475,7 +475,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=1,
                 bottom_row_button=InlineKeyboardButton(
                     PHRASES["ask_teacher_peer_help_done"][locale],
-                    callback_data=CallbackData.DONE,
+                    callback_data=CommonCallbackData.DONE,
                 ),
             )
         )
@@ -524,7 +524,7 @@ class CallbackQueryReplySender:
         if show_done_button:
             done_button = InlineKeyboardButton(
                 text=PHRASES["ask_teaching_language_done"][context.user_data.locale],
-                callback_data=CallbackData.DONE,
+                callback_data=CommonCallbackData.DONE,
             )
 
         language_buttons = [
@@ -583,7 +583,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=3,
                 bottom_row_button=InlineKeyboardButton(
                     text=PHRASES["ask_slots_next"][data.locale],
-                    callback_data=CallbackData.NEXT,
+                    callback_data=CommonCallbackData.NEXT,
                 ),
                 parse_mode=ParseMode.MARKDOWN_V2,
             )
@@ -682,7 +682,7 @@ class CallbackQueryReplySender:
 
         phrase_for_callback_data = {
             option: PHRASES[f"option_{option}"][context.user_data.locale]
-            for option in (CallbackData.YES, CallbackData.NO)
+            for option in (CommonCallbackData.YES, CommonCallbackData.NO)
         }
 
         buttons = [

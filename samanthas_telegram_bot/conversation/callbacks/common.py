@@ -18,24 +18,26 @@ from samanthas_telegram_bot.api_queries import (
     person_with_first_name_last_name_email_exists_in_database,
 )
 from samanthas_telegram_bot.assessment import prepare_assessment
-from samanthas_telegram_bot.callbacks.auxil.callback_query_reply_sender import (
+from samanthas_telegram_bot.conversation.callbacks.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.callbacks.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.callbacks.auxil.utils import answer_callback_query_and_get_data
-from samanthas_telegram_bot.constants import (
+from samanthas_telegram_bot.conversation.callbacks.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.callbacks.auxil.utils import (
+    answer_callback_query_and_get_data,
+)
+from samanthas_telegram_bot.conversation.constants_enums import (
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
     LOCALES,
     NON_TEACHING_HELP_TYPES,
     PHRASES,
-    CallbackData,
-    ChatMode,
+    CommonCallbackData,
+    ConversationMode,
+    ConversationState,
     Role,
-    State,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
     context.chat_data["age_ranges"] = await get_age_ranges()
-    context.chat_data["mode"] = ChatMode.NORMAL
+    context.chat_data["mode"] = ConversationMode.NORMAL
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
@@ -87,7 +89,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         ),
     )
 
-    return State.IS_REGISTERED
+    return ConversationState.IS_REGISTERED
 
 
 async def store_locale_ask_if_already_registered(
@@ -103,7 +105,7 @@ async def store_locale_ask_if_already_registered(
         question_phrase_internal_id="ask_already_with_us",
     )
 
-    return State.CHECK_CHAT_ID_ASK_FIRST_NAME
+    return ConversationState.CHECK_CHAT_ID_ASK_FIRST_NAME
 
 
 async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
@@ -121,7 +123,7 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
 
     query, data = await answer_callback_query_and_get_data(update)
 
-    if data == CallbackData.YES:
+    if data == CommonCallbackData.YES:
         await query.edit_message_text(
             PHRASES["reply_go_to_other_chat"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -132,13 +134,13 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
-        return State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME
+        return ConversationState.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME
 
     await query.edit_message_text(
         PHRASES["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return State.ASK_LAST_NAME
+    return ConversationState.ASK_LAST_NAME
 
 
 async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
@@ -148,7 +150,7 @@ async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
 
     query, data = await answer_callback_query_and_get_data(update)
 
-    if data == CallbackData.NO:
+    if data == CommonCallbackData.NO:
         await query.edit_message_text(
             PHRASES["bye_wait_for_message_from_bot"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -159,7 +161,7 @@ async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
         PHRASES["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return State.ASK_LAST_NAME
+    return ConversationState.ASK_LAST_NAME
 
 
 async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -176,34 +178,34 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
     # callback.
     # TODO an enhancement could be to store the information from the edited message
     if update.message is None:
-        return State.ASK_LAST_NAME
+        return ConversationState.ASK_LAST_NAME
 
     context.user_data.first_name = update.message.text
 
-    if context.chat_data["mode"] == ChatMode.REVIEW:
+    if context.chat_data["mode"] == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(PHRASES["ask_last_name"][context.user_data.locale])
-    return State.ASK_SOURCE
+    return ConversationState.ASK_SOURCE
 
 
 async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the last name and asks the user how they found out about Samantha's Group."""
 
     if update.message is None:
-        return State.ASK_SOURCE
+        return ConversationState.ASK_SOURCE
 
     context.user_data.last_name = update.message.text
 
-    if context.chat_data["mode"] == ChatMode.REVIEW:
+    if context.chat_data["mode"] == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
-    return State.CHECK_USERNAME
+    return ConversationState.CHECK_USERNAME
 
 
 async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -212,14 +214,14 @@ async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TY
     """
 
     if update.message is None:
-        return State.CHECK_USERNAME
+        return ConversationState.CHECK_USERNAME
 
     context.user_data.source = update.message.text
 
     if update.effective_user.username:
         await MessageSender.ask_store_username(update, context)
 
-    return State.ASK_PHONE_NUMBER
+    return ConversationState.ASK_PHONE_NUMBER
 
 
 async def store_username_if_available_ask_phone_or_email(
@@ -242,20 +244,20 @@ async def store_username_if_available_ask_phone_or_email(
             PHRASES["ask_email"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.ASK_ROLE
+        return ConversationState.ASK_ROLE
 
     context.user_data.tg_username = None
     await query.delete_message()
 
     await MessageSender.ask_phone_number(update, context)
-    return State.ASK_EMAIL
+    return ConversationState.ASK_EMAIL
 
 
 async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the phone number and asks for email."""
 
     if update.message is None:
-        return State.ASK_EMAIL
+        return ConversationState.ASK_EMAIL
 
     # 1. Read phone number
     phone_number_to_parse = (
@@ -289,19 +291,19 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             f"{phone_number_to_parse} {PHRASES['invalid_phone_number'][context.user_data.locale]}",
             reply_markup=ReplyKeyboardRemove(),
         )
-        return State.ASK_EMAIL
+        return ConversationState.ASK_EMAIL
 
-    if context.chat_data["mode"] == ChatMode.REVIEW:
+    if context.chat_data["mode"] == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
         PHRASES["ask_email"][context.user_data.locale],
         reply_markup=ReplyKeyboardRemove(),
     )
     logger.info(f"Phone: {context.user_data.phone_number}")
-    return State.ASK_ROLE
+    return ConversationState.ASK_ROLE
 
 
 async def store_email_check_existence_ask_role(
@@ -314,7 +316,7 @@ async def store_email_check_existence_ask_role(
     """
 
     if update.message is None:
-        return State.ASK_ROLE
+        return ConversationState.ASK_ROLE
 
     locale = context.user_data.locale
 
@@ -324,7 +326,7 @@ async def store_email_check_existence_ask_role(
             PHRASES["invalid_email"][locale],
             reply_markup=ReplyKeyboardRemove(),
         )
-        return State.ASK_ROLE
+        return ConversationState.ASK_ROLE
 
     context.user_data.email = email
 
@@ -337,10 +339,10 @@ async def store_email_check_existence_ask_role(
         await update.message.reply_text(PHRASES["user_already_exists"][locale])
         return ConversationHandler.END
 
-    if context.chat_data["mode"] == ChatMode.REVIEW:
+    if context.chat_data["mode"] == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
         PHRASES["ask_role"][locale],
@@ -356,7 +358,7 @@ async def store_email_check_existence_ask_role(
             ]
         ),
     )
-    return State.ASK_AGE
+    return ConversationState.ASK_AGE
 
 
 async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -373,7 +375,7 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
     else:
         await CQReplySender.ask_student_age(context, query)
 
-    return State.ASK_TIMEZONE
+    return ConversationState.ASK_TIMEZONE
 
 
 async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -386,14 +388,14 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     query, data = await answer_callback_query_and_get_data(update)
 
     if context.user_data.role == Role.TEACHER:
-        if data == CallbackData.YES:  # yes, the teacher is 18 or older
+        if data == CommonCallbackData.YES:  # yes, the teacher is 18 or older
             context.user_data.teacher_is_under_18 = False
         else:
             context.user_data.teacher_is_under_18 = True
             await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
                 context, query
             )
-            return State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+            return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
 
     if context.user_data.role == Role.STUDENT:
         context.user_data.student_age_from, context.user_data.student_age_to = (
@@ -403,13 +405,13 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
             f"Age group: {context.user_data.student_age_from}-{context.user_data.student_age_to}"
         )
 
-    if context.chat_data["mode"] == ChatMode.REVIEW:
+    if context.chat_data["mode"] == ConversationMode.REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
-        return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await CQReplySender.ask_timezone(context, query)
-    return State.TIME_SLOTS_START
+    return ConversationState.TIME_SLOTS_START
 
 
 async def store_timezone_ask_slots_for_one_day_or_teaching_language(
@@ -432,14 +434,14 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             int(item) for item in query.data.split(":")
         )
 
-        if context.chat_data["mode"] == ChatMode.REVIEW:
+        if context.chat_data["mode"] == ConversationMode.REVIEW:
             await query.delete_message()
             await MessageSender.ask_review(update, context)
-            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+            return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         context.user_data.time_slots_for_day = defaultdict(list)
 
-    elif query.data == CallbackData.NEXT:  # user pressed "next" button after choosing slots
+    elif query.data == CommonCallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
             logger.info(context.user_data.time_slots_for_day)
 
@@ -453,14 +455,14 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
                 logger.info("User has selected no slots at all")
                 context.chat_data["day_idx"] = 0
                 await CQReplySender.ask_time_slot(context, query)
-                return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+                return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
             await query.answer()
 
-            if context.chat_data["mode"] == ChatMode.REVIEW:
+            if context.chat_data["mode"] == ConversationMode.REVIEW:
                 await query.delete_message()
                 await MessageSender.ask_review(update, context)
-                return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+                return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
             context.user_data.levels_for_teaching_language = {}
             # if the dictionary is empty, it means that no language was chosen yet.
@@ -469,13 +471,15 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             await CQReplySender.ask_teaching_languages(
                 context, query, show_done_button=show_done_button
             )
-            return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+            return (
+                ConversationState.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+            )
         context.chat_data["day_idx"] += 1
 
     await query.answer()
     await CQReplySender.ask_time_slot(context, query)
 
-    return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+    return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
 async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -487,7 +491,7 @@ async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEX
 
     await CQReplySender.ask_time_slot(context, query)
 
-    return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+    return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
 async def store_teaching_language_ask_another_or_level_or_communication_language(
@@ -513,14 +517,14 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
 
     # Students can only choose one language, so callback_data == "done" is only possible
     # for a teacher, but we'll keep it explicit here
-    if data == CallbackData.DONE and context.user_data.role == Role.TEACHER:
-        if context.chat_data["mode"] == ChatMode.REVIEW:
+    if data == CommonCallbackData.DONE and context.user_data.role == Role.TEACHER:
+        if context.chat_data["mode"] == ConversationMode.REVIEW:
             await query.delete_message()
             await MessageSender.ask_review(update, context)
-            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+            return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE
+        return ConversationState.ASK_TEACHING_EXPERIENCE
 
     context.user_data.levels_for_teaching_language[data] = []
 
@@ -533,10 +537,10 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
             query,
             question_phrase_internal_id="ask_student_if_can_read_in_english",
         )
-        return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
+        return ConversationState.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
     await CQReplySender.ask_language_levels(context, query, show_done_button=False)
-    return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
+    return ConversationState.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
 async def store_data_ask_another_level_or_communication_language_or_start_assessment(
@@ -563,10 +567,10 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 
     query, data = await answer_callback_query_and_get_data(update)
 
-    if data == CallbackData.DONE:
+    if data == CommonCallbackData.DONE:
         # A teacher has finished selecting levels for this language: ask for another language
         await CQReplySender.ask_teaching_languages(context, query)
-        return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+        return ConversationState.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
     user_data = context.user_data
     last_language_added = tuple(user_data.levels_for_teaching_language.keys())[-1]
@@ -574,7 +578,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 
     # If this is a student that had chosen English, query.data is their ability to read in English.
     if role == Role.STUDENT and last_language_added == "en":
-        user_data.student_can_read_in_english = True if data == CallbackData.YES else False
+        user_data.student_can_read_in_english = True if data == CommonCallbackData.YES else False
 
         can_read = user_data.student_can_read_in_english
         logger.info(f"User can read in English: {can_read}")
@@ -583,17 +587,17 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
             # young students: mark as requiring interview, ask about communication language
             user_data.student_needs_oral_interview = True
             await CQReplySender.ask_class_communication_languages(context, query)
-            return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
+            return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
         if can_read and user_data.student_age_to < 18:
             # students of age 13 through 17 are asked how long they have been learning English
             await CQReplySender.ask_how_long_been_learning_english(context, query)
-            return State.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT
+            return ConversationState.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT
 
         if can_read and user_data.student_age_from >= 18:
             # adult students: start assessment
             await prepare_assessment(context, query)
-            return State.ASK_ASSESSMENT_QUESTION
+            return ConversationState.ASK_ASSESSMENT_QUESTION
 
         # if a student can NOT read in English: no assessment.  Adult students get A0...
         if user_data.student_age_from >= 18:
@@ -603,7 +607,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
             user_data.student_needs_oral_interview = True
 
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
+        return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
     # If this is a teacher or a student that had chosen another language than English,
     # query.data is language level.
@@ -613,20 +617,20 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 
     # Students can only choose one language and one level
     if role == Role.STUDENT:
-        if context.chat_data["mode"] == ChatMode.REVIEW:
+        if context.chat_data["mode"] == ConversationMode.REVIEW:
             await query.delete_message()
             await MessageSender.ask_review(update, context)
-            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+            return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         await CQReplySender.ask_class_communication_languages(
             context,
             query,
         )
-        return State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
+        return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
     # Teacher can choose another level of the same language
     await CQReplySender.ask_language_levels(context, query)
-    return State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
+    return ConversationState.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE
 
 
 async def store_non_teaching_help_ask_another_or_additional_help(
@@ -636,31 +640,31 @@ async def store_non_teaching_help_ask_another_or_additional_help(
     role = context.user_data.role
 
     # protection against coding error
-    if data not in NON_TEACHING_HELP_TYPES + (CallbackData.DONE,):
+    if data not in NON_TEACHING_HELP_TYPES + (CommonCallbackData.DONE,):
         raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
 
     # pressed "Done" or chose all types of help
-    if data == CallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
+    if data == CommonCallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
         NON_TEACHING_HELP_TYPES
     ):
         if role == Role.STUDENT:
             await MessageSender.ask_review(update, context)
-            return State.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+            return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
         if role == Role.TEACHER and context.user_data.teacher_has_prior_experience:
             await CQReplySender.ask_teacher_peer_help(context, query)
-            return State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+            return ConversationState.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
         # skip peer help for inexperienced teachers
         await query.edit_message_text(
             PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.ASK_REVIEW
+        return ConversationState.ASK_REVIEW
 
     context.user_data.non_teaching_help_types.append(data)
     await CQReplySender.ask_non_teaching_help(context, query)
-    return State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
+    return ConversationState.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
 
 
 async def check_if_review_needed_give_review_menu_or_ask_final_comment(
@@ -669,8 +673,10 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
     """If the user requested a review, gives a review menu. Otherwise, asks for final comment."""
     query, data = await answer_callback_query_and_get_data(update)
 
-    if data == CallbackData.YES:
-        context.chat_data["mode"] = ChatMode.NORMAL  # set explicitly to normal just in case
+    if data == CommonCallbackData.YES:
+        context.chat_data[
+            "mode"
+        ] = ConversationMode.NORMAL  # set explicitly to normal just in case
         # I don't want to do edit_message_text. Let user info remain in the chat for user to see,
         # but remove the buttons.
         await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
@@ -678,13 +684,13 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
             PHRASES["ask_final_comment"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.BYE
+        return ConversationState.BYE
     else:
         # Switch into review mode to let other callbacks know that they should return user
         # back to the review callback instead of moving him normally along the conversation line
-        context.chat_data["mode"] = ChatMode.REVIEW
+        context.chat_data["mode"] = ConversationMode.REVIEW
         await CQReplySender.ask_review_category(context, query)
-        return State.REVIEW_REQUESTED_ITEM
+        return ConversationState.REVIEW_REQUESTED_ITEM
 
 
 async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -709,48 +715,48 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         # This callback contains a check for a chat mode and will return the user
         # back to the review if chat is in review mode.
         # Same for other cases below.
-        return State.ASK_LAST_NAME
+        return ConversationState.ASK_LAST_NAME
     elif data == UserDataReviewCategory.LAST_NAME:
         await query.edit_message_text(
             PHRASES["ask_last_name"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.ASK_SOURCE
+        return ConversationState.ASK_SOURCE
     elif data == UserDataReviewCategory.PHONE_NUMBER:
         # no need to check user_data here since the user couldn't have selected this option
         # if it wasn't there.
         # edit_message_text not possible here because of a button for sharing phone number
         await MessageSender.ask_phone_number(update, context)
-        return State.ASK_EMAIL
+        return ConversationState.ASK_EMAIL
     elif data == UserDataReviewCategory.EMAIL:
         await query.edit_message_text(
             PHRASES["ask_email"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return State.ASK_ROLE
+        return ConversationState.ASK_ROLE
     elif data == UserDataReviewCategory.TIMEZONE:
         await CQReplySender.ask_timezone(context, query)
-        return State.TIME_SLOTS_START
+        return ConversationState.TIME_SLOTS_START
     elif data == UserDataReviewCategory.AVAILABILITY:
         context.user_data.time_slots_for_day = defaultdict(list)
         await CQReplySender.ask_time_slot(context, query)
-        return State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+        return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
     elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:
         context.user_data.levels_for_teaching_language = {}
         show_done_button = True if context.user_data.levels_for_teaching_language else False
         await CQReplySender.ask_teaching_languages(
             context, query, show_done_button=show_done_button
         )
-        return State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+        return ConversationState.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
     elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
         await CQReplySender.ask_class_communication_languages(context, query)
-        return State.ASK_TEACHING_EXPERIENCE
+        return ConversationState.ASK_TEACHING_EXPERIENCE
     elif data == UserDataReviewCategory.STUDENT_AGE_GROUP:
         if context.user_data.role == Role.STUDENT:  # TODO maybe add students' ages for teachers
             await CQReplySender.ask_student_age(context, query)
-            return State.ASK_TIMEZONE
+            return ConversationState.ASK_TIMEZONE
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-        return State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
+        return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
     else:
         raise NotImplementedError(f"Cannot handle review of {data}")
 
@@ -760,7 +766,7 @@ async def store_additional_help_comment_ask_final_comment(
 ) -> int:
     """For young teachers: stores comment on additional help, asks for final comment."""
     if update.message is None:
-        return State.ASK_FINAL_COMMENT
+        return ConversationState.ASK_FINAL_COMMENT
     locale = context.user_data.locale
 
     context.user_data.teacher_additional_skills_comment = update.message.text
@@ -771,7 +777,7 @@ async def store_additional_help_comment_ask_final_comment(
         f"{PHRASES['young_teacher_we_will_email_you'][locale]} {context.user_data.email}\n\n"
         f"{PHRASES['ask_final_comment'][locale]}"
     )
-    return State.BYE
+    return ConversationState.BYE
 
 
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
