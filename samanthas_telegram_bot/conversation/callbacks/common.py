@@ -17,14 +17,12 @@ from samanthas_telegram_bot.api_queries import (
     get_age_ranges,
     person_with_first_name_last_name_email_exists_in_database,
 )
-from samanthas_telegram_bot.conversation.callbacks.auxil.assessment import prepare_assessment
-from samanthas_telegram_bot.conversation.callbacks.auxil.callback_query_reply_sender import (
+from samanthas_telegram_bot.conversation.auxil.assessment import prepare_assessment
+from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.callbacks.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.callbacks.auxil.utils import (
-    answer_callback_query_and_get_data,
-)
+from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.constants_enums import (
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,

@@ -3,14 +3,12 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
 from samanthas_telegram_bot.api_queries import get_smalltalk_url, send_written_answers_get_level
-from samanthas_telegram_bot.conversation.callbacks.auxil.assessment import prepare_assessment
-from samanthas_telegram_bot.conversation.callbacks.auxil.callback_query_reply_sender import (
+from samanthas_telegram_bot.conversation.auxil.assessment import prepare_assessment
+from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.callbacks.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.callbacks.auxil.utils import (
-    answer_callback_query_and_get_data,
-)
+from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.constants_enums import (
     PHRASES,
     CommonCallbackData,
