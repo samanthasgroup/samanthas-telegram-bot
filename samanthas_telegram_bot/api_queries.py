@@ -47,8 +47,7 @@ async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
 def get_assessment_questions(lang_code: str) -> tuple[dict[str, str], ...]:
     """Gets assessment questions, based on language and level"""
 
-    # for some strange reason another ".parent" doesn't work, but ".." does
-    DATA_DIR = Path(__name__).parent / ".." / "data"
+    DATA_DIR = Path(__name__).resolve().parent.parent / "data"
 
     if lang_code != "en":
         # There is a difference between no test being available (that shouldn't raise an error)
