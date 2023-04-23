@@ -75,9 +75,7 @@ async def store_experience_ask_about_groups_or_speaking_clubs(
 
     query, data = await answer_callback_query_and_get_data(update)
 
-    context.user_data.teacher_has_prior_experience = (
-        True if data == CommonCallbackData.YES else False
-    )
+    context.user_data.teacher_has_prior_experience = data == CommonCallbackData.YES
 
     await CQReplySender.ask_teacher_can_teach_regular_groups_speaking_clubs(context, query)
     return ConversationState.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP
@@ -95,8 +93,9 @@ async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
 
     query, data = await answer_callback_query_and_get_data(update)
 
-    context.user_data.teacher_can_host_speaking_club = (
-        True if data in (TeachingMode.SPEAKING_CLUB_ONLY, TeachingMode.BOTH) else False
+    context.user_data.teacher_can_host_speaking_club = data in (
+        TeachingMode.SPEAKING_CLUB_ONLY,
+        TeachingMode.BOTH,
     )
 
     if data == TeachingMode.SPEAKING_CLUB_ONLY:
