@@ -33,7 +33,7 @@ class UserData:
     # no datetime objects are needed to achieve results needed for the bot
     utc_offset_hour: int = None
     utc_offset_minute: int = None
-    time_slots_for_day: dict = None
+    time_slots_for_day: dict = None  # TODO use dataclass or TypedDict
     levels_for_teaching_language: dict[str, list[str]] = None
     communication_language_in_class: Literal["en", "ru", "ua"] = None
     # This will be a list as opposed to peer help that is a bunch of boolean flags, because IDs of
