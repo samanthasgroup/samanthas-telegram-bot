@@ -51,8 +51,8 @@ class MessageSender:
             ),
         )
 
-    @staticmethod
-    async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    @classmethod
+    async def ask_review(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         """Sends a message to the user for them to review their basic info."""
 
         # If there was no message immediately before the review message is sent to user,
@@ -61,95 +61,20 @@ class MessageSender:
         with suppress(telegram.error.BadRequest):
             await update.effective_message.delete()  # remove whatever was before the review
 
-        u_data = context.user_data
-
-        if u_data.role == Role.TEACHER and context.chat_data["mode"] == ConversationMode.NORMAL:
-            u_data.teacher_additional_skills_comment = update.message.text
-
-        locale = u_data.locale
-
-        message = (
-            f"{PHRASES['ask_review'][locale]}\n\n"
-            f"{PHRASES['review_first_name'][locale]}: {u_data.first_name}\n"
-            f"{PHRASES['review_last_name'][locale]}: {u_data.last_name}\n"
-            f"{PHRASES['review_email'][locale]}: {u_data.email}\n"
-        )
-
-        if u_data.role == Role.STUDENT:
-            message += (
-                f"{PHRASES['review_student_age_group'][locale]}: {u_data.student_age_from}-"
-                f"{u_data.student_age_to}\n"
-            )
-
-        if u_data.tg_username:
-            message += f"{PHRASES['review_username'][locale]} (@{u_data.tg_username})\n"
-        if u_data.phone_number:
-            message += f"{PHRASES['review_phone_number'][locale]}: {u_data.phone_number}\n"
-
-        offset_hour = u_data.utc_offset_hour
-        offset_minute = str(u_data.utc_offset_minute).zfill(2)  # to produce "00" from 0
-
-        if u_data.utc_offset_hour > 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC+{offset_hour}"
-        elif u_data.utc_offset_hour < 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC{offset_hour}"
-        else:
-            message += f"\n{PHRASES['review_timezone'][locale]}: UTC"
-
-        utc_time = update.effective_message.date
-        now_with_offset = utc_time + datetime.timedelta(
-            hours=u_data.utc_offset_hour, minutes=u_data.utc_offset_minute
-        )
-        message += f" ({PHRASES['current_time'][locale]} {now_with_offset.strftime('%H:%M')})\n"
-
-        message += f"\n{PHRASES['review_availability'][locale]}:\n"
-        # The dictionary of days contains keys for all days of week. Only display the days to the
-        # user that they have chosen slots for:
-        for idx, day in enumerate(u_data.time_slots_for_day):
-            slots = u_data.time_slots_for_day[day]
-            if slots:
-                message += f"{PHRASES['ask_slots_' + str(idx)][locale]}: "
-            # sort by first part of slot as a number (otherwise "8:00" will be after "11:00")
-            for slot in sorted(slots, key=lambda s: int(s.split("-")[0])):
-                # user must see their slots in their chosen timezone
-                hour_from, hour_to = slot.split("-")
-
-                # % 24 is needed to avoid showing 22:00-25:00 to the user
-                message += (
-                    f" {(int(hour_from) + offset_hour) % 24}:{offset_minute}-"
-                    f"{(int(hour_to) + offset_hour) % 24}:{offset_minute};"
-                )
-            else:  # remove last semicolon, end day with line break
-                message = message[:-1] + "\n"
-        message += "\n"
-
-        # Because of complex logic around English, we will not offer the student to review their
-        # language/level for now.  This option will be reserved for teachers.
-        if u_data.role == Role.TEACHER:
-            message += f"{PHRASES['review_languages_levels'][locale]}:\n"
-            for language in u_data.levels_for_teaching_language:
-                message += f"{PHRASES[language][locale]}: "
-                message += ", ".join(sorted(u_data.levels_for_teaching_language[language])) + "\n"
-            message += "\n"
-
-        message += f"{PHRASES['review_communication_language'][locale]}: "
-        message += (
-            PHRASES[
-                f"class_communication_language_option_{u_data.communication_language_in_class}"
-            ][locale]
-            + "\n"
-        )
+        data = context.user_data
+        if data.role == Role.TEACHER and context.chat_data["mode"] == ConversationMode.NORMAL:
+            data.teacher_additional_skills_comment = update.message.text
 
         buttons = [
             InlineKeyboardButton(
-                text=PHRASES["review_reaction_" + option][u_data.locale],
+                text=PHRASES["review_reaction_" + option][data.locale],
                 callback_data=option,
             )
             for option in ("yes", "no")
         ]
 
         await update.effective_chat.send_message(
-            text=message,
+            text=cls._prepare_message_for_review(update, context),
             # each button in a separate list to make them show in one column
             reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
         )
@@ -174,3 +99,83 @@ class MessageSender:
                 ]
             ),
         )
+
+    @staticmethod
+    def _prepare_message_for_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
+        """Prepares text message with user info for review, depending on role and other factors."""
+        data = context.user_data
+        locale = data.locale
+
+        message = (
+            f"{PHRASES['ask_review'][locale]}\n\n"
+            f"{PHRASES['review_first_name'][locale]}: {data.first_name}\n"
+            f"{PHRASES['review_last_name'][locale]}: {data.last_name}\n"
+            f"{PHRASES['review_email'][locale]}: {data.email}\n"
+        )
+
+        if data.role == Role.STUDENT:
+            message += (
+                f"{PHRASES['review_student_age_group'][locale]}: {data.student_age_from}-"
+                f"{data.student_age_to}\n"
+            )
+
+        if data.tg_username:
+            message += f"{PHRASES['review_username'][locale]} (@{data.tg_username})\n"
+        if data.phone_number:
+            message += f"{PHRASES['review_phone_number'][locale]}: {data.phone_number}\n"
+
+        offset_hour = data.utc_offset_hour
+        offset_minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
+
+        if data.utc_offset_hour > 0:
+            message += f"{PHRASES['review_timezone'][locale]}: UTC+{offset_hour}"
+        elif data.utc_offset_hour < 0:
+            message += f"{PHRASES['review_timezone'][locale]}: UTC{offset_hour}"
+        else:
+            message += f"\n{PHRASES['review_timezone'][locale]}: UTC"
+
+        utc_time = update.effective_message.date
+        now_with_offset = utc_time + datetime.timedelta(
+            hours=data.utc_offset_hour, minutes=data.utc_offset_minute
+        )
+        message += f" ({PHRASES['current_time'][locale]} {now_with_offset.strftime('%H:%M')})\n"
+
+        message += f"\n{PHRASES['review_availability'][locale]}:\n"
+        # The dictionary of days contains keys for all days of week. Only display the days to the
+        # user that they have chosen slots for:
+        for idx, day in enumerate(data.time_slots_for_day):
+            slots = data.time_slots_for_day[day]
+            if slots:
+                message += f"{PHRASES['ask_slots_' + str(idx)][locale]}: "
+            # sort by first part of slot as a number (otherwise "8:00" will be after "11:00")
+            for slot in sorted(slots, key=lambda s: int(s.split("-")[0])):
+                # user must see their slots in their chosen timezone
+                hour_from, hour_to = slot.split("-")
+
+                # % 24 is needed to avoid showing 22:00-25:00 to the user
+                message += (
+                    f" {(int(hour_from) + offset_hour) % 24}:{offset_minute}-"
+                    f"{(int(hour_to) + offset_hour) % 24}:{offset_minute};"
+                )
+            else:  # remove last semicolon, end day with line break
+                message = message[:-1] + "\n"
+        message += "\n"
+
+        # Because of complex logic around English, we will not offer the student to review their
+        # language/level for now.  This option will be reserved for teachers.
+        if data.role == Role.TEACHER:
+            message += f"{PHRASES['review_languages_levels'][locale]}:\n"
+            for language in data.levels_for_teaching_language:
+                message += f"{PHRASES[language][locale]}: "
+                message += ", ".join(sorted(data.levels_for_teaching_language[language])) + "\n"
+            message += "\n"
+
+        message += f"{PHRASES['review_communication_language'][locale]}: "
+        message += (
+            PHRASES[f"class_communication_language_option_{data.communication_language_in_class}"][
+                locale
+            ]
+            + "\n"
+        )
+
+        return message
