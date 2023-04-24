@@ -53,7 +53,9 @@ class CallbackQueryReplySender:
             language_codes = STUDENT_COMMUNICATION_LANGUAGE_CODES[:]
         else:
             # the student cannot choose "L2 only" because that wouldn't make sense
-            language_codes = [c for c in STUDENT_COMMUNICATION_LANGUAGE_CODES if c != "l2_only"]
+            language_codes = tuple(
+                c for c in STUDENT_COMMUNICATION_LANGUAGE_CODES if c != "l2_only"
+            )
 
         language_for_callback_data = {
             code: PHRASES[f"class_communication_language_option_{code}"][locale]
@@ -703,7 +705,7 @@ class CallbackQueryReplySender:
     def _make_dict_for_message_with_inline_keyboard(
         message_text: str,
         buttons: list[InlineKeyboardButton],
-        buttons_per_row,
+        buttons_per_row: int,
         bottom_row_button: InlineKeyboardButton = None,
         top_row_button: InlineKeyboardButton = None,
         parse_mode: Union[ParseMode, None] = None,

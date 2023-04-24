@@ -45,7 +45,7 @@ STUDENT_AGE_GROUPS_FOR_TEACHER = {
     "adults": "18-65",
     "seniors": "66-95",
 }
-STUDENT_COMMUNICATION_LANGUAGE_CODES = ("ru", "ua", "ru_ua", "l2_only")
+STUDENT_COMMUNICATION_LANGUAGE_CODES: tuple[str, ...] = ("ru", "ua", "ru_ua", "l2_only")
 UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))  # to make "05:00-08:00" etc.
 
 

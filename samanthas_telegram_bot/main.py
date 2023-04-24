@@ -64,7 +64,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def post_init(application: Application):
+async def post_init(application: Application) -> None:
     await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
     await application.bot.set_my_commands(
         [

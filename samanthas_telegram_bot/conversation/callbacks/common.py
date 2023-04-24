@@ -823,7 +823,7 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return ConversationHandler.END
 
 
-async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES):
+async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """Displays help message."""
 
     await update.message.reply_text(
