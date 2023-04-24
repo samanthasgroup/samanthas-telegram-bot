@@ -56,5 +56,4 @@ class UserData:
     teacher_age_groups_of_students: list[str] | None = None
     teacher_can_host_speaking_club: bool | None = None
     teacher_peer_help = TeacherPeerHelp()
-    teacher_additional_skills: list | None = None  # type: ignore # FIXME remove
     teacher_additional_skills_comment: str | None = None
