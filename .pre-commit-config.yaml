@@ -17,3 +17,9 @@ repos:
         name: ruff
         args:
         - --fix
+-   repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.2.0
+    hooks:
+      - id: mypy
+        additional_dependencies:
+            - "phonenumberslite"
