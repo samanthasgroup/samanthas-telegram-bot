@@ -1,4 +1,3 @@
-# TODO for now this module only contains dummy functions for the conversation flow to work.
 import csv
 import json
 import logging
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 async def chat_id_is_registered(chat_id: int) -> bool:
     """Checks whether the chat ID is already stored in the database."""
     logger.info(f"Checking with the backend if chat ID {chat_id} exists...")
-    return False
+    return False  # TODO
 
 
 async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
@@ -31,7 +30,9 @@ async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
 
     return {
         type_: [item for item in data if item["type"] == type_]
-        for type_ in ("student", "teacher")  # TODO teacher age ranges are not used yet
+        for type_ in ("student", "teacher")
+        # TODO teacher age ranges are not used yet
+        # TODO store IDs of age ranges during conversation
     }
 
 
@@ -50,7 +51,7 @@ def get_assessment_questions(lang_code: str) -> tuple[dict[str, str], ...]:
     with path_to_test.open(encoding="utf-8", newline="") as fh:
         rows = tuple(csv.DictReader(fh))
 
-    return rows
+    return rows  # TODO
 
 
 async def get_smalltalk_url(
@@ -60,7 +61,7 @@ async def get_smalltalk_url(
 ) -> str:
     """Gets Smalltalk test URL from the back-end"""
     logger.info("Getting Smalltalk URL from backend...")
-    return "(URL)"
+    return "(URL)"  # TODO
 
 
 async def person_with_first_name_last_name_email_exists_in_database(
@@ -87,4 +88,4 @@ async def person_with_first_name_last_name_email_exists_in_database(
 async def send_written_answers_get_level(answers: dict[str, str]) -> str:
     """Sends answers to written assessment to the backend, gets level and returns it."""
     logger.info("Sending the results to the backend and receiving the level...")
-    return "A2"
+    return "A2"  # TODO
