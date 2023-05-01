@@ -3,6 +3,11 @@ import csv
 import logging
 from pathlib import Path
 
+import httpx
+
+HOST = "http://127.0.0.1:8000"
+# TODO check for something different in case host is unavailable? Add decorators to all functions?
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,10 +83,19 @@ async def person_with_first_name_last_name_email_exists_in_database(
     email: str,
 ) -> bool:
     """Checks whether user with given first and last name and email already exists in database."""
-    logger.info(
-        f"Checking with the backend if user {first_name} {last_name} ({email}) already exists..."
-    )
-    return False
+    data_to_check = f"user {first_name} {last_name} ({email})"
+
+    logger.info(f"Checking with the backend if {data_to_check} already exists...")
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{HOST}/api/personal_info/check_existence/",
+            data={"first_name": first_name, "last_name": last_name, "email": email},
+        )
+    if r.status_code == 200:
+        logger.info(f"... {data_to_check} does not exist")
+        return False
+    logger.info(f"... {data_to_check} already exists")
+    return True
 
 
 async def send_written_answers_get_level(answers: dict[str, str]) -> str:
