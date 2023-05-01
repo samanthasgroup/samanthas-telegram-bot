@@ -1,11 +1,12 @@
 # TODO for now this module only contains dummy functions for the conversation flow to work.
 import csv
+import json
 import logging
 from pathlib import Path
 
 import httpx
 
-HOST = "http://127.0.0.1:8000"
+PREFIX = "http://127.0.0.1:8000/api"
 # TODO check for something different in case host is unavailable? Add decorators to all functions?
 
 logger = logging.getLogger(__name__)
@@ -19,33 +20,18 @@ async def chat_id_is_registered(chat_id: int) -> bool:
 
 async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
     logger.info("Getting age ranges from the backend...")
+
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{PREFIX}/age_ranges/")
+    if r.status_code != 200:
+        logger.error("Could not load age ranges")  # TODO alert the user
+
+    data = json.loads(r.content)
+    logger.info("... age ranges loaded successfully.")
+
     return {
-        "student": [
-            {"age_from": 5, "age_to": 6},
-            {"age_from": 7, "age_to": 8},
-            {"age_from": 9, "age_to": 10},
-            {"age_from": 11, "age_to": 12},
-            {"age_from": 13, "age_to": 14},
-            {"age_from": 15, "age_to": 17},
-            {"age_from": 18, "age_to": 20},
-            {"age_from": 21, "age_to": 25},
-            {"age_from": 26, "age_to": 30},
-            {"age_from": 31, "age_to": 35},
-            {"age_from": 36, "age_to": 40},
-            {"age_from": 41, "age_to": 45},
-            {"age_from": 46, "age_to": 50},
-            {"age_from": 51, "age_to": 55},
-            {"age_from": 56, "age_to": 60},
-            {"age_from": 61, "age_to": 65},
-            {"age_from": 66, "age_to": 70},
-            {"age_from": 71, "age_to": 75},
-            {"age_from": 76, "age_to": 80},
-            {"age_from": 81, "age_to": 85},
-            {"age_from": 86, "age_to": 90},
-            {"age_from": 91, "age_to": 95},
-        ],
-        "teacher": [],
-        "matching": [],
+        type_: [item for item in data if item["type"] == type_]
+        for type_ in ("student", "teacher")  # TODO teacher age ranges are not used yet
     }
 
 
@@ -88,7 +74,7 @@ async def person_with_first_name_last_name_email_exists_in_database(
     logger.info(f"Checking with the backend if {data_to_check} already exists...")
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{HOST}/api/personal_info/check_existence/",
+            f"{PREFIX}/personal_info/check_existence/",
             data={"first_name": first_name, "last_name": last_name, "email": email},
         )
     if r.status_code == 200:
