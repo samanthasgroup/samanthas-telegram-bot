@@ -5,7 +5,7 @@ from pathlib import Path
 
 import httpx
 
-PREFIX = "http://127.0.0.1:8000/api"
+PREFIX = "https://admin.samanthasgroup.com/api"
 # TODO check for something different in case host is unavailable? Add decorators to all functions?
 
 logger = logging.getLogger(__name__)
