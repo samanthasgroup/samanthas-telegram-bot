@@ -17,7 +17,15 @@ async def chat_id_is_registered(chat_id: int) -> bool:
     return False  # TODO
 
 
-async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
+async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:
+    """Gets age ranges, assigns IDs (for bot phrases) to age ranges for teacher.
+
+    The bot asks the teacher about students' ages, adding words like "teenager" or "adult"
+    to the number ranges (e.g. "children (5-11)", in user's language).
+    These words have to be assigned to these age ranges for the bot to display the correct phrase.
+    For example: `phrases.csv` contains the phrase with ID ``option_adults``, so the age range
+    corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
+    """
     logger.info("Getting age ranges from the backend...")
 
     async with httpx.AsyncClient() as client:
@@ -28,12 +36,25 @@ async def get_age_ranges() -> dict[str, list[dict[str, int]]]:
     data = json.loads(r.content)
     logger.info("... age ranges loaded successfully.")
 
-    return {
-        type_: [item for item in data if item["type"] == type_]
-        for type_ in ("student", "teacher")
-        # TODO teacher age ranges are not used yet
-        # TODO store IDs of age ranges during conversation
+    # prepare age ranges like {"student": [{"age_from": 5, "age_to": 7}, {...}, ...]}
+    age_ranges = {
+        type_: [item for item in data if item["type"] == type_] for type_ in ("student", "teacher")
     }
+
+    # add IDs of bot phrases to teachers' age ranges
+    age_to_phrase_id = {
+        5: "young_children",
+        9: "older_children",
+        13: "adolescents",
+        18: "adults",
+        66: "seniors",
+    }
+    for age_range in age_ranges["teacher"]:
+        age_range["bot_phrase_id"] = f"option_{age_to_phrase_id[age_range['age_from']]}"
+
+    logger.info(age_ranges)
+
+    return age_ranges
 
 
 def get_assessment_questions(lang_code: str) -> tuple[dict[str, str], ...]:
