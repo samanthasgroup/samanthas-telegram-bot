@@ -10,7 +10,6 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.constants_enums import (
     PHRASES,
-    STUDENT_AGE_GROUPS_FOR_TEACHER,
     CommonCallbackData,
     ConversationMode,
     ConversationState,
@@ -149,12 +148,13 @@ async def store_student_age_group_ask_another_or_non_teaching_help(
     query, data = await answer_callback_query_and_get_data(update)
 
     if data != CommonCallbackData.DONE:
-        context.user_data.teacher_age_groups_of_students.append(data)
+        context.user_data.teacher_student_age_range_ids.append(int(data))
+        logger.info(f"IDs of student ages {context.user_data.teacher_student_age_range_ids}")
 
     # teacher pressed "Done" or chose all age groups
     if data == CommonCallbackData.DONE or len(
-        context.user_data.teacher_age_groups_of_students
-    ) == len(STUDENT_AGE_GROUPS_FOR_TEACHER):
+        context.user_data.teacher_student_age_range_ids
+    ) == len(context.chat_data["age_ranges"]["teacher"]):
         await CQReplySender.ask_non_teaching_help(context, query)
         return (
             ConversationState.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT

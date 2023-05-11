@@ -11,7 +11,6 @@ from samanthas_telegram_bot.conversation.constants_enums import (
     LEVELS,
     NON_TEACHING_HELP_TYPES,
     PHRASES,
-    STUDENT_AGE_GROUPS_FOR_TEACHER,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     UTC_TIME_SLOTS,
     CommonCallbackData,
@@ -298,7 +297,7 @@ class CallbackQueryReplySender:
         buttons = [
             InlineKeyboardButton(
                 text=f"{d['age_from']}-{d['age_to']}",
-                callback_data=f"{d['age_from']}-{d['age_to']}",  # can't just leave this arg out
+                callback_data=d["id"],
             )
             for d in context.chat_data["age_ranges"]["student"]
         ]
@@ -324,14 +323,17 @@ class CallbackQueryReplySender:
         locale = context.user_data.locale
 
         all_buttons = [
-            InlineKeyboardButton(text=PHRASES[f"option_{key}"][locale], callback_data=value)
-            for key, value in STUDENT_AGE_GROUPS_FOR_TEACHER.items()
+            InlineKeyboardButton(
+                text=PHRASES[d["bot_phrase_id"]][locale],
+                callback_data=d["id"],
+            )
+            for d in context.chat_data["age_ranges"]["teacher"]
         ]
 
         buttons_to_show = [
             b
             for b in all_buttons
-            if b.callback_data not in context.user_data.teacher_age_groups_of_students
+            if b.callback_data not in context.user_data.teacher_student_age_range_ids
         ]
 
         # only show "Done" button if the user has selected something on the previous step

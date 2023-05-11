@@ -7,7 +7,7 @@ import httpx
 
 PREFIX = "https://admin.samanthasgroup.com/api"
 # TODO check for something different in case host is unavailable? Add decorators to all functions?
-
+#  httpx.ConnectTimeout
 logger = logging.getLogger(__name__)
 
 
@@ -51,8 +51,6 @@ async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:
     }
     for age_range in age_ranges["teacher"]:
         age_range["bot_phrase_id"] = f"option_{age_to_phrase_id[age_range['age_from']]}"
-
-    logger.info(age_ranges)
 
     return age_ranges
 

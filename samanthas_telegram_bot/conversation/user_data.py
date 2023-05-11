@@ -42,8 +42,9 @@ class UserData:
     comment: str | None = None
 
     # role-specific attributes:
-    student_age_from: int | None = None
-    student_age_to: int | None = None
+    student_age_range_id: int | None = None  # for passing back to backend
+    student_age_from: int | None = None  # for assessment
+    student_age_to: int | None = None  # for assessment
     student_can_read_in_english: bool | None = None
     # False instead of None is intended, because the value is set based on other answers.
     # By default, the student doesn't need an oral interview before they are included
@@ -53,7 +54,7 @@ class UserData:
     teacher_has_prior_experience: bool | None = None
     teacher_number_of_groups: int | None = None
     teacher_class_frequency: int | None = None
-    teacher_age_groups_of_students: list[str] | None = None
+    teacher_student_age_range_ids: list[int] | None = None
     teacher_can_host_speaking_club: bool | None = None
     teacher_peer_help = TeacherPeerHelp()
     teacher_additional_skills_comment: str | None = None

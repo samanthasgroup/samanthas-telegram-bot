@@ -50,6 +50,11 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
     context.chat_data["age_ranges"] = await get_age_ranges()
+    context.chat_data["student_ages_for_age_range_id"] = {
+        dict_["id"]: {"age_from": dict_["age_from"], "age_to": dict_["age_to"]}
+        for dict_ in context.chat_data["age_ranges"]["student"]
+    }
+
     context.chat_data["mode"] = ConversationMode.NORMAL
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
@@ -58,7 +63,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # Methods handling these iterables can be called from different callbacks, so better to set
     # them here, in one place.
     context.user_data.non_teaching_help_types = []
-    context.user_data.teacher_age_groups_of_students = []
+    context.user_data.teacher_student_age_range_ids = []
 
     # TODO maybe remove this altogether and produce a list like with non-teaching help
     # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
@@ -396,11 +401,17 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
             return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
 
     if context.user_data.role == Role.STUDENT:
-        context.user_data.student_age_from, context.user_data.student_age_to = (
-            int(item) for item in data.split("-")
-        )
+        age_range_id = int(data)
+        context.user_data.student_age_range_id = age_range_id
+        context.user_data.student_age_from = context.chat_data["student_ages_for_age_range_id"][
+            age_range_id
+        ]["age_from"]
+        context.user_data.student_age_to = context.chat_data["student_ages_for_age_range_id"][
+            age_range_id
+        ]["age_to"]
         logger.info(
-            f"Age group: {context.user_data.student_age_from}-{context.user_data.student_age_to}"
+            f"Age group of the student: ID {context.user_data.student_age_range_id} "
+            f"({context.user_data.student_age_from}-{context.user_data.student_age_to} years old)"
         )
 
     if context.chat_data["mode"] == ConversationMode.REVIEW:
@@ -611,8 +622,6 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
     # query.data is language level.
     user_data.levels_for_teaching_language[last_language_added].append(data)
 
-    logger.info(user_data.levels_for_teaching_language)
-
     # Students can only choose one language and one level
     if role == Role.STUDENT:
         if context.chat_data["mode"] == ConversationMode.REVIEW:
@@ -634,6 +643,8 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 async def store_non_teaching_help_ask_another_or_additional_help(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
+    logger.info(f"Language(s) and level(s): {context.user_data.levels_for_teaching_language}")
+
     query, data = await answer_callback_query_and_get_data(update)
     role = context.user_data.role
 

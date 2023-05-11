@@ -37,14 +37,6 @@ NON_TEACHING_HELP_TYPES = (
 
 PHRASES = read_phrases()  # TODO move function to this package
 
-# Teacher-oriented age groups are in here because they are used in several modules
-# TODO everything should come from the backend?
-STUDENT_AGE_GROUPS_FOR_TEACHER = {
-    "children": "5-12",
-    "adolescents": "13-17",
-    "adults": "18-65",
-    "seniors": "66-95",
-}
 STUDENT_COMMUNICATION_LANGUAGE_CODES: tuple[str, ...] = ("ru", "ua", "ru_ua", "l2_only")
 UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))  # to make "05:00-08:00" etc.
 
