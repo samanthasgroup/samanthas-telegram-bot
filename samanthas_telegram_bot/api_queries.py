@@ -14,7 +14,18 @@ logger = logging.getLogger(__name__)
 async def chat_id_is_registered(chat_id: int) -> bool:
     """Checks whether the chat ID is already stored in the database."""
     logger.info(f"Checking with the backend if chat ID {chat_id} exists...")
-    return False  # TODO
+
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{PREFIX}/personal_info/check_existence_of_chat_id/",
+            params={"registration_telegram_bot_chat_id": chat_id},
+        )
+    logger.debug(f"Response from backend after check for existence of {chat_id=}: {r.status_code}")
+    if r.status_code == 200:
+        logger.info(f"... {chat_id} already exists")
+        return True
+    logger.info(f"... {chat_id} doesn't exist")
+    return False
 
 
 async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:

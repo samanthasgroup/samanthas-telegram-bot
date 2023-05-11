@@ -242,7 +242,9 @@ async def store_username_if_available_ask_phone_or_email(
     if data == "store_username_yes" and username:
         context.user_data.phone_number = None  # in case it was entered at previous run of the bot
         context.user_data.tg_username = username
-        logger.info(f"Username: {username}. Will be stored in the database.")
+        logger.info(
+            f"Chat {update.effective_chat.id}. Username {username} will be stored in the database."
+        )
         await query.edit_message_text(
             PHRASES["ask_email"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
@@ -278,7 +280,10 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         # Any European region would work (GB, DE, etc.).  Ireland is used for sentimental reasons.
         parsed_phone_number = phonenumbers.parse(number=phone_number_to_parse, region="IE")
     except phonenumbers.phonenumberutil.NumberParseException:
-        logger.info(f"Could not parse phone number {phone_number_to_parse}")
+        logger.info(
+            f"Chat {update.effective_chat.id}. "
+            f"Could not parse phone number {phone_number_to_parse}"
+        )
         parsed_phone_number = None
 
     # 3. Check validity and return user to same state if phone number not valid
@@ -288,7 +293,8 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         )
     else:
         logger.info(
-            f"Invalid phone number {parsed_phone_number} (parsed from {phone_number_to_parse})"
+            f"Chat {update.effective_chat.id}. Invalid phone number {parsed_phone_number} "
+            f"(parsed from {phone_number_to_parse})"
         )
         await update.message.reply_text(
             f"{phone_number_to_parse} {PHRASES['invalid_phone_number'][context.user_data.locale]}",
@@ -305,7 +311,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         PHRASES["ask_email"][context.user_data.locale],
         reply_markup=ReplyKeyboardRemove(),
     )
-    logger.info(f"Phone: {context.user_data.phone_number}")
+    logger.info(f"Chat {update.effective_chat.id}. Phone: {context.user_data.phone_number}")
     return ConversationState.ASK_ROLE
 
 
@@ -410,6 +416,7 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
             age_range_id
         ]["age_to"]
         logger.info(
+            f"Chat {update.effective_chat.id}. "
             f"Age group of the student: ID {context.user_data.student_age_range_id} "
             f"({context.user_data.student_age_from}-{context.user_data.student_age_to} years old)"
         )
@@ -452,7 +459,9 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
     elif query.data == CommonCallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data["day_idx"] == 6:  # we have reached Sunday
-            logger.info(context.user_data.time_slots_for_day)
+            logger.info(
+                f"Chat {update.effective_chat.id}. Slots: {context.user_data.time_slots_for_day}"
+            )
 
             # reset day of week to Monday for possible review
             context.chat_data["day_idx"] = 0
@@ -461,7 +470,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
                 await query.answer(
                     PHRASES["no_slots_selected"][context.user_data.locale], show_alert=True
                 )
-                logger.info("User has selected no slots at all")
+                logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
                 context.chat_data["day_idx"] = 0
                 await CQReplySender.ask_time_slot(context, query)
                 return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
@@ -590,7 +599,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
         user_data.student_can_read_in_english = True if data == CommonCallbackData.YES else False
 
         can_read = user_data.student_can_read_in_english
-        logger.info(f"User can read in English: {can_read}")
+        logger.info(f"Chat {update.effective_chat.id}. User can read in English: {can_read}")
 
         if can_read and user_data.student_age_to <= 12:
             # young students: mark as requiring interview, ask about communication language
@@ -643,7 +652,10 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 async def store_non_teaching_help_ask_another_or_additional_help(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    logger.info(f"Language(s) and level(s): {context.user_data.levels_for_teaching_language}")
+    logger.info(
+        f"Chat {update.effective_chat.id}. Language(s) and level(s): "
+        f"{context.user_data.levels_for_teaching_language}"
+    )
 
     query, data = await answer_callback_query_and_get_data(update)
     role = context.user_data.role
@@ -817,9 +829,7 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
 async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Cancels and ends the conversation."""
 
-    user = update.message.from_user
-
-    logger.info("User %s canceled the conversation.", user.first_name)
+    logger.info(f"Chat {update.effective_chat.id}. User canceled the conversation.")
 
     # the /cancel command could come even before the user chooses the locale
     if context.user_data.locale:
