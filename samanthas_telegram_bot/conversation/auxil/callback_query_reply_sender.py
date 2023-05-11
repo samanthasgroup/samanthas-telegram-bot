@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from math import ceil
 from typing import Union
@@ -20,6 +21,8 @@ from samanthas_telegram_bot.conversation.constants_enums import (
 from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
 
 # TODO mark parse mode in phrases.csv so that I don't have to escape full stops etc. everywhere
+
+logger = logging.getLogger(__name__)
 
 
 class CallbackQueryReplySender:
@@ -150,27 +153,30 @@ class CallbackQueryReplySender:
         """Asks user the next assessment question."""
         questions = context.chat_data["assessment_questions"]
 
+        logger.info(
+            f"Preparing to ask question #{context.chat_data['current_question_index'] + 1}"
+            f" out of {len(context.chat_data['assessment_questions'])}, question ID "
+            f"{questions[context.chat_data['current_question_index']]['id']}"
+        )
+
         buttons = [
             InlineKeyboardButton(
-                text=questions[context.chat_data["current_question_idx"]][f"option_{option_idx}"],
-                callback_data=option_idx,
+                text=option["text"],
+                callback_data=option["id"],
             )
-            for option_idx in ("1", "2", "3", "4")  # TODO different tests have different amount
+            for option in questions[context.chat_data["current_question_index"]]["options"]
         ]
 
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=(
-                    f"(Question #{context.chat_data['current_question_idx'] + 1} out of "
-                    f"{len(context.chat_data['assessment_questions'])}) "
-                    f"{questions[context.chat_data['current_question_idx']]['question']}"
+                    f"Question {context.chat_data['current_question_index'] + 1} out of "
+                    f"{len(context.chat_data['assessment_questions'])}\n\n"
+                    f"{questions[context.chat_data['current_question_index']]['text']}"
                 ),
                 buttons=buttons,
                 buttons_per_row=2,  # TODO 4 or variable number
-                bottom_row_button=InlineKeyboardButton(
-                    text=PHRASES["assessment_option_dont_know"][context.user_data.locale],
-                    callback_data=CommonCallbackData.DONT_KNOW,
-                ),
+                # TODO remove PHRASES["assessment_option_dont_know"]
             )
         )
 

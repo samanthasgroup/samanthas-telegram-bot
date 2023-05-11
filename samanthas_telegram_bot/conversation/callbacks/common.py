@@ -63,6 +63,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # Methods handling these iterables can be called from different callbacks, so better to set
     # them here, in one place.
     context.user_data.non_teaching_help_types = []
+    context.user_data.student_assessment_answers = []
     context.user_data.teacher_student_age_range_ids = []
 
     # TODO maybe remove this altogether and produce a list like with non-teaching help

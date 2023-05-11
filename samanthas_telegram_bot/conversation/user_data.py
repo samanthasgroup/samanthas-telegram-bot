@@ -5,6 +5,14 @@ from samanthas_telegram_bot.conversation.constants_enums import Role
 
 
 @dataclass
+class AssessmentAnswer:
+    # Those will be numbers, but both CallbackData and API work with strings,
+    # and no math operations are performed, so no need to convert back and forth.
+    question_id: str
+    answer_id: str
+
+
+@dataclass
 class TeacherPeerHelp:
     """A class that comprises boolean flags for experienced teachers' willingness to help their
     peers.
@@ -45,6 +53,8 @@ class UserData:
     student_age_range_id: int | None = None  # for passing back to backend
     student_age_from: int | None = None  # for assessment
     student_age_to: int | None = None  # for assessment
+    student_assessment_id: int | None = None  # for backend to identify which test was taken
+    student_assessment_answers = list[AssessmentAnswer]
     student_can_read_in_english: bool | None = None
     # False instead of None is intended, because the value is set based on other answers.
     # By default, the student doesn't need an oral interview before they are included

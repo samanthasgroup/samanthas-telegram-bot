@@ -13,6 +13,7 @@ DAY_OF_WEEK_FOR_INDEX = {
     6: "Sunday",
 }
 
+DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
 # TODO maybe factor out from phrases; addition of language will require double changes
@@ -47,7 +48,6 @@ class CommonCallbackData(str, Enum):
     """
 
     DONE = "done"
-    DONT_KNOW = "don't know"
     NEXT = "next"
     NO = "no"
     OK = "ok"

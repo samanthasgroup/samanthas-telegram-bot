@@ -1,5 +1,3 @@
-import logging
-
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
 from samanthas_telegram_bot.api_queries import get_smalltalk_url, send_written_answers_get_level
@@ -10,13 +8,13 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.constants_enums import (
+    DIGIT_PATTERN,
     PHRASES,
     CommonCallbackData,
     ConversationState,
 )
 from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
-
-logger = logging.getLogger(__name__)
+from samanthas_telegram_bot.conversation.user_data import AssessmentAnswer
 
 
 async def store_communication_language_ask_non_teaching_help_or_start_review(
@@ -70,7 +68,7 @@ async def assessment_store_answer_ask_question(
     query, data = await answer_callback_query_and_get_data(update)
 
     if (
-        context.chat_data["current_question_idx"]
+        context.chat_data["current_question_index"]
         == len(context.chat_data["assessment_questions"]) - 1
     ):
         level = await send_written_answers_get_level({})  # TODO
@@ -87,9 +85,17 @@ async def assessment_store_answer_ask_question(
             await CQReplySender.ask_class_communication_languages(context, query)
             return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
-    if data in ("1", "2", "3", "4", CommonCallbackData.DONT_KNOW):
-        # TODO store
-        context.chat_data["current_question_idx"] += 1
+    if DIGIT_PATTERN.match(data):  # this is ID of student's answer
+        context.user_data.student_assessment_answers.append(
+            AssessmentAnswer(
+                question_id=context.chat_data["current_question_id"],
+                answer_id=data,
+            )
+        )
+        context.chat_data["current_question_index"] += 1
+        context.chat_data["current_question_id"] = context.chat_data["assessment_questions"][
+            context.chat_data["current_question_index"]
+        ]["id"]
 
     await CQReplySender.ask_next_assessment_question(context, query)
     return ConversationState.ASK_ASSESSMENT_QUESTION

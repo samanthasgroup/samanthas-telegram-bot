@@ -1,7 +1,5 @@
-import csv
 import json
 import logging
-from pathlib import Path
 
 import httpx
 
@@ -66,22 +64,37 @@ async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:
     return age_ranges
 
 
-def get_assessment_questions(lang_code: str) -> tuple[dict[str, str], ...]:
-    """Gets assessment questions, based on language and level"""
+async def get_assessment_questions(
+    lang_code: str, age_range_id: int
+) -> tuple[int, list[dict[str, str | int | dict[str, int | str]]]]:  # TODO data type?
+    """Gets assessment questions, based on language and level.
 
-    DATA_DIR = Path(__name__).resolve().parent.parent / "data"
+    Returns assessment ID (for the backend to know later which assessment was taken)
+    and questions.
+    """
 
-    if lang_code != "en":
-        # There is a difference between no test being available (that shouldn't raise an error)
-        # and a wrong language code being passed
-        raise ValueError(f"Wrong language code {lang_code}")
+    logger.info(f"Getting assessment questions for age range ID {age_range_id}...")
 
-    path_to_test = DATA_DIR / "assessment_temp.csv"
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{PREFIX}/enrollment_test/",
+            params={"age_ranges": [age_range_id], "language": lang_code},
+        )
+    if r.status_code != 200:
+        logger.error("Could not load assessment questions")  # TODO alert the user?
+        return 0, []
 
-    with path_to_test.open(encoding="utf-8", newline="") as fh:
-        rows = tuple(csv.DictReader(fh))
+    # language code and age range ID match only one test, so the list will consist of 1 element
+    data = json.loads(r.content)[0]
 
-    return rows  # TODO
+    questions = data["questions"]
+    logger.info(
+        f"... received assessment questions for age range ID {age_range_id} "
+        f"({len(questions)} questions). First question: {questions[0]}. "
+        f"Last question: {questions[-1]}"
+    )
+
+    return int(data["id"]), questions
 
 
 async def get_smalltalk_url(
