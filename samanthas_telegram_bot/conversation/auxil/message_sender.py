@@ -13,13 +13,15 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.constants_enums import (
+from samanthas_telegram_bot.conversation.constants_dataclasses.constants_enums import (
     PHRASES,
     CommonCallbackData,
     ConversationMode,
     Role,
 )
-from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.conversation.constants_dataclasses.custom_context_types import (
+    CUSTOM_CONTEXT_TYPES,
+)
 
 
 class MessageSender:

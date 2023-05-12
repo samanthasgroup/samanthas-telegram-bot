@@ -7,14 +7,16 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.constants_enums import (
+from samanthas_telegram_bot.conversation.constants_dataclasses.constants_enums import (
     DIGIT_PATTERN,
     PHRASES,
     CommonCallbackData,
     ConversationState,
 )
-from samanthas_telegram_bot.conversation.custom_context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.conversation.user_data import AssessmentAnswer
+from samanthas_telegram_bot.conversation.constants_dataclasses.custom_context_types import (
+    CUSTOM_CONTEXT_TYPES,
+)
+from samanthas_telegram_bot.conversation.constants_dataclasses.user_data import AssessmentAnswer
 
 
 async def store_communication_language_ask_non_teaching_help_or_start_review(
