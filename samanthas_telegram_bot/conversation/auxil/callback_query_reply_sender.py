@@ -175,7 +175,7 @@ class CallbackQueryReplySender:
                     f"{questions[context.chat_data['current_question_index']]['text']}"
                 ),
                 buttons=buttons,
-                buttons_per_row=2,  # TODO 4 or variable number
+                buttons_per_row=2,
                 # TODO remove PHRASES["assessment_option_dont_know"]
             )
         )
