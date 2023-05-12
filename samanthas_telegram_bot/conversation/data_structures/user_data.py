@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
-from samanthas_telegram_bot.conversation.constants_dataclasses.constants_enums import Role
+from samanthas_telegram_bot.conversation.data_structures.enums import Role
 
 
 @dataclass

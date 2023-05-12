@@ -13,14 +13,14 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.constants_dataclasses.constants_enums import (
-    PHRASES,
+from samanthas_telegram_bot.conversation.data_structures.constants import PHRASES
+from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
+    CUSTOM_CONTEXT_TYPES,
+)
+from samanthas_telegram_bot.conversation.data_structures.enums import (
     CommonCallbackData,
     ConversationMode,
     Role,
-)
-from samanthas_telegram_bot.conversation.constants_dataclasses.custom_context_types import (
-    CUSTOM_CONTEXT_TYPES,
 )
 
 

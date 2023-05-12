@@ -4,7 +4,7 @@ from samanthas_telegram_bot.api_queries import get_assessment_questions
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender,
 )
-from samanthas_telegram_bot.conversation.constants_dataclasses.custom_context_types import (
+from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
     CUSTOM_CONTEXT_TYPES,
 )
 
