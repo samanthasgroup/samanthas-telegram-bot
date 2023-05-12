@@ -55,6 +55,7 @@ from samanthas_telegram_bot.conversation.callbacks.teacher import (
     store_teachers_additional_skills_ask_if_review_needed,
     store_teaching_preference_ask_groups_or_frequency_or_student_age,
 )
+from samanthas_telegram_bot.conversation.data_structures.chat_data import ChatData
 from samanthas_telegram_bot.conversation.data_structures.enums import ConversationState as State
 from samanthas_telegram_bot.conversation.data_structures.user_data import UserData
 
@@ -99,7 +100,7 @@ def main() -> None:
     application = (
         Application.builder()
         .token(os.environ.get("TOKEN"))
-        .context_types(ContextTypes(user_data=UserData))
+        .context_types(ContextTypes(user_data=UserData, chat_data=ChatData))
         .post_init(post_init)
         .build()
     )

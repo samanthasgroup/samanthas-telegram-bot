@@ -34,6 +34,7 @@ from samanthas_telegram_bot.conversation.data_structures.custom_context_types im
     CUSTOM_CONTEXT_TYPES,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
+    AgeRangeType,
     CommonCallbackData,
     ConversationMode,
     ConversationState,
@@ -53,13 +54,12 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
-    context.chat_data["age_ranges"] = await get_age_ranges()
-    context.chat_data["student_ages_for_age_range_id"] = {
-        dict_["id"]: {"age_from": dict_["age_from"], "age_to": dict_["age_to"]}
-        for dict_ in context.chat_data["age_ranges"]["student"]
+    context.chat_data.age_ranges = await get_age_ranges()
+    context.chat_data.student_ages_for_age_range_id = {
+        age_range.id: age_range for age_range in context.chat_data.age_ranges[AgeRangeType.STUDENT]
     }
 
-    context.chat_data["mode"] = ConversationMode.NORMAL
+    context.chat_data.mode = ConversationMode.NORMAL
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
@@ -74,10 +74,10 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
     # but in order to remove selected options from InlineKeyboard, I have to store exact
     # callback_data somewhere.
-    context.chat_data["peer_help_callback_data"] = set()
+    context.chat_data.peer_help_callback_data = set()
 
     # set day of week to Monday to start asking about slots for each day
-    context.chat_data["day_idx"] = 0
+    context.chat_data.day_index = 0
 
     greeting = "👋 "
     for locale in LOCALES:
@@ -190,7 +190,7 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
 
     context.user_data.first_name = update.message.text
 
-    if context.chat_data["mode"] == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -207,7 +207,7 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
 
     context.user_data.last_name = update.message.text
 
-    if context.chat_data["mode"] == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -307,7 +307,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         )
         return ConversationState.ASK_EMAIL
 
-    if context.chat_data["mode"] == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -353,7 +353,7 @@ async def store_email_check_existence_ask_role(
         await update.message.reply_text(PHRASES["user_already_exists"][locale])
         return ConversationHandler.END
 
-    if context.chat_data["mode"] == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -414,19 +414,19 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     if context.user_data.role == Role.STUDENT:
         age_range_id = int(data)
         context.user_data.student_age_range_id = age_range_id
-        context.user_data.student_age_from = context.chat_data["student_ages_for_age_range_id"][
+        context.user_data.student_age_from = context.chat_data.student_ages_for_age_range_id[
             age_range_id
-        ]["age_from"]
-        context.user_data.student_age_to = context.chat_data["student_ages_for_age_range_id"][
+        ].age_from
+        context.user_data.student_age_to = context.chat_data.student_ages_for_age_range_id[
             age_range_id
-        ]["age_to"]
+        ].age_to
         logger.info(
             f"Chat {update.effective_chat.id}. "
             f"Age group of the student: ID {context.user_data.student_age_range_id} "
             f"({context.user_data.student_age_from}-{context.user_data.student_age_to} years old)"
         )
 
-    if context.chat_data["mode"] == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -455,7 +455,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             int(item) for item in query.data.split(":")
         )
 
-        if context.chat_data["mode"] == ConversationMode.REVIEW:
+        if context.chat_data.mode == ConversationMode.REVIEW:
             await query.delete_message()
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -463,26 +463,26 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
         context.user_data.time_slots_for_day = defaultdict(list)
 
     elif query.data == CommonCallbackData.NEXT:  # user pressed "next" button after choosing slots
-        if context.chat_data["day_idx"] == 6:  # we have reached Sunday
+        if context.chat_data.day_index == 6:  # we have reached Sunday
             logger.info(
                 f"Chat {update.effective_chat.id}. Slots: {context.user_data.time_slots_for_day}"
             )
 
             # reset day of week to Monday for possible review
-            context.chat_data["day_idx"] = 0
+            context.chat_data.day_index = 0
 
             if not any(context.user_data.time_slots_for_day.values()):
                 await query.answer(
                     PHRASES["no_slots_selected"][context.user_data.locale], show_alert=True
                 )
                 logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
-                context.chat_data["day_idx"] = 0
+                context.chat_data.day_index = 0
                 await CQReplySender.ask_time_slot(context, query)
                 return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
             await query.answer()
 
-            if context.chat_data["mode"] == ConversationMode.REVIEW:
+            if context.chat_data.mode == ConversationMode.REVIEW:
                 await query.delete_message()
                 await MessageSender.ask_review(update, context)
                 return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -497,7 +497,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             return (
                 ConversationState.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
             )
-        context.chat_data["day_idx"] += 1
+        context.chat_data.day_index += 1
 
     await query.answer()
     await CQReplySender.ask_time_slot(context, query)
@@ -509,7 +509,7 @@ async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEX
     """Stores one time slot and offers to choose another."""
     query, data = await answer_callback_query_and_get_data(update)
 
-    day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
+    day = DAY_OF_WEEK_FOR_INDEX[context.chat_data.day_index]
     context.user_data.time_slots_for_day[day].append(data)
 
     await CQReplySender.ask_time_slot(context, query)
@@ -541,7 +541,7 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     # Students can only choose one language, so callback_data == "done" is only possible
     # for a teacher, but we'll keep it explicit here
     if data == CommonCallbackData.DONE and context.user_data.role == Role.TEACHER:
-        if context.chat_data["mode"] == ConversationMode.REVIEW:
+        if context.chat_data.mode == ConversationMode.REVIEW:
             await query.delete_message()
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -638,7 +638,7 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 
     # Students can only choose one language and one level
     if role == Role.STUDENT:
-        if context.chat_data["mode"] == ConversationMode.REVIEW:
+        if context.chat_data.mode == ConversationMode.REVIEW:
             await query.delete_message()
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -700,9 +700,7 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
     query, data = await answer_callback_query_and_get_data(update)
 
     if data == CommonCallbackData.YES:
-        context.chat_data[
-            "mode"
-        ] = ConversationMode.NORMAL  # set explicitly to normal just in case
+        context.chat_data.mode = ConversationMode.NORMAL  # set explicitly to normal just in case
         # I don't want to do edit_message_text. Let user info remain in the chat for user to see,
         # but remove the buttons.
         await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
@@ -714,7 +712,7 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
     else:
         # Switch into review mode to let other callbacks know that they should return user
         # back to the review callback instead of moving him normally along the conversation line
-        context.chat_data["mode"] = ConversationMode.REVIEW
+        context.chat_data.mode = ConversationMode.REVIEW
         await CQReplySender.ask_review_category(context, query)
         return ConversationState.REVIEW_REQUESTED_ITEM
 

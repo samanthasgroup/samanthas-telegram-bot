@@ -6,6 +6,9 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.conversation.data_structures.assessment_question_option import (
+    AssessmentQuestion,
+)
 from samanthas_telegram_bot.conversation.data_structures.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
@@ -19,12 +22,11 @@ from samanthas_telegram_bot.conversation.data_structures.custom_context_types im
     CUSTOM_CONTEXT_TYPES,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
+    AgeRangeType,
     CommonCallbackData,
     Role,
     UserDataReviewCategory,
 )
-
-# TODO mark parse mode in phrases.csv so that I don't have to escape full stops etc. everywhere
 
 logger = logging.getLogger(__name__)
 
@@ -155,28 +157,26 @@ class CallbackQueryReplySender:
         query: CallbackQuery,
     ) -> None:
         """Asks user the next assessment question."""
-        questions = context.chat_data["assessment_questions"]
+        questions = context.chat_data.assessment_questions
+        index = context.chat_data.current_assessment_question_index
+        current_question: AssessmentQuestion = questions[index]
 
         logger.info(
-            f"Preparing to ask question #{context.chat_data['current_question_index'] + 1}"
-            f" out of {len(context.chat_data['assessment_questions'])}, question ID "
-            f"{questions[context.chat_data['current_question_index']]['id']}"
+            f"Preparing to ask question #{index + 1}"
+            f" out of {len(context.chat_data.assessment_questions)}, QID {current_question.id}"
         )
 
         buttons = [
-            InlineKeyboardButton(
-                text=option["text"],
-                callback_data=option["id"],
-            )
-            for option in questions[context.chat_data["current_question_index"]]["options"]
+            InlineKeyboardButton(text=option.text, callback_data=option.id)
+            for option in current_question.options
         ]
 
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=(
-                    f"Question {context.chat_data['current_question_index'] + 1} out of "
-                    f"{len(context.chat_data['assessment_questions'])}\n\n"
-                    f"{questions[context.chat_data['current_question_index']]['text']}"
+                    f"Question {index + 1} out of "
+                    f"{len(context.chat_data.assessment_questions)}\n\n"
+                    f"{current_question.text}"
                 ),
                 buttons=buttons,
                 buttons_per_row=2,
@@ -306,10 +306,10 @@ class CallbackQueryReplySender:
 
         buttons = [
             InlineKeyboardButton(
-                text=f"{d['age_from']}-{d['age_to']}",
-                callback_data=d["id"],
+                text=f"{age_range.age_from}-{age_range.age_to}",
+                callback_data=age_range.id,
             )
-            for d in context.chat_data["age_ranges"]["student"]
+            for age_range in context.chat_data.age_ranges[AgeRangeType.STUDENT]
         ]
 
         await query.edit_message_text(
@@ -334,10 +334,10 @@ class CallbackQueryReplySender:
 
         all_buttons = [
             InlineKeyboardButton(
-                text=PHRASES[d["bot_phrase_id"]][locale],
-                callback_data=d["id"],
+                text=PHRASES[age_range.bot_phrase_id][locale],
+                callback_data=age_range.id,
             )
-            for d in context.chat_data["age_ranges"]["teacher"]
+            for age_range in context.chat_data.age_ranges[AgeRangeType.TEACHER]
         ]
 
         buttons_to_show = [
@@ -477,7 +477,7 @@ class CallbackQueryReplySender:
                 "invite",
                 "tandem",
             )
-            if option not in context.chat_data["peer_help_callback_data"]
+            if option not in context.chat_data.peer_help_callback_data
         ]
 
         # "Done" button must be there right from the start because the teacher may not be willing
@@ -567,7 +567,7 @@ class CallbackQueryReplySender:
         """Asks a user to choose a time slot on one particular day."""
 
         data = context.user_data
-        day = DAY_OF_WEEK_FOR_INDEX[context.chat_data["day_idx"]]
+        day = DAY_OF_WEEK_FOR_INDEX[context.chat_data.day_index]
 
         hour = data.utc_offset_hour
         minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
@@ -586,7 +586,7 @@ class CallbackQueryReplySender:
         message_text = (
             PHRASES["ask_timeslots"][data.locale]
             + " *"
-            + (PHRASES["ask_slots_" + str(context.chat_data["day_idx"])][data.locale])
+            + (PHRASES["ask_slots_" + str(context.chat_data.day_index)][data.locale])
             + r"*\?"
         )
 

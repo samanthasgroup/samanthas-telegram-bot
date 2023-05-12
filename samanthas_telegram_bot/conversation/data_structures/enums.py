@@ -1,6 +1,14 @@
 from enum import Enum, IntEnum, auto
 
 
+class AgeRangeType(str, Enum):
+    """Enumeration types of age ranges. Members of this enum can be treated as strings."""
+
+    MATCHING = "matching"
+    STUDENT = "student"
+    TEACHER = "teacher"
+
+
 class CommonCallbackData(str, Enum):
     """Enumeration for fixed values of callback_data. Members of this enum can be treated as
     strings.

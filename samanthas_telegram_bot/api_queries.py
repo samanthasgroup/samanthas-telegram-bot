@@ -1,7 +1,15 @@
 import json
 import logging
+import typing
 
 import httpx
+
+from samanthas_telegram_bot.conversation.data_structures.age_range import AgeRange
+from samanthas_telegram_bot.conversation.data_structures.assessment_question_option import (
+    AssessmentQuestion,
+    AssessmentQuestionOption,
+)
+from samanthas_telegram_bot.conversation.data_structures.enums import AgeRangeType
 
 PREFIX = "https://admin.samanthasgroup.com/api"
 # TODO check for something different in case host is unavailable? Add decorators to all functions?
@@ -26,7 +34,7 @@ async def chat_id_is_registered(chat_id: int) -> bool:
     return False
 
 
-async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:
+async def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     """Gets age ranges, assigns IDs (for bot phrases) to age ranges for teacher.
 
     The bot asks the teacher about students' ages, adding words like "teenager" or "adult"
@@ -45,9 +53,9 @@ async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:
     data = json.loads(r.content)
     logger.info("... age ranges loaded successfully.")
 
-    # prepare age ranges like {"student": [{"age_from": 5, "age_to": 7}, {...}, ...]}
-    age_ranges = {
-        type_: [item for item in data if item["type"] == type_] for type_ in ("student", "teacher")
+    age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
+        type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
+        for type_ in (AgeRangeType.STUDENT, AgeRangeType.TEACHER)
     }
 
     # add IDs of bot phrases to teachers' age ranges
@@ -58,15 +66,15 @@ async def get_age_ranges() -> dict[str, list[dict[str, str | int]]]:
         18: "adults",
         66: "seniors",
     }
-    for age_range in age_ranges["teacher"]:
-        age_range["bot_phrase_id"] = f"option_{age_to_phrase_id[age_range['age_from']]}"
+    for age_range in age_ranges[AgeRangeType.TEACHER]:
+        age_range.bot_phrase_id = f"option_{age_to_phrase_id[age_range.age_from]}"
 
     return age_ranges
 
 
 async def get_assessment_questions(
     lang_code: str, age_range_id: int
-) -> tuple[int, list[dict[str, str | int | dict[str, int | str]]]]:  # TODO data type?
+) -> tuple[str, tuple[AssessmentQuestion, ...]]:
     """Gets assessment questions, based on language and level.
 
     Returns assessment ID (for the backend to know later which assessment was taken)
@@ -82,19 +90,26 @@ async def get_assessment_questions(
         )
     if r.status_code != 200:
         logger.error("Could not load assessment questions")  # TODO alert the user?
-        return 0, []
+        return "", tuple()
 
     # language code and age range ID match only one test, so the list will consist of 1 element
     data = json.loads(r.content)[0]
 
-    questions = data["questions"]
+    questions = tuple(
+        AssessmentQuestion(
+            id=question["id"],
+            text=question["text"],
+            options=tuple(AssessmentQuestionOption(**option) for option in question["options"]),
+        )
+        for question in data["questions"]
+    )
     logger.info(
         f"... received assessment questions for age range ID {age_range_id} "
         f"({len(questions)} questions). First question: {questions[0]}. "
         f"Last question: {questions[-1]}"
     )
 
-    return int(data["id"]), questions
+    return typing.cast(str, data["id"]), questions
 
 
 async def get_smalltalk_url(

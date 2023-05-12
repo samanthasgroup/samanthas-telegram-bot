@@ -64,7 +64,7 @@ class MessageSender:
             await update.effective_message.delete()  # remove whatever was before the review
 
         data = context.user_data
-        if data.role == Role.TEACHER and context.chat_data["mode"] == ConversationMode.NORMAL:
+        if data.role == Role.TEACHER and context.chat_data.mode == ConversationMode.NORMAL:
             data.teacher_additional_skills_comment = update.message.text
 
         buttons = [

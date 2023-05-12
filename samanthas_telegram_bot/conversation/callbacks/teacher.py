@@ -13,6 +13,7 @@ from samanthas_telegram_bot.conversation.data_structures.custom_context_types im
     CUSTOM_CONTEXT_TYPES,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
+    AgeRangeType,
     CommonCallbackData,
     ConversationMode,
     ConversationState,
@@ -56,7 +57,7 @@ async def store_communication_language_ask_teaching_experience(
         context.user_data.communication_language_in_class,
     ) = await answer_callback_query_and_get_data(update)
 
-    if context.chat_data["mode"] == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
@@ -156,7 +157,7 @@ async def store_student_age_group_ask_another_or_non_teaching_help(
     # teacher pressed "Done" or chose all age groups
     if data == CommonCallbackData.DONE or len(
         context.user_data.teacher_student_age_range_ids
-    ) == len(context.chat_data["age_ranges"]["teacher"]):
+    ) == len(context.chat_data.age_ranges[AgeRangeType.TEACHER]):
         await CQReplySender.ask_non_teaching_help(context, query)
         return (
             ConversationState.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
@@ -196,7 +197,7 @@ async def store_peer_help_ask_another_or_additional_help(
         context.user_data.teacher_peer_help.can_work_in_tandem = True
 
     # to remove this button from the keyboard
-    context.chat_data["peer_help_callback_data"].add(data)
+    context.chat_data.peer_help_callback_data.add(data)
     await CQReplySender.ask_teacher_peer_help(context, query)
     return ConversationState.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
