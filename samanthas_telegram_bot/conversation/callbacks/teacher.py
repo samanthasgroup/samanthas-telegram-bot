@@ -157,7 +157,7 @@ async def store_student_age_group_ask_another_or_non_teaching_help(
     # teacher pressed "Done" or chose all age groups
     if data == CommonCallbackData.DONE or len(
         context.user_data.teacher_student_age_range_ids
-    ) == len(context.chat_data.age_ranges[AgeRangeType.TEACHER]):
+    ) == len(context.chat_data.age_ranges_for_type[AgeRangeType.TEACHER]):
         await CQReplySender.ask_non_teaching_help(context, query)
         return (
             ConversationState.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT

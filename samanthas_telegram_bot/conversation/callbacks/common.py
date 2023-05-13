@@ -54,9 +54,10 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
-    context.chat_data.age_ranges = await get_age_ranges()
+    context.chat_data.age_ranges_for_type = await get_age_ranges()
     context.chat_data.student_ages_for_age_range_id = {
-        age_range.id: age_range for age_range in context.chat_data.age_ranges[AgeRangeType.STUDENT]
+        age_range.id: age_range
+        for age_range in context.chat_data.age_ranges_for_type[AgeRangeType.STUDENT]
     }
 
     context.chat_data.mode = ConversationMode.NORMAL

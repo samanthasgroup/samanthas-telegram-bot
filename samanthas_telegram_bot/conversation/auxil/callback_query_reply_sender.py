@@ -309,7 +309,7 @@ class CallbackQueryReplySender:
                 text=f"{age_range.age_from}-{age_range.age_to}",
                 callback_data=age_range.id,
             )
-            for age_range in context.chat_data.age_ranges[AgeRangeType.STUDENT]
+            for age_range in context.chat_data.age_ranges_for_type[AgeRangeType.STUDENT]
         ]
 
         await query.edit_message_text(
@@ -337,7 +337,7 @@ class CallbackQueryReplySender:
                 text=PHRASES[age_range.bot_phrase_id][locale],
                 callback_data=age_range.id,
             )
-            for age_range in context.chat_data.age_ranges[AgeRangeType.TEACHER]
+            for age_range in context.chat_data.age_ranges_for_type[AgeRangeType.TEACHER]
         ]
 
         buttons_to_show = [
