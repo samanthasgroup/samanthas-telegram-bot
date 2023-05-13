@@ -7,10 +7,8 @@ def read_phrases() -> dict[str, dict[str, str]]:
     and another dictionary as value, matching locales to actual phrases.
     """
 
-    DATA_DIR = Path(__name__).resolve().parent.parent / "data"
-
-    with (DATA_DIR / "bot_phrases.csv").open(encoding="utf-8", newline="") as fh:
-        rows = tuple(csv.DictReader(fh))
+    with (Path(__file__).parent.resolve() / "phrases.csv").open(encoding="utf-8", newline="") as f:
+        rows = tuple(csv.DictReader(f))
 
     return {
         row["internal_id"]: {locale: row[locale] for locale in ("en", "ru", "ua")} for row in rows
