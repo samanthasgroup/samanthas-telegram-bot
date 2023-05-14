@@ -34,7 +34,6 @@ from samanthas_telegram_bot.conversation.data_structures.custom_context_types im
     CUSTOM_CONTEXT_TYPES,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
-    AgeRangeType,
     CommonCallbackData,
     ConversationMode,
     ConversationState,
@@ -53,11 +52,6 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
-
-    context.chat_data.student_ages_for_age_range_id = {
-        age_range.id: age_range
-        for age_range in context.bot_data.age_ranges_for_type[AgeRangeType.STUDENT]
-    }
 
     context.chat_data.mode = ConversationMode.NORMAL
 
@@ -420,10 +414,10 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     if context.user_data.role == Role.STUDENT:
         age_range_id = int(data)
         context.user_data.student_age_range_id = age_range_id
-        context.user_data.student_age_from = context.chat_data.student_ages_for_age_range_id[
+        context.user_data.student_age_from = context.bot_data.student_ages_for_age_range_id[
             age_range_id
         ].age_from
-        context.user_data.student_age_to = context.chat_data.student_ages_for_age_range_id[
+        context.user_data.student_age_to = context.bot_data.student_ages_for_age_range_id[
             age_range_id
         ].age_to
         logger.info(
