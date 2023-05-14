@@ -48,9 +48,8 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     """
     logger.info("Getting age ranges from the backend...")
 
+    # this operation is run at application startup, so no exception handling needed
     r = httpx.get(f"{PREFIX}/age_ranges/")
-    if r.status_code != 200:
-        logger.error("Could not load age ranges")  # TODO alert the user
 
     data = json.loads(r.content)
     logger.info("... age ranges loaded successfully.")
@@ -85,10 +84,8 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
 
     logger.info(f"Getting assessment questions for {lang_code=}...")
 
+    # this operation is run at application startup, so no exception handling needed
     r = httpx.get(f"{PREFIX}/enrollment_test/", params={"language": lang_code})
-    if r.status_code != 200:
-        logger.error("Could not load assessment questions")  # TODO alert the user?
-        return {}
 
     data = json.loads(r.content)
 
