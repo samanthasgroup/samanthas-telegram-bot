@@ -20,11 +20,11 @@ class TeacherPeerHelp:
     peers.
     """
 
-    can_consult_other_teachers: bool | None = None
-    can_help_with_children_group: bool | None = None
-    can_help_with_materials: bool | None = None
     can_check_syllabus: bool | None = None
     can_give_feedback: bool | None = None
+    can_help_with_children_group: bool | None = None
+    can_provide_materials: bool | None = None
+    can_host_mentoring_sessions: bool | None = None
     can_invite_to_class: bool | None = None
     can_work_in_tandem: bool | None = None
 

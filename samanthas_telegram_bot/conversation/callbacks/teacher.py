@@ -182,11 +182,11 @@ async def store_peer_help_ask_another_or_additional_help(
         return ConversationState.ASK_REVIEW
 
     if data == "consult":
-        context.user_data.teacher_peer_help.can_consult_other_teachers = True
+        context.user_data.teacher_peer_help.can_host_mentoring_sessions = True
     elif data == "children_group":
         context.user_data.teacher_peer_help.can_help_with_children_group = True
     elif data == "materials":
-        context.user_data.teacher_peer_help.can_help_with_materials = True
+        context.user_data.teacher_peer_help.can_provide_materials = True
     elif data == "check_syllabus":
         context.user_data.teacher_peer_help.can_check_syllabus = True
     elif data == "feedback":
