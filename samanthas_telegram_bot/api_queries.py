@@ -1,11 +1,11 @@
 import json
 import logging
-import typing
 
 import httpx
 
 from samanthas_telegram_bot.conversation.data_structures.age_range import AgeRange
-from samanthas_telegram_bot.conversation.data_structures.assessment_question_option import (
+from samanthas_telegram_bot.conversation.data_structures.assessment import (
+    Assessment,
     AssessmentQuestion,
     AssessmentQuestionOption,
 )
@@ -43,7 +43,8 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     For example: `phrases.csv` contains the phrase with ID ``option_adults``, so the age range
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
 
-    Note: this is a **synchronous** function because it runs before the application even starts.
+    Note: this is a **synchronous** function because it runs once before the application start.
+    It being synchronous enables us to include it into ``BotData.__init__()``
     """
     logger.info("Getting age ranges from the backend...")
 
@@ -73,44 +74,52 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     return age_ranges
 
 
-async def get_assessment_questions(
-    lang_code: str, age_range_id: int
-) -> tuple[str, tuple[AssessmentQuestion, ...]]:
-    """Gets assessment questions, based on language and level.
+def get_assessments(lang_code: str) -> dict[int, Assessment]:
+    """Gets assessment questions, based on language.
 
-    Returns assessment ID (for the backend to know later which assessment was taken)
-    and questions.
+    Returns a dictionary matching an age range ID to assessment.
+
+    Note: this is a **synchronous** function because it runs once before the application start.
+    It being synchronous enables us to include it into ``BotData.__init__()``
     """
 
-    logger.info(f"Getting assessment questions for age range ID {age_range_id}...")
+    logger.info(f"Getting assessment questions for {lang_code=}...")
 
-    async with httpx.AsyncClient() as client:
-        r = await client.get(
-            f"{PREFIX}/enrollment_test/",
-            params={"age_ranges": [age_range_id], "language": lang_code},
-        )
+    r = httpx.get(f"{PREFIX}/enrollment_test/", params={"language": lang_code})
     if r.status_code != 200:
         logger.error("Could not load assessment questions")  # TODO alert the user?
-        return "", tuple()
+        return {}
 
-    # language code and age range ID match only one test, so the list will consist of 1 element
-    data = json.loads(r.content)[0]
+    data = json.loads(r.content)
 
-    questions = tuple(
-        AssessmentQuestion(
-            id=question["id"],
-            text=question["text"],
-            options=tuple(AssessmentQuestionOption(**option) for option in question["options"]),
+    assessments = tuple(
+        Assessment(
+            id=item["id"],
+            age_range_ids=tuple(item["age_ranges"]),
+            questions=tuple(
+                AssessmentQuestion(
+                    id=question["id"],
+                    text=question["text"],
+                    options=tuple(
+                        AssessmentQuestionOption(**option) for option in question["options"]
+                    ),
+                )
+                for question in item["questions"]
+            ),
         )
-        for question in data["questions"]
+        for item in data
     )
-    logger.info(
-        f"... received assessment questions for age range ID {age_range_id} "
-        f"({len(questions)} questions). First question: {questions[0]}. "
-        f"Last question: {questions[-1]}"
-    )
+    logger.info(f"... received {len(assessments)} assessments for {lang_code=}.")
 
-    return typing.cast(str, data["id"]), questions
+    # Each assessment has a sequence of age range IDs. We have to match every single age range ID
+    # in this sequence to a respective assessment.
+    assessment_for_age_range_id = {
+        age_range_id: assessment
+        for assessment in assessments
+        for age_range_id in assessment.age_range_ids
+    }
+
+    return assessment_for_age_range_id
 
 
 async def get_smalltalk_url(
@@ -148,3 +157,7 @@ async def send_written_answers_get_level(answers: dict[str, str]) -> str:
     """Sends answers to written assessment to the backend, gets level and returns it."""
     logger.info("Sending the results to the backend and receiving the level...")
     return "A2"  # TODO
+
+
+if __name__ == "__main__":
+    get_assessments("en")

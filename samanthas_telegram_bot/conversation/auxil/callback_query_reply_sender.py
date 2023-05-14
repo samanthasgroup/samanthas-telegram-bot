@@ -6,9 +6,7 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.data_structures.assessment_question_option import (
-    AssessmentQuestion,
-)
+from samanthas_telegram_bot.conversation.data_structures.assessment import AssessmentQuestion
 from samanthas_telegram_bot.conversation.data_structures.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
@@ -163,13 +161,13 @@ class CallbackQueryReplySender:
         query: CallbackQuery,
     ) -> None:
         """Asks user the next assessment question."""
-        questions = context.chat_data.assessment_questions
+        questions = context.user_data.student_assessment.questions
         index = context.chat_data.current_assessment_question_index
         current_question: AssessmentQuestion = questions[index]
 
         logger.info(
             f"Preparing to ask question #{index + 1}"
-            f" out of {len(context.chat_data.assessment_questions)}, QID {current_question.id}"
+            f" of {len(context.user_data.student_assessment.questions)}, QID {current_question.id}"
         )
 
         buttons = [
@@ -181,7 +179,7 @@ class CallbackQueryReplySender:
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=(
                     f"Question {index + 1} out of "
-                    f"{len(context.chat_data.assessment_questions)}\n\n"
+                    f"{len(context.user_data.student_assessment.questions)}\n\n"
                     f"{current_question.text}"
                 ),
                 buttons=buttons,

@@ -1,9 +1,6 @@
 from dataclasses import dataclass
 
 from samanthas_telegram_bot.conversation.data_structures.age_range import AgeRange
-from samanthas_telegram_bot.conversation.data_structures.assessment_question_option import (
-    AssessmentQuestion,
-)
 from samanthas_telegram_bot.conversation.data_structures.enums import (
     AgeRangeType,
     ConversationMode,
@@ -13,7 +10,6 @@ from samanthas_telegram_bot.conversation.data_structures.enums import (
 @dataclass
 class ChatData:
     age_ranges_for_type: dict[AgeRangeType, tuple[AgeRange]] | None = None
-    assessment_questions: tuple[AssessmentQuestion] | None = None
     current_assessment_question_index: int | None = None
     current_assessment_question_id: str | None = None
     day_index: int | None = None

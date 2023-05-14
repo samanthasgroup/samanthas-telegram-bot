@@ -70,7 +70,7 @@ async def assessment_store_answer_ask_question(
 
     if (
         context.chat_data.current_assessment_question_index
-        == len(context.chat_data.assessment_questions) - 1
+        == len(context.user_data.student_assessment.questions) - 1
     ):
         level = await send_written_answers_get_level({})  # TODO
         if level == "A2":  # TODO A2 or higher
@@ -94,9 +94,11 @@ async def assessment_store_answer_ask_question(
             )
         )
         context.chat_data.current_assessment_question_index += 1
-        context.chat_data.current_assessment_question_id = context.chat_data.assessment_questions[
-            context.chat_data.current_assessment_question_index
-        ].id
+        context.chat_data.current_assessment_question_id = (
+            context.user_data.student_assessment.questions[
+                context.chat_data.current_assessment_question_index
+            ].id
+        )
 
     await CQReplySender.ask_next_assessment_question(context, query)
     return ConversationState.ASK_ASSESSMENT_QUESTION

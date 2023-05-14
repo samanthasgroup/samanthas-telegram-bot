@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from samanthas_telegram_bot.conversation.data_structures.assessment import Assessment
 from samanthas_telegram_bot.conversation.data_structures.constants import Locale
 from samanthas_telegram_bot.conversation.data_structures.enums import Role
 
@@ -54,7 +55,7 @@ class UserData:
     student_age_range_id: int | None = None  # for passing back to backend
     student_age_from: int | None = None  # for assessment
     student_age_to: int | None = None  # for assessment
-    student_assessment_id: int | None = None  # for backend to identify which test was taken
+    student_assessment: Assessment | None = None
     student_assessment_answers = list[AssessmentAnswer]
     student_can_read_in_english: bool | None = None
     # False instead of None is intended, because the value is set based on other answers.
