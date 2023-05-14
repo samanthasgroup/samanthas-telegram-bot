@@ -17,7 +17,7 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
     # prepare questions and set index to 0
     age_range_id = context.user_data.student_age_range_id
     logger.info(
-        f"Using assessment for {age_range_id} ({context.user_data.student_age_from}-"
+        f"Using assessment for {age_range_id=} ({context.user_data.student_age_from}-"
         f"{context.user_data.student_age_to} years old)"
     )
     context.user_data.student_assessment = context.bot_data.assessment_for_age_range_id[
