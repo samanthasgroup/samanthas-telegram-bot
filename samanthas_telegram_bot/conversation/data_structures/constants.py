@@ -37,4 +37,16 @@ NON_TEACHING_HELP_TYPES = (
 )
 
 STUDENT_COMMUNICATION_LANGUAGE_CODES: tuple[str, ...] = ("ru", "ua", "ru_ua", "l2_only")
+
+TEACHER_PEER_HELP_TYPES = (
+    "can_check_syllabus",
+    "can_give_feedback",
+    "can_help_with_children_group",
+    "can_provide_materials",
+    "can_host_mentoring_sessions",
+    "can_invite_to_class",
+    "can_work_in_tandem",
+)
+"""These types are used in `UserData`, callback data, setting boolean flags for teacher."""
+
 UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))  # to make "05:00-08:00" etc.

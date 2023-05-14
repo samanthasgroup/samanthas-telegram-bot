@@ -13,6 +13,7 @@ from samanthas_telegram_bot.conversation.data_structures.constants import (
     LEVELS,
     NON_TEACHING_HELP_TYPES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
+    TEACHER_PEER_HELP_TYPES,
     UTC_TIME_SLOTS,
     Locale,
 )
@@ -481,15 +482,7 @@ class CallbackQueryReplySender:
                 text=context.bot_data.phrases[f"option_teacher_peer_help_{option}"][locale],
                 callback_data=option,
             )
-            for option in (
-                "consult",
-                "children_group",
-                "materials",
-                "check_syllabus",
-                "feedback",
-                "invite",
-                "tandem",
-            )
+            for option in TEACHER_PEER_HELP_TYPES
             if option not in context.chat_data.peer_help_callback_data
         ]
 

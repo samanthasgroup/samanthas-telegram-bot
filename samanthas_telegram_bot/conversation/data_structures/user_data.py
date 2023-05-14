@@ -20,6 +20,7 @@ class TeacherPeerHelp:
     peers.
     """
 
+    # names of these flags match (parts of) IDs of phrases in phrases.csv and callback data
     can_check_syllabus: bool | None = None
     can_give_feedback: bool | None = None
     can_help_with_children_group: bool | None = None

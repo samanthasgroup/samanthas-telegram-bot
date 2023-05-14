@@ -8,7 +8,10 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.data_structures.constants import Locale
+from samanthas_telegram_bot.conversation.data_structures.constants import (
+    TEACHER_PEER_HELP_TYPES,
+    Locale,
+)
 from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
     CUSTOM_CONTEXT_TYPES,
 )
@@ -175,26 +178,20 @@ async def store_peer_help_ask_another_or_additional_help(
     query, data = await answer_callback_query_and_get_data(update)
 
     if data == CommonCallbackData.DONE:
+        selected_types = ", ".join(
+            help_type
+            for help_type in TEACHER_PEER_HELP_TYPES
+            if getattr(context.user_data.teacher_peer_help, help_type) is True
+        )
+        logger.info(f"Chat {update.effective_chat.id}: teacher's peer help: {selected_types}")
+
         await query.edit_message_text(
             context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_REVIEW
 
-    if data == "consult":
-        context.user_data.teacher_peer_help.can_host_mentoring_sessions = True
-    elif data == "children_group":
-        context.user_data.teacher_peer_help.can_help_with_children_group = True
-    elif data == "materials":
-        context.user_data.teacher_peer_help.can_provide_materials = True
-    elif data == "check_syllabus":
-        context.user_data.teacher_peer_help.can_check_syllabus = True
-    elif data == "feedback":
-        context.user_data.teacher_peer_help.can_give_feedback = True
-    elif data == "invite":
-        context.user_data.teacher_peer_help.can_invite_to_class = True
-    elif data == "tandem":
-        context.user_data.teacher_peer_help.can_work_in_tandem = True
+    setattr(context.user_data.teacher_peer_help, data, True)
 
     # to remove this button from the keyboard
     context.chat_data.peer_help_callback_data.add(data)
