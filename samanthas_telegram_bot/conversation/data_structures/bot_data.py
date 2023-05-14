@@ -13,6 +13,8 @@ class MultilingualBotPhrase(TypedDict):
 
 
 class BotData:
+    """Class for data needed for every conversation and get loaded once at application start."""
+
     def __init__(self) -> None:
         self.age_ranges_for_type = get_age_ranges()
         self.assessment_for_age_range_id = get_assessments(lang_code="en")

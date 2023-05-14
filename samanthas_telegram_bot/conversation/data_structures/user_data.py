@@ -31,6 +31,8 @@ class TeacherPeerHelp:
 
 @dataclass
 class UserData:
+    """Class for data pertaining to the user that will be sent to backend."""
+
     # TODO sets instead of lists?
     locale: Locale | None = None
     first_name: str | None = None
