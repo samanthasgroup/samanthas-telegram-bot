@@ -7,7 +7,7 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.data_structures.constants import DIGIT_PATTERN, PHRASES
+from samanthas_telegram_bot.conversation.data_structures.constants import DIGIT_PATTERN, Locale
 from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
     CUSTOM_CONTEXT_TYPES,
 )
@@ -107,7 +107,7 @@ async def send_smalltalk_url_or_ask_communication_language(
 ) -> int:
     """If student wants to take Smalltalk test, give them URL. Else, ask communication language."""
     query, data = await answer_callback_query_and_get_data(update)
-    locale = context.user_data.locale
+    locale: Locale = context.user_data.locale
 
     if data == CommonCallbackData.YES:
         url = await get_smalltalk_url(
@@ -116,12 +116,13 @@ async def send_smalltalk_url_or_ask_communication_language(
             email=context.user_data.email,
         )
         await query.edit_message_text(
-            PHRASES["give_smalltalk_url"][locale] + f"\n{url}",  # TODO add link onto a text
+            context.bot_data.phrases["give_smalltalk_url"][locale]
+            + f"\n{url}",  # TODO add link onto a text
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
                         InlineKeyboardButton(
-                            PHRASES["answer_smalltalk_done"][locale],
+                            context.bot_data.phrases["answer_smalltalk_done"][locale],
                             callback_data=CommonCallbackData.DONE,
                         )
                     ]

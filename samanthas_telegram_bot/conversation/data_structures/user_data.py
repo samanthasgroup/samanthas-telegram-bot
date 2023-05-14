@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Literal
 
+from samanthas_telegram_bot.conversation.data_structures.constants import Locale
 from samanthas_telegram_bot.conversation.data_structures.enums import Role
 
 
@@ -30,7 +31,7 @@ class TeacherPeerHelp:
 @dataclass
 class UserData:
     # TODO sets instead of lists?
-    locale: str | None = None
+    locale: Locale | None = None
     first_name: str | None = None
     last_name: str | None = None
     source: str | None = None

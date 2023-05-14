@@ -1,5 +1,6 @@
 import logging
 import re
+import typing
 from collections import defaultdict
 
 import phonenumbers
@@ -28,7 +29,7 @@ from samanthas_telegram_bot.conversation.data_structures.constants import (
     EMAIL_PATTERN,
     LOCALES,
     NON_TEACHING_HELP_TYPES,
-    PHRASES,
+    Locale,
 )
 from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
     CUSTOM_CONTEXT_TYPES,
@@ -83,8 +84,8 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     greeting = "👋 "
     for locale in LOCALES:
         greeting += (
-            f"{PHRASES['hello'][locale]} {update.message.from_user.first_name}! "
-            f"{PHRASES['choose_language_of_conversation'][locale]}\n\n"
+            f"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
+            f"{context.bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
         )
 
     await update.message.reply_text(
@@ -134,7 +135,7 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
 
     if data == CommonCallbackData.YES:
         await query.edit_message_text(
-            PHRASES["reply_go_to_other_chat"][context.user_data.locale],
+            context.bot_data.phrases["reply_go_to_other_chat"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationHandler.END
@@ -146,7 +147,7 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
         return ConversationState.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME
 
     await query.edit_message_text(
-        PHRASES["ask_first_name"][context.user_data.locale],
+        context.bot_data.phrases["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return ConversationState.ASK_LAST_NAME
@@ -161,13 +162,13 @@ async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
 
     if data == CommonCallbackData.NO:
         await query.edit_message_text(
-            PHRASES["bye_wait_for_message_from_bot"][context.user_data.locale],
+            context.bot_data.phrases["bye_wait_for_message_from_bot"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationHandler.END
 
     await query.edit_message_text(
-        PHRASES["ask_first_name"][context.user_data.locale],
+        context.bot_data.phrases["ask_first_name"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return ConversationState.ASK_LAST_NAME
@@ -196,7 +197,9 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-    await update.message.reply_text(PHRASES["ask_last_name"][context.user_data.locale])
+    await update.message.reply_text(
+        context.bot_data.phrases["ask_last_name"][context.user_data.locale]
+    )
     return ConversationState.ASK_SOURCE
 
 
@@ -213,7 +216,9 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-    await update.effective_chat.send_message(PHRASES["ask_source"][context.user_data.locale])
+    await update.effective_chat.send_message(
+        context.bot_data.phrases["ask_source"][context.user_data.locale]
+    )
     return ConversationState.CHECK_USERNAME
 
 
@@ -252,7 +257,7 @@ async def store_username_if_available_ask_phone_or_email(
             f"Chat {update.effective_chat.id}. Username {username} will be stored in the database."
         )
         await query.edit_message_text(
-            PHRASES["ask_email"][context.user_data.locale],
+            context.bot_data.phrases["ask_email"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_ROLE
@@ -269,6 +274,8 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
 
     if update.message is None:
         return ConversationState.ASK_EMAIL
+
+    locale: Locale = context.user_data.locale
 
     # 1. Read phone number
     phone_number_to_parse = (
@@ -303,7 +310,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             f"(parsed from {phone_number_to_parse})"
         )
         await update.message.reply_text(
-            f"{phone_number_to_parse} {PHRASES['invalid_phone_number'][context.user_data.locale]}",
+            f"{phone_number_to_parse} {context.bot_data.phrases['invalid_phone_number'][locale]}",
             reply_markup=ReplyKeyboardRemove(),
         )
         return ConversationState.ASK_EMAIL
@@ -314,7 +321,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
-        PHRASES["ask_email"][context.user_data.locale],
+        context.bot_data.phrases["ask_email"][locale],
         reply_markup=ReplyKeyboardRemove(),
     )
     logger.info(f"Chat {update.effective_chat.id}. Phone: {context.user_data.phone_number}")
@@ -333,12 +340,12 @@ async def store_email_check_existence_ask_role(
     if update.message is None:
         return ConversationState.ASK_ROLE
 
-    locale = context.user_data.locale
+    locale: Locale = context.user_data.locale
 
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
         await update.message.reply_text(
-            PHRASES["invalid_email"][locale],
+            context.bot_data.phrases["invalid_email"][locale],
             reply_markup=ReplyKeyboardRemove(),
         )
         return ConversationState.ASK_ROLE
@@ -351,7 +358,7 @@ async def store_email_check_existence_ask_role(
         last_name=context.user_data.last_name,
         email=context.user_data.email,
     ):
-        await update.message.reply_text(PHRASES["user_already_exists"][locale])
+        await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
         return ConversationHandler.END
 
     if context.chat_data.mode == ConversationMode.REVIEW:
@@ -360,12 +367,12 @@ async def store_email_check_existence_ask_role(
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await update.message.reply_text(
-        PHRASES["ask_role"][locale],
+        context.bot_data.phrases["ask_role"][locale],
         reply_markup=InlineKeyboardMarkup(
             [
                 [
                     InlineKeyboardButton(
-                        text=PHRASES[f"option_{role}"][locale],
+                        text=context.bot_data.phrases[f"option_{role}"][locale],
                         callback_data=role,
                     )
                     for role in (Role.STUDENT, Role.TEACHER)
@@ -474,7 +481,8 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
 
             if not any(context.user_data.time_slots_for_day.values()):
                 await query.answer(
-                    PHRASES["no_slots_selected"][context.user_data.locale], show_alert=True
+                    context.bot_data.phrases["no_slots_selected"][context.user_data.locale],
+                    show_alert=True,
                 )
                 logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
                 context.chat_data.day_index = 0
@@ -684,7 +692,7 @@ async def store_non_teaching_help_ask_another_or_additional_help(
 
         # skip peer help for inexperienced teachers
         await query.edit_message_text(
-            PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_REVIEW
@@ -706,7 +714,7 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
         # but remove the buttons.
         await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
         await update.effective_chat.send_message(
-            PHRASES["ask_final_comment"][context.user_data.locale],
+            context.bot_data.phrases["ask_final_comment"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.BYE
@@ -728,11 +736,11 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     """
     query, data = await answer_callback_query_and_get_data(update)
 
-    locale = context.user_data.locale
+    locale: Locale = context.user_data.locale
 
     if data == UserDataReviewCategory.FIRST_NAME:
         await query.edit_message_text(
-            PHRASES["ask_first_name"][locale],
+            context.bot_data.phrases["ask_first_name"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         # Return state that is right after asking for the first name.
@@ -743,7 +751,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return ConversationState.ASK_LAST_NAME
     elif data == UserDataReviewCategory.LAST_NAME:
         await query.edit_message_text(
-            PHRASES["ask_last_name"][context.user_data.locale],
+            context.bot_data.phrases["ask_last_name"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_SOURCE
@@ -755,7 +763,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return ConversationState.ASK_EMAIL
     elif data == UserDataReviewCategory.EMAIL:
         await query.edit_message_text(
-            PHRASES["ask_email"][locale],
+            context.bot_data.phrases["ask_email"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_ROLE
@@ -792,15 +800,16 @@ async def store_additional_help_comment_ask_final_comment(
     """For young teachers: stores comment on additional help, asks for final comment."""
     if update.message is None:
         return ConversationState.ASK_FINAL_COMMENT
-    locale = context.user_data.locale
+    locale: Locale = context.user_data.locale
 
     context.user_data.teacher_additional_skills_comment = update.message.text
 
     # We want to give the young teacher the opportunity to double-check their email
     # without starting a full-fledged review
     await update.message.reply_text(
-        f"{PHRASES['young_teacher_we_will_email_you'][locale]} {context.user_data.email}\n\n"
-        f"{PHRASES['ask_final_comment'][locale]}"
+        f"{context.bot_data.phrases['young_teacher_we_will_email_you'][locale]} "
+        f"{context.user_data.email}\n\n"
+        f"{context.bot_data.phrases['ask_final_comment'][locale]}"
     )
     return ConversationState.BYE
 
@@ -811,7 +820,7 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     For a would-be teacher that is under 18, stores their comment about potential useful skills.
     For others, stores the general comment. Ends the conversation."""
     data = context.user_data
-    locale = data.locale
+    locale: Locale = data.locale
 
     if data.role == Role.TEACHER and data.teacher_is_under_18 is True:
         data.teacher_additional_skills_comment = update.message.text
@@ -826,7 +835,7 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     else:
         phrase_id = "bye_wait_for_message_from_bot"
 
-    await update.effective_chat.send_message(PHRASES[phrase_id][locale])
+    await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
     return ConversationHandler.END
 
 
@@ -837,12 +846,12 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     # the /cancel command could come even before the user chooses the locale
     if context.user_data.locale:
-        locale = context.user_data.locale
+        locale: Locale = context.user_data.locale
     else:
-        locale = update.effective_user.language_code
+        locale = typing.cast(Locale, update.effective_user.language_code)
 
     await update.message.reply_text(
-        PHRASES["bye_cancel"][locale], reply_markup=InlineKeyboardMarkup([])
+        context.bot_data.phrases["bye_cancel"][locale], reply_markup=InlineKeyboardMarkup([])
     )
 
     return ConversationHandler.END

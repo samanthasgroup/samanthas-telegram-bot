@@ -13,7 +13,7 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.data_structures.constants import PHRASES
+from samanthas_telegram_bot.conversation.data_structures.constants import Locale
 from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
     CUSTOM_CONTEXT_TYPES,
 )
@@ -37,15 +37,17 @@ class MessageSender:
     @staticmethod
     async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         """Sends a message to ask for phone number."""
+        locale: Locale = context.user_data.locale
+
         await update.effective_chat.send_message(
-            PHRASES["ask_phone"][context.user_data.locale],
+            context.bot_data.phrases["ask_phone"][locale],
             disable_web_page_preview=True,  # the message contains link to site with country codes
             parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=ReplyKeyboardMarkup(
                 [
                     [
                         KeyboardButton(
-                            text=PHRASES["share_phone"][context.user_data.locale],
+                            text=context.bot_data.phrases["share_phone"][locale],
                             request_contact=True,
                         )
                     ]
@@ -64,12 +66,14 @@ class MessageSender:
             await update.effective_message.delete()  # remove whatever was before the review
 
         data = context.user_data
+        locale: Locale = data.locale
+
         if data.role == Role.TEACHER and context.chat_data.mode == ConversationMode.NORMAL:
             data.teacher_additional_skills_comment = update.message.text
 
         buttons = [
             InlineKeyboardButton(
-                text=PHRASES["review_reaction_" + option][data.locale],
+                text=context.bot_data.phrases["review_reaction_" + option][locale],
                 callback_data=option,
             )
             for option in ("yes", "no")
@@ -84,16 +88,17 @@ class MessageSender:
     @staticmethod
     async def ask_store_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         """Asks if user's Telegram username should be stored or they want to give phone number."""
+        locale: Locale = context.user_data.locale
         username = update.effective_user.username
 
         await update.effective_chat.send_message(
-            f"{PHRASES['ask_username_1'][context.user_data.locale]} @{username}"
-            f"{PHRASES['ask_username_2'][context.user_data.locale]}",
+            f"{context.bot_data.phrases['ask_username_1'][locale]} @{username}"
+            f"{context.bot_data.phrases['ask_username_2'][locale]}",
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
                         InlineKeyboardButton(
-                            text=PHRASES[f"username_reply_{option}"][context.user_data.locale],
+                            text=context.bot_data.phrases[f"username_reply_{option}"][locale],
                             callback_data=f"store_username_{option}",
                         )
                         for option in (CommonCallbackData.YES, CommonCallbackData.NO)
@@ -106,49 +111,56 @@ class MessageSender:
     def _prepare_message_for_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
         """Prepares text message with user info for review, depending on role and other factors."""
         data = context.user_data
-        locale = data.locale
+        locale: Locale = data.locale
 
         message = (
-            f"{PHRASES['ask_review'][locale]}\n\n"
-            f"{PHRASES['review_first_name'][locale]}: {data.first_name}\n"
-            f"{PHRASES['review_last_name'][locale]}: {data.last_name}\n"
-            f"{PHRASES['review_email'][locale]}: {data.email}\n"
+            f"{context.bot_data.phrases['ask_review'][locale]}\n\n"
+            f"{context.bot_data.phrases['review_first_name'][locale]}: {data.first_name}\n"
+            f"{context.bot_data.phrases['review_last_name'][locale]}: {data.last_name}\n"
+            f"{context.bot_data.phrases['review_email'][locale]}: {data.email}\n"
         )
 
         if data.role == Role.STUDENT:
             message += (
-                f"{PHRASES['review_student_age_group'][locale]}: {data.student_age_from}-"
-                f"{data.student_age_to}\n"
+                f"{context.bot_data.phrases['review_student_age_group'][locale]}: "
+                f"{data.student_age_from}-{data.student_age_to}\n"
             )
 
         if data.tg_username:
-            message += f"{PHRASES['review_username'][locale]} (@{data.tg_username})\n"
+            message += (
+                f"{context.bot_data.phrases['review_username'][locale]} (@{data.tg_username})\n"
+            )
         if data.phone_number:
-            message += f"{PHRASES['review_phone_number'][locale]}: {data.phone_number}\n"
+            message += (
+                f"{context.bot_data.phrases['review_phone_number'][locale]}: {data.phone_number}\n"
+            )
 
         offset_hour = data.utc_offset_hour
         offset_minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
 
         if data.utc_offset_hour > 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC+{offset_hour}"
+            message += f"{context.bot_data.phrases['review_timezone'][locale]}: UTC+{offset_hour}"
         elif data.utc_offset_hour < 0:
-            message += f"{PHRASES['review_timezone'][locale]}: UTC{offset_hour}"
+            message += f"{context.bot_data.phrases['review_timezone'][locale]}: UTC{offset_hour}"
         else:
-            message += f"\n{PHRASES['review_timezone'][locale]}: UTC"
+            message += f"\n{context.bot_data.phrases['review_timezone'][locale]}: UTC"
 
         utc_time = update.effective_message.date
         now_with_offset = utc_time + datetime.timedelta(
             hours=data.utc_offset_hour, minutes=data.utc_offset_minute
         )
-        message += f" ({PHRASES['current_time'][locale]} {now_with_offset.strftime('%H:%M')})\n"
+        message += (
+            f" ({context.bot_data.phrases['current_time'][locale]} "
+            f"{now_with_offset.strftime('%H:%M')})\n"
+        )
 
-        message += f"\n{PHRASES['review_availability'][locale]}:\n"
+        message += f"\n{context.bot_data.phrases['review_availability'][locale]}:\n"
         # The dictionary of days contains keys for all days of week. Only display the days to the
         # user that they have chosen slots for:
         for idx, day in enumerate(data.time_slots_for_day):
             slots = data.time_slots_for_day[day]
             if slots:
-                message += f"{PHRASES['ask_slots_' + str(idx)][locale]}: "
+                message += f"{context.bot_data.phrases['ask_slots_' + str(idx)][locale]}: "
             # sort by first part of slot as a number (otherwise "8:00" will be after "11:00")
             for slot in sorted(slots, key=lambda s: int(s.split("-")[0])):
                 # user must see their slots in their chosen timezone
@@ -166,17 +178,17 @@ class MessageSender:
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
         if data.role == Role.TEACHER:
-            message += f"{PHRASES['review_languages_levels'][locale]}:\n"
+            message += f"{context.bot_data.phrases['review_languages_levels'][locale]}:\n"
             for language in data.levels_for_teaching_language:
-                message += f"{PHRASES[language][locale]}: "
+                message += f"{context.bot_data.phrases[language][locale]}: "
                 message += ", ".join(sorted(data.levels_for_teaching_language[language])) + "\n"
             message += "\n"
 
-        message += f"{PHRASES['review_communication_language'][locale]}: "
+        message += f"{context.bot_data.phrases['review_communication_language'][locale]}: "
         message += (
-            PHRASES[f"class_communication_language_option_{data.communication_language_in_class}"][
-                locale
-            ]
+            context.bot_data.phrases[
+                f"class_communication_language_option_{data.communication_language_in_class}"
+            ][locale]
             + "\n"
         )
 

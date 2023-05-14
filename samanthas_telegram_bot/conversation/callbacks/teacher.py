@@ -8,7 +8,7 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.data_structures.constants import PHRASES
+from samanthas_telegram_bot.conversation.data_structures.constants import Locale
 from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
     CUSTOM_CONTEXT_TYPES,
 )
@@ -32,18 +32,18 @@ async def store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye(
     This callback is for young teachers only.
     """
     query, data = await answer_callback_query_and_get_data(update)
-    locale = context.user_data.locale
+    locale: Locale = context.user_data.locale
 
     await query.delete_message()
 
     if data == CommonCallbackData.YES:  # yes, I can host speaking clubs
         context.user_data.teacher_can_host_speaking_club = True
         await update.effective_chat.send_message(
-            PHRASES["ask_teacher_any_additional_help"][locale]
+            context.bot_data.phrases["ask_teacher_any_additional_help"][locale]
         )
         return ConversationState.ASK_FINAL_COMMENT
 
-    await update.effective_chat.send_message(PHRASES["reply_cannot_work"][locale])
+    await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
     return ConversationHandler.END
 
 
@@ -176,7 +176,7 @@ async def store_peer_help_ask_another_or_additional_help(
 
     if data == CommonCallbackData.DONE:
         await query.edit_message_text(
-            PHRASES["ask_teacher_any_additional_help"][context.user_data.locale],
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_REVIEW
