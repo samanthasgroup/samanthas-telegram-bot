@@ -26,11 +26,10 @@ async def chat_id_is_registered(chat_id: int) -> bool:
             f"{PREFIX}/personal_info/check_existence_of_chat_id/",
             params={"registration_telegram_bot_chat_id": chat_id},
         )
-    logger.debug(f"Response from backend after check for existence of {chat_id=}: {r.status_code}")
     if r.status_code == 200:
         logger.info(f"... {chat_id} already exists")
         return True
-    logger.info(f"... {chat_id} doesn't exist")
+    logger.info(f"... {chat_id} doesn't exist (response code {r.status_code})")
     return False
 
 
