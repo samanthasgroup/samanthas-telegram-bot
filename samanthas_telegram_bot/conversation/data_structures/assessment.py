@@ -2,17 +2,17 @@ from typing import NamedTuple
 
 
 class AssessmentQuestionOption(NamedTuple):
-    id: str
+    id: int
     text: str
 
 
 class AssessmentQuestion(NamedTuple):
-    id: str
+    id: int
     text: str
     options: tuple[AssessmentQuestionOption, ...]
 
 
 class Assessment(NamedTuple):
-    id: str
+    id: int
     age_range_ids: tuple[int, ...]
     questions: tuple[AssessmentQuestion, ...]
