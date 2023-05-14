@@ -34,7 +34,7 @@ async def chat_id_is_registered(chat_id: int) -> bool:
     return False
 
 
-async def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
+def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     """Gets age ranges, assigns IDs (for bot phrases) to age ranges for teacher.
 
     The bot asks the teacher about students' ages, adding words like "teenager" or "adult"
@@ -42,11 +42,12 @@ async def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     These words have to be assigned to these age ranges for the bot to display the correct phrase.
     For example: `phrases.csv` contains the phrase with ID ``option_adults``, so the age range
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
+
+    Note: this is a **synchronous** function because it runs before the application even starts.
     """
     logger.info("Getting age ranges from the backend...")
 
-    async with httpx.AsyncClient() as client:
-        r = await client.get(f"{PREFIX}/age_ranges/")
+    r = httpx.get(f"{PREFIX}/age_ranges/")
     if r.status_code != 200:
         logger.error("Could not load age ranges")  # TODO alert the user
 

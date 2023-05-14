@@ -15,7 +15,6 @@ from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.api_queries import (
     chat_id_is_registered,
-    get_age_ranges,
     person_with_first_name_last_name_email_exists_in_database,
 )
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
@@ -55,10 +54,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # TODO if user clears the history after starting, they won't be able to start until they cancel
     logger.info(f"Chat ID: {update.effective_chat.id}")
 
-    context.chat_data.age_ranges_for_type = await get_age_ranges()
     context.chat_data.student_ages_for_age_range_id = {
         age_range.id: age_range
-        for age_range in context.chat_data.age_ranges_for_type[AgeRangeType.STUDENT]
+        for age_range in context.bot_data.age_ranges_for_type[AgeRangeType.STUDENT]
     }
 
     context.chat_data.mode = ConversationMode.NORMAL
