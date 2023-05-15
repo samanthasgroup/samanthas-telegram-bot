@@ -10,8 +10,8 @@ from samanthas_telegram_bot.conversation.data_structures.assessment import (
     AssessmentQuestion,
     AssessmentQuestionOption,
 )
+from samanthas_telegram_bot.conversation.data_structures.context_types import UserData
 from samanthas_telegram_bot.conversation.data_structures.enums import AgeRangeType
-from samanthas_telegram_bot.conversation.data_structures.user_data import UserData
 
 logger = logging.getLogger(__name__)
 PREFIX = "https://admin.samanthasgroup.com/api"

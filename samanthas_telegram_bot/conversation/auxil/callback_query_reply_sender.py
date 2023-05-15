@@ -8,7 +8,6 @@ from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.conversation.data_structures.assessment import AssessmentQuestion
 from samanthas_telegram_bot.conversation.data_structures.constants import (
-    CUSTOM_CONTEXT_TYPES,
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
     LEVELS,
@@ -18,6 +17,7 @@ from samanthas_telegram_bot.conversation.data_structures.constants import (
     UTC_TIME_SLOTS,
     Locale,
 )
+from samanthas_telegram_bot.conversation.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.conversation.data_structures.enums import (
     AgeRangeType,
     CommonCallbackData,

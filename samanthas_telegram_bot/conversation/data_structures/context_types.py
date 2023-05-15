@@ -1,9 +1,50 @@
+"""Module with context types to be used with python-telegram-bot instead of plain dictionaries."""
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
-from samanthas_telegram_bot.conversation.data_structures.assessment import Assessment
+from telegram.ext import CallbackContext, ExtBot
+
+from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
 from samanthas_telegram_bot.conversation.data_structures.constants import Locale
-from samanthas_telegram_bot.conversation.data_structures.enums import Role
+from samanthas_telegram_bot.conversation.data_structures.enums import (
+    AgeRangeType,
+    ConversationMode,
+    Role,
+)
+from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
+    Assessment,
+    MultilingualBotPhrase,
+)
+
+
+class BotData:
+    """Class for data needed for every conversation and get loaded once at application start."""
+
+    def __init__(self) -> None:
+        # can't be imported at top of the module: it will lead to circular import error
+        from samanthas_telegram_bot.api_queries import get_age_ranges, get_assessments
+
+        self.age_ranges_for_type = get_age_ranges()
+        self.assessment_for_age_range_id = get_assessments(lang_code="en")
+
+        self.phrases = cast(dict[str, MultilingualBotPhrase], load_phrases())
+        """Matches internal ID of a bot phrase to localized versions of this phrase."""
+
+        self.student_ages_for_age_range_id = {
+            age_range.id: age_range for age_range in self.age_ranges_for_type[AgeRangeType.STUDENT]
+        }
+        """Matches IDs of students' age ranges to the same `AgeRange` objects."""
+
+
+@dataclass
+class ChatData:
+    """Class for data only relevant for one particular conversation."""
+
+    current_assessment_question_index: int | None = None
+    current_assessment_question_id: str | None = None
+    day_index: int | None = None
+    mode: ConversationMode | None = None
+    peer_help_callback_data: set[str] | None = None
 
 
 @dataclass
@@ -74,3 +115,8 @@ class UserData:
     teacher_can_host_speaking_club: bool | None = None
     teacher_peer_help = TeacherPeerHelp()
     teacher_additional_skills_comment: str | None = None
+
+
+# Include custom classes into ContextTypes to get attribute hinting (replacing standard dicts with
+# UserData for "user_data" etc.).
+CUSTOM_CONTEXT_TYPES = CallbackContext[ExtBot[None], UserData, ChatData, BotData]
