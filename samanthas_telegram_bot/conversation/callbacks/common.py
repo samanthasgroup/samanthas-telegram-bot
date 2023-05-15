@@ -25,14 +25,12 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.data_structures.constants import (
+    CUSTOM_CONTEXT_TYPES,
     DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
     LOCALES,
     NON_TEACHING_HELP_TYPES,
     Locale,
-)
-from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
-    CUSTOM_CONTEXT_TYPES,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
     CommonCallbackData,

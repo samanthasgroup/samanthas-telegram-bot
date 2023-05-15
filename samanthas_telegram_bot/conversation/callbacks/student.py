@@ -7,9 +7,10 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.data_structures.constants import DIGIT_PATTERN, Locale
-from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
+from samanthas_telegram_bot.conversation.data_structures.constants import (
     CUSTOM_CONTEXT_TYPES,
+    DIGIT_PATTERN,
+    Locale,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
     CommonCallbackData,

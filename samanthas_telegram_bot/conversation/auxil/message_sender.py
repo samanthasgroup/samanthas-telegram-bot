@@ -13,9 +13,9 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.data_structures.constants import Locale
-from samanthas_telegram_bot.conversation.data_structures.custom_context_types import (
+from samanthas_telegram_bot.conversation.data_structures.constants import (
     CUSTOM_CONTEXT_TYPES,
+    Locale,
 )
 from samanthas_telegram_bot.conversation.data_structures.enums import (
     CommonCallbackData,
