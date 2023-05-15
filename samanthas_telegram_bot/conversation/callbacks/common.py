@@ -16,6 +16,7 @@ from telegram.ext import ConversationHandler
 from samanthas_telegram_bot.api_queries import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
+    send_student_info,
 )
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -51,7 +52,8 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """
 
     # TODO if user clears the history after starting, they won't be able to start until they cancel
-    logger.info(f"Chat ID: {update.effective_chat.id}")
+    context.user_data.chat_id = update.effective_chat.id
+    logger.info(f"Chat ID: {context.user_data.chat_id}")
 
     context.chat_data.mode = ConversationMode.NORMAL
 
@@ -658,11 +660,6 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 async def store_non_teaching_help_ask_another_or_additional_help(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    logger.info(
-        f"Chat {update.effective_chat.id}. Language(s) and level(s): "
-        f"{context.user_data.levels_for_teaching_language}"
-    )
-
     query, data = await answer_callback_query_and_get_data(update)
     role = context.user_data.role
 
@@ -699,6 +696,11 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
 ) -> int:
     """If the user requested a review, gives a review menu. Otherwise, asks for final comment."""
     query, data = await answer_callback_query_and_get_data(update)
+
+    logger.info(
+        f"Chat {update.effective_chat.id}. Language(s) and level(s): "
+        f"{context.user_data.levels_for_teaching_language}"
+    )
 
     if data == CommonCallbackData.YES:
         context.chat_data.mode = ConversationMode.NORMAL  # set explicitly to normal just in case
@@ -827,7 +829,12 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     else:
         phrase_id = "bye_wait_for_message_from_bot"
 
-    await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
+    if context.user_data.role == Role.STUDENT:
+        result = await send_student_info(update, context.user_data)
+    else:
+        result = False  # TODO teacher
+    if result is True:
+        await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
     return ConversationHandler.END
 
 

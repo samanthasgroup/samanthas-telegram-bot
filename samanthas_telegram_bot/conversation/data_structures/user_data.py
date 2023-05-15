@@ -36,6 +36,7 @@ class UserData:
 
     # TODO sets instead of lists?
     locale: Locale | None = None
+    chat_id: int | None = None
     first_name: str | None = None
     last_name: str | None = None
     source: str | None = None
