@@ -4,14 +4,14 @@ import logging
 import httpx
 from telegram import Update
 
-from samanthas_telegram_bot.conversation.data_structures.age_range import AgeRange
-from samanthas_telegram_bot.conversation.data_structures.assessment import (
+from samanthas_telegram_bot.conversation.data_structures.context_types import UserData
+from samanthas_telegram_bot.conversation.data_structures.enums import AgeRangeType
+from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
+    AgeRange,
     Assessment,
     AssessmentQuestion,
     AssessmentQuestionOption,
 )
-from samanthas_telegram_bot.conversation.data_structures.context_types import UserData
-from samanthas_telegram_bot.conversation.data_structures.enums import AgeRangeType
 
 logger = logging.getLogger(__name__)
 PREFIX = "https://admin.samanthasgroup.com/api"

@@ -6,7 +6,6 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.data_structures.assessment import AssessmentQuestion
 from samanthas_telegram_bot.conversation.data_structures.constants import (
     DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
@@ -24,6 +23,7 @@ from samanthas_telegram_bot.conversation.data_structures.enums import (
     Role,
     UserDataReviewCategory,
 )
+from samanthas_telegram_bot.conversation.data_structures.helper_classes import AssessmentQuestion
 
 logger = logging.getLogger(__name__)
 
