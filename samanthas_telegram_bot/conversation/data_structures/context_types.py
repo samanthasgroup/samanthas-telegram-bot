@@ -13,7 +13,9 @@ from samanthas_telegram_bot.conversation.data_structures.enums import (
 )
 from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
     Assessment,
+    AssessmentAnswer,
     MultilingualBotPhrase,
+    TeacherPeerHelp,
 )
 
 
@@ -45,30 +47,6 @@ class ChatData:
     day_index: int | None = None
     mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
-
-
-@dataclass
-class AssessmentAnswer:
-    # Those will be numbers, but both CallbackData and API work with strings,
-    # and no math operations are performed, so no need to convert back and forth.
-    question_id: str
-    answer_id: str
-
-
-@dataclass
-class TeacherPeerHelp:
-    """A class that comprises boolean flags for experienced teachers' willingness to help their
-    peers.
-    """
-
-    # names of these flags match (parts of) IDs of phrases in phrases.csv and callback data
-    can_check_syllabus: bool | None = None
-    can_give_feedback: bool | None = None
-    can_help_with_children_group: bool | None = None
-    can_provide_materials: bool | None = None
-    can_host_mentoring_sessions: bool | None = None
-    can_invite_to_class: bool | None = None
-    can_work_in_tandem: bool | None = None
 
 
 @dataclass
