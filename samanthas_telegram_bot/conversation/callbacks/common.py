@@ -1,7 +1,6 @@
 import logging
 import re
 import typing
-from collections import defaultdict
 
 import phonenumbers
 from telegram import (
@@ -25,7 +24,6 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.data_structures.constants import (
-    DAY_OF_WEEK_FOR_INDEX,
     EMAIL_PATTERN,
     LOCALES,
     NON_TEACHING_HELP_TYPES,
@@ -460,18 +458,23 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-        context.user_data.time_slots_for_day = defaultdict(list)
+        context.user_data.day_and_time_slot_ids = []
 
     elif query.data == CommonCallbackData.NEXT:  # user pressed "next" button after choosing slots
         if context.chat_data.day_index == 6:  # we have reached Sunday
+            slots_for_logging = (
+                context.bot_data.day_and_time_slot_for_slot_id[slot_id]
+                for slot_id in sorted(context.user_data.day_and_time_slot_ids)
+            )
             logger.info(
-                f"Chat {update.effective_chat.id}. Slots: {context.user_data.time_slots_for_day}"
+                f"Chat {update.effective_chat.id}. "
+                f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}"
             )
 
             # reset day of week to Monday for possible review
             context.chat_data.day_index = 0
 
-            if not any(context.user_data.time_slots_for_day.values()):
+            if not any(context.user_data.day_and_time_slot_ids):
                 await query.answer(
                     context.bot_data.phrases["no_slots_selected"][context.user_data.locale],
                     show_alert=True,
@@ -488,7 +491,7 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
                 await MessageSender.ask_review(update, context)
                 return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-            context.user_data.levels_for_teaching_language = {}
+            context.user_data.levels_for_teaching_language = {}  # FIXME levels for non-english
             # if the dictionary is empty, it means that no language was chosen yet.
             # In this case no "done" button must be shown.
             show_done_button = True if context.user_data.levels_for_teaching_language else False
@@ -510,8 +513,7 @@ async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEX
     """Stores one time slot and offers to choose another."""
     query, data = await answer_callback_query_and_get_data(update)
 
-    day = DAY_OF_WEEK_FOR_INDEX[context.chat_data.day_index]
-    context.user_data.time_slots_for_day[day].append(data)
+    context.user_data.day_and_time_slot_ids.append(int(data))
 
     await CQReplySender.ask_time_slot(context, query)
 
@@ -763,7 +765,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         await CQReplySender.ask_timezone(context, query)
         return ConversationState.TIME_SLOTS_START
     elif data == UserDataReviewCategory.AVAILABILITY:
-        context.user_data.time_slots_for_day = defaultdict(list)
+        context.user_data.day_and_time_slot_ids = []
         await CQReplySender.ask_time_slot(context, query)
         return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
     elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:

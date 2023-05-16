@@ -1,16 +1,6 @@
 import re
 from typing import Literal
 
-DAY_OF_WEEK_FOR_INDEX = {
-    0: "Monday",
-    1: "Tuesday",
-    2: "Wednesday",
-    3: "Thursday",
-    4: "Friday",
-    5: "Saturday",
-    6: "Sunday",
-}
-
 DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
@@ -48,5 +38,3 @@ TEACHER_PEER_HELP_TYPES = (
     "can_work_in_tandem",
 )
 """These types are used in `UserData`, callback data, setting boolean flags for teacher."""
-
-UTC_TIME_SLOTS = ((5, 8), (8, 11), (11, 14), (14, 17), (17, 21))  # to make "05:00-08:00" etc.

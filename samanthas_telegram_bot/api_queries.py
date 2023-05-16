@@ -11,6 +11,7 @@ from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
     Assessment,
     AssessmentQuestion,
     AssessmentQuestionOption,
+    DayAndTimeSlot,
 )
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,37 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     return assessment_for_age_range_id
 
 
+def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
+    """Gets day and time slots.
+
+    Note: this is a **synchronous** function because it runs once before the application start.
+    It being synchronous enables us to include it into ``BotData.__init__()``
+    """
+
+    def get_hour(str_: str) -> int:
+        """Takes a string like 05:00:00 and returns hours (5 in this example)."""
+        return int(str_.split(":")[0])
+
+    logger.info("Getting day and time slots...")
+
+    # this operation is run at application startup, so no exception handling needed
+    r = httpx.get(f"{PREFIX}/day_and_time_slots/")
+
+    data = json.loads(r.content)
+
+    logger.info(f"... received {len(data)} day and time slots.")
+
+    return tuple(
+        DayAndTimeSlot(
+            id=item["id"],
+            day_of_week_index=item["day_of_week_index"],
+            from_utc_hour=get_hour(item["time_slot"]["from_utc_hour"]),
+            to_utc_hour=get_hour(item["time_slot"]["to_utc_hour"]),
+        )
+        for item in data
+    )
+
+
 async def get_smalltalk_url(
     first_name: str,
     last_name: str,
@@ -163,12 +195,12 @@ async def _send_personal_info_get_id(user_data: UserData) -> int:
                 "telegram_username": user_data.tg_username if user_data.tg_username else "",
                 "email": user_data.email,
                 "phone": user_data.phone_number,
-                # TODO check:
-                "utc_timedelta": f"{user_data.utc_offset_hour}:{user_data.utc_offset_minute}",
+                "utc_timedelta": (
+                    f"{user_data.utc_offset_hour:02d}:{user_data.utc_offset_minute}:00"
+                ),
                 "information_source": user_data.source,
                 "registration_telegram_bot_chat_id": user_data.chat_id,
                 "registration_telegram_bot_language": user_data.locale,
-                "chatwoot_conversation_id": 0,  # TODO do not pass?
             },
         )
     if r.status_code == httpx.codes.CREATED:
@@ -197,7 +229,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
                 "smalltalk_test_result": {},  # TODO
                 "age_range": user_data.student_age_range_id,
-                "availability_slots": [],  # FIXME
+                "availability_slots": user_data.day_and_time_slot_ids,
                 "non_teaching_help_required": user_data.non_teaching_help_types,
                 "teaching_languages_and_levels": [],  # FIXME
             },

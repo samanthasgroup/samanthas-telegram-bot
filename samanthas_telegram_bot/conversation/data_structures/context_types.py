@@ -14,6 +14,7 @@ from samanthas_telegram_bot.conversation.data_structures.enums import (
 from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
     Assessment,
     AssessmentAnswer,
+    DayAndTimeSlot,
     MultilingualBotPhrase,
     TeacherPeerHelp,
 )
@@ -24,10 +25,32 @@ class BotData:
 
     def __init__(self) -> None:
         # can't be imported at top of the module: it will lead to circular import error
-        from samanthas_telegram_bot.api_queries import get_age_ranges, get_assessments
+        from samanthas_telegram_bot.api_queries import (
+            get_age_ranges,
+            get_assessments,
+            get_day_and_time_slots,
+        )
 
         self.age_ranges_for_type = get_age_ranges()
         self.assessment_for_age_range_id = get_assessments(lang_code="en")
+
+        day_and_time_slots = get_day_and_time_slots()
+
+        self.day_and_time_slot_for_slot_id: dict[int, DayAndTimeSlot] = {
+            slot.id: slot for slot in day_and_time_slots
+        }
+        """Matches IDs of DayAndTimeSlot objects to DayAndTimeSLot objects themselves.
+        Needed for matching callback data to entire objects (e.g. to show the user later on
+        what they have chosen)
+         """
+
+        self.day_and_time_slots_for_day_index: dict[int, tuple[DayAndTimeSlot, ...]] = {
+            index: tuple(slot for slot in day_and_time_slots if slot.day_of_week_index == index)
+            for index in range(7)
+        }
+        """Matches indexes of days of the week to DayAndTimeSlot objects. We ask the user
+        time slots day by day, so for each day we have to select slots with the correct day index.
+         """
 
         self.phrases = cast(dict[str, MultilingualBotPhrase], load_phrases())
         """Matches internal ID of a bot phrase to localized versions of this phrase."""
@@ -66,7 +89,7 @@ class UserData:
     # no datetime objects are needed to achieve results needed for the bot
     utc_offset_hour: int | None = None
     utc_offset_minute: int | None = None
-    time_slots_for_day: dict | None = None  # type: ignore  # TODO use dataclass or TypedDict
+    day_and_time_slot_ids: list[int] | None = None
     levels_for_teaching_language: dict[str, list[str]] | None = None
     communication_language_in_class: Literal["en", "ru", "ua"] | None = None
     # This will be a list as opposed to peer help that is a bunch of boolean flags, because IDs of

@@ -1,6 +1,7 @@
 # This module contains some send_message operations that are too complex to be included in the main
 # code, and at the same time need to run multiple times.
 import datetime
+from collections import defaultdict
 from contextlib import suppress
 
 import telegram.error
@@ -153,21 +154,28 @@ class MessageSender:
         )
 
         message += f"\n{context.bot_data.phrases['review_availability'][locale]}:\n"
-        # The dictionary of days contains keys for all days of week. Only display the days to the
-        # user that they have chosen slots for:
-        for idx, day in enumerate(data.time_slots_for_day):
-            slots = data.time_slots_for_day[day]
-            if slots:
-                message += f"{context.bot_data.phrases['ask_slots_' + str(idx)][locale]}: "
-            # sort by first part of slot as a number (otherwise "8:00" will be after "11:00")
-            for slot in sorted(slots, key=lambda s: int(s.split("-")[0])):
-                # user must see their slots in their chosen timezone
-                hour_from, hour_to = slot.split("-")
 
+        slot_ids = sorted(data.day_and_time_slot_ids)
+        # creating a dictionary matching days to lists of slots, so that slots can be shown to
+        # user grouped by a day of the week
+        slot_id_for_day_index: dict[int, list[int]] = defaultdict(list)
+
+        for slot_id in slot_ids:
+            slot_id_for_day_index[
+                context.bot_data.day_and_time_slot_for_slot_id[slot_id].day_of_week_index
+            ].append(slot_id)
+
+        for day_index in slot_id_for_day_index:
+            message += f"{context.bot_data.phrases['ask_slots_' + str(day_index)][locale]}: "
+
+            for slot_id in slot_id_for_day_index[day_index]:
+                slot = context.bot_data.day_and_time_slot_for_slot_id[slot_id]
+
+                # User must see their slots in their chosen timezone.
                 # % 24 is needed to avoid showing 22:00-25:00 to the user
                 message += (
-                    f" {(int(hour_from) + offset_hour) % 24}:{offset_minute}-"
-                    f"{(int(hour_to) + offset_hour) % 24}:{offset_minute};"
+                    f" {(slot.from_utc_hour + offset_hour) % 24}:{offset_minute}-"
+                    f"{(slot.to_utc_hour + offset_hour) % 24}:{offset_minute};"
                 )
             else:  # remove last semicolon, end day with line break
                 message = message[:-1] + "\n"

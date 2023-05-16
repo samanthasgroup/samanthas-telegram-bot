@@ -7,13 +7,11 @@ from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.conversation.data_structures.constants import (
-    DAY_OF_WEEK_FOR_INDEX,
     LANGUAGE_CODES,
     LEVELS,
     NON_TEACHING_HELP_TYPES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     TEACHER_PEER_HELP_TYPES,
-    UTC_TIME_SLOTS,
     Locale,
 )
 from samanthas_telegram_bot.conversation.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -574,29 +572,30 @@ class CallbackQueryReplySender:
     ) -> None:
         """Asks a user to choose a time slot on one particular day."""
 
-        data = context.user_data
-        locale: Locale = data.locale
+        user_data = context.user_data
+        locale: Locale = user_data.locale
 
-        day = DAY_OF_WEEK_FOR_INDEX[context.chat_data.day_index]
+        day_index = context.chat_data.day_index
 
-        hour = data.utc_offset_hour
-        minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
+        offset_hour = user_data.utc_offset_hour
+        offset_minute = str(user_data.utc_offset_minute).zfill(2)  # to produce "00" from 0
 
         # % 24 is needed to avoid showing 22:00-25:00 to the user
         buttons = [
             InlineKeyboardButton(
-                f"{(pair[0] + hour) % 24}:{minute}-" f"{(pair[1] + hour) % 24}:{minute}",
-                callback_data=f"{pair[0]}-{pair[1]}",  # callback_data is in UTC
+                f"{(slot.from_utc_hour + offset_hour) % 24}:{offset_minute}-"
+                f"{(slot.to_utc_hour + offset_hour) % 24}:{offset_minute}",
+                callback_data=slot.id,
             )
-            for pair in UTC_TIME_SLOTS
-            # exclude slots that user has already selected
-            if f"{pair[0]}-{pair[1]}" not in data.time_slots_for_day[day]
+            for slot in context.bot_data.day_and_time_slots_for_day_index[day_index]
+            # exclude slots that user already selected
+            if slot.id not in user_data.day_and_time_slot_ids
         ]
 
         message_text = (
             context.bot_data.phrases["ask_timeslots"][locale]
             + " *"
-            + (context.bot_data.phrases["ask_slots_" + str(context.chat_data.day_index)][locale])
+            + (context.bot_data.phrases["ask_slots_" + str(day_index)][locale])
             + r"*\?"
         )
 

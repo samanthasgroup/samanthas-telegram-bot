@@ -43,6 +43,14 @@ class Assessment(NamedTuple):
     questions: tuple[AssessmentQuestion, ...]
 
 
+@dataclass
+class DayAndTimeSlot:
+    id: int
+    day_of_week_index: int
+    from_utc_hour: int
+    to_utc_hour: int
+
+
 # using TypedDict for phrases to allow simple dict-like usage with dynamically determined locale
 class MultilingualBotPhrase(TypedDict):
     en: str
