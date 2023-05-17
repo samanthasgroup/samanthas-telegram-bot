@@ -16,7 +16,11 @@ from samanthas_telegram_bot.api_queries.check import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
 )
-from samanthas_telegram_bot.api_queries.send import send_student_info, send_teacher_info
+from samanthas_telegram_bot.api_queries.send import (
+    send_student_info,
+    send_teacher_info,
+    send_teacher_under_18_info,
+)
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -842,7 +846,7 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
         result = await send_student_info(update, context.user_data)
     elif context.user_data.role == Role.TEACHER:
         if context.user_data.teacher_is_under_18:
-            result = False  # TODO young teacher
+            result = await send_teacher_under_18_info(update, context.user_data)
         else:
             result = await send_teacher_info(update, context.user_data)
     else:

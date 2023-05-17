@@ -118,10 +118,39 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
             # TODO status
         )
     if r.status_code == httpx.codes.CREATED:
-        logger.info(f"Chat {user_data.chat_id}: Created teacher")
+        logger.info(f"Chat {user_data.chat_id}: Created adult teacher")
         return True
     logger.error(
-        f"Chat {user_data.chat_id}: Failed to create teacher (code {r.status_code}, {r.content})"
+        f"Chat {user_data.chat_id}: Failed to create adult teacher "
+        f"(code {r.status_code}, {r.content})"
+    )
+    return False
+
+
+async def send_teacher_under_18_info(update: Update, user_data: UserData) -> bool:
+    """Sends a POST request to create a teacher under 18 years old."""
+
+    personal_info_id = await _send_personal_info_get_id(user_data)
+
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{API_URL_PREFIX}/teachers/",
+            data={
+                "personal_info": personal_info_id,
+                "comment": user_data.comment,
+                "status_since": _format_status_since(update),
+                "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
+                "has_hosted_speaking_club": False,
+                "is_validated": False,
+            },
+            # TODO status
+        )
+    if r.status_code == httpx.codes.CREATED:
+        logger.info(f"Chat {user_data.chat_id}: Created young teacher")
+        return True
+    logger.error(
+        f"Chat {user_data.chat_id}: Failed to create young teacher "
+        f"(code {r.status_code}, {r.content})"
     )
     return False
 
