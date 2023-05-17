@@ -99,7 +99,6 @@ class ChatData:
 class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
 
-    # TODO sets instead of lists?
     locale: Locale | None = None
     chat_id: int | None = None
     first_name: str | None = None
