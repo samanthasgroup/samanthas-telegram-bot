@@ -107,8 +107,10 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 "age_range": user_data.student_age_range_id,
                 "availability_slots": user_data.day_and_time_slot_ids,
                 "non_teaching_help_required": user_data.non_teaching_help_types,
-                "teaching_languages_and_levels": [],  # FIXME
+                "teaching_languages_and_levels": user_data.language_and_level_ids,
             },
+            # TODO send answers to assessment here (backend cannot store them earlier when
+            #  determining student's level because student is not created yet at that point).
         )
     if r.status_code == httpx.codes.CREATED:
         logger.info(f"Chat {user_data.chat_id}: Created student")

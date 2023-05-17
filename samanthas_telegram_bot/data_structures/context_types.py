@@ -62,6 +62,7 @@ class BotData:
         }
         """Matches IDs of `LanguageAndLevel` objects to same `LanguageAndLevel` objects."""
 
+        # naming with "_objects" to avoid ambiguity of "languages_and_levels"
         self.language_and_level_objects_for_language_id: dict[
             str, tuple[LanguageAndLevel, ...]
         ] = {
@@ -74,6 +75,12 @@ class BotData:
         }
         """Matches IDs of languages (strings like "en", "de" etc.) to sequences of corresponding
         `LanguageAndLevel` objects."""
+
+        self.language_and_level_id_for_language_id_and_level: dict[tuple[str, str], int] = {
+            (item.language_id, item.level): item.id for item in languages_and_levels
+        }
+        """Matches a tuple of language_id and level to an ID of `LanguageAndLevel` object.
+        This ID will be passed to the backend."""
 
         self.phrases = cast(dict[str, MultilingualBotPhrase], load_phrases())
         """Matches internal ID of a bot phrase to localized versions of this phrase."""
@@ -113,6 +120,9 @@ class UserData:
     utc_offset_minute: int | None = None
     day_and_time_slot_ids: list[int] | None = None
     levels_for_teaching_language: dict[str, list[str]] | None = None
+    """A dictionary for languages and levels, used for building messages and keyboards."""
+    language_and_level_ids: list[int] | None = None
+    """A list of `LanguageAndLevel` IDs to be passed to backend."""
     communication_language_in_class: Literal["en", "ru", "ua"] | None = None
     # This will be a list as opposed to peer help that is a bunch of boolean flags, because IDs of
     # help types are fixed between back-end and bot anyway (they are used for bot phrases).

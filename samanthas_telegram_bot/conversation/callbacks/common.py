@@ -491,7 +491,8 @@ async def store_timezone_ask_slots_for_one_day_or_teaching_language(
                 await MessageSender.ask_review(update, context)
                 return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-            context.user_data.levels_for_teaching_language = {}  # FIXME levels for non-english
+            context.user_data.language_and_level_ids = []
+            context.user_data.levels_for_teaching_language = {}
             # if the dictionary is empty, it means that no language was chosen yet.
             # In this case no "done" button must be shown.
             show_done_button = True if context.user_data.levels_for_teaching_language else False
@@ -627,7 +628,9 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
 
         # if a student can NOT read in English: no assessment.  Adult students get A0...
         if user_data.student_age_from >= 18:
-            user_data.levels_for_teaching_language["en"] = ["A0"]
+            user_data.language_and_level_ids = [
+                context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
+            ]
         else:
             # ...while young students get no level and are marked to require oral interview.
             user_data.student_needs_oral_interview = True
@@ -638,6 +641,11 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
     # If this is a teacher or a student that had chosen another language than English,
     # query.data is language level.
     user_data.levels_for_teaching_language[last_language_added].append(data)
+    user_data.language_and_level_ids.append(
+        context.bot_data.language_and_level_id_for_language_id_and_level[
+            (last_language_added, data)
+        ]
+    )
 
     # Students can only choose one language and one level
     if role == Role.STUDENT:
@@ -770,6 +778,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
     elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:
         context.user_data.levels_for_teaching_language = {}
+        context.user_data.language_and_level_ids = []
         show_done_button = True if context.user_data.levels_for_teaching_language else False
         await CQReplySender.ask_teaching_languages(
             context, query, show_done_button=show_done_button
