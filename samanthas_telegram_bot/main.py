@@ -12,7 +12,9 @@ from telegram.ext import (
     filters,
 )
 
-from samanthas_telegram_bot.conversation.callbacks.common import (
+from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
+from samanthas_telegram_bot.data_structures.enums import ConversationState as State
+from samanthas_telegram_bot.registration.callbacks.common import (
     cancel,
     check_if_review_needed_give_review_menu_or_ask_final_comment,
     redirect_to_coordinator_if_registered_check_chat_id_ask_first_name,
@@ -37,14 +39,14 @@ from samanthas_telegram_bot.conversation.callbacks.common import (
     store_timezone_ask_slots_for_one_day_or_teaching_language,
     store_username_if_available_ask_phone_or_email,
 )
-from samanthas_telegram_bot.conversation.callbacks.student import (
+from samanthas_telegram_bot.registration.callbacks.student import (
     ask_communication_language_after_smalltalk,
     ask_communication_language_or_start_assessment_depending_on_learning_experience,
     assessment_store_answer_ask_question,
     send_smalltalk_url_or_ask_communication_language,
     store_communication_language_ask_non_teaching_help_or_start_review,
 )
-from samanthas_telegram_bot.conversation.callbacks.teacher import (
+from samanthas_telegram_bot.registration.callbacks.teacher import (
     store_communication_language_ask_teaching_experience,
     store_experience_ask_about_groups_or_speaking_clubs,
     store_frequency_ask_student_age_groups,
@@ -55,8 +57,6 @@ from samanthas_telegram_bot.conversation.callbacks.teacher import (
     store_teachers_additional_skills_ask_if_review_needed,
     store_teaching_preference_ask_groups_or_frequency_or_student_age,
 )
-from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
-from samanthas_telegram_bot.data_structures.enums import ConversationState as State
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO

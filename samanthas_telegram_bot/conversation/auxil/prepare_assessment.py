@@ -2,10 +2,10 @@ import logging
 
 from telegram import CallbackQuery
 
-from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
+from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.registration.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender,
 )
-from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
 
