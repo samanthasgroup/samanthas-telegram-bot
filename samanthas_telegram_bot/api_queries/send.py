@@ -59,9 +59,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
             data={
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,
-                "status_since": update.effective_message.date.isoformat().replace(
-                    "+00:00", "Z"
-                ),  # TODO can backend do this?
+                "status_since": _format_status_since(update),
                 "can_read_in_english": user_data.student_can_read_in_english,  # TODO what if None?
                 "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
                 "smalltalk_test_result": {},  # TODO
@@ -83,8 +81,8 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
     return False
 
 
-async def send_teacher_info(update: Update, user_data: UserData) -> bool:  # TODO young teacher
-    """Sends a POST request to create a teacher."""
+async def send_teacher_info(update: Update, user_data: UserData) -> bool:
+    """Sends a POST request to create an adult teacher."""
 
     personal_info_id = await _send_personal_info_get_id(user_data)
     peer_help = user_data.teacher_peer_help
@@ -95,9 +93,7 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:  # TOD
             data={
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,
-                "status_since": update.effective_message.date.isoformat().replace(
-                    "+00:00", "Z"
-                ),  # TODO can backend do this?
+                "status_since": _format_status_since(update),
                 "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
                 "has_hosted_speaking_club": False,
                 "is_validated": False,
@@ -128,6 +124,12 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:  # TOD
         f"Chat {user_data.chat_id}: Failed to create teacher (code {r.status_code}, {r.content})"
     )
     return False
+
+
+def _format_status_since(update: Update) -> str:
+    """Converts a datetime object into suitable format for `status_since` field."""
+    # TODO can/should backend do this?
+    return update.effective_message.date.isoformat().replace("+00:00", "Z")
 
 
 async def send_written_answers_get_level(answers: dict[str, str]) -> str:
