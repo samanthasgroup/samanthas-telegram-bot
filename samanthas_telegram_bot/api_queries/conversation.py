@@ -4,8 +4,8 @@ import logging
 import httpx
 from telegram import Update
 
-from samanthas_telegram_bot.api_queries import PREFIX
-from samanthas_telegram_bot.conversation.data_structures.context_types import UserData
+from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
+from samanthas_telegram_bot.data_structures.context_types import UserData
 
 logger = logging.getLogger(__name__)
 # TODO check for something different in case host is unavailable? Add decorators to all functions?
@@ -18,7 +18,7 @@ async def chat_id_is_registered(chat_id: int) -> bool:
 
     async with httpx.AsyncClient() as client:
         r = await client.get(
-            f"{PREFIX}/personal_info/check_existence_of_chat_id/",
+            f"{API_URL_PREFIX}/personal_info/check_existence_of_chat_id/",
             params={"registration_telegram_bot_chat_id": chat_id},
         )
     if r.status_code == httpx.codes.OK:
@@ -49,7 +49,7 @@ async def person_with_first_name_last_name_email_exists_in_database(
     logger.info(f"Checking with the backend if {data_to_check} already exists...")
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{PREFIX}/personal_info/check_existence/",
+            f"{API_URL_PREFIX}/personal_info/check_existence/",
             data={"first_name": first_name, "last_name": last_name, "email": email},
         )
     if r.status_code == httpx.codes.OK:
@@ -63,7 +63,7 @@ async def _send_personal_info_get_id(user_data: UserData) -> int:
     """Creates a personal info item. This function is meant to be called from other functions."""
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{PREFIX}/personal_info/",
+            f"{API_URL_PREFIX}/personal_info/",
             data={
                 "communication_language_mode": user_data.communication_language_in_class,
                 "first_name": user_data.first_name,
@@ -94,7 +94,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{PREFIX}/students/",
+            f"{API_URL_PREFIX}/students/",
             data={
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,

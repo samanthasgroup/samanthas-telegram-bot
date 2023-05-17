@@ -6,7 +6,7 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.data_structures.constants import (
+from samanthas_telegram_bot.data_structures.constants import (
     LANGUAGE_CODES,
     LEVELS,
     NON_TEACHING_HELP_TYPES,
@@ -14,14 +14,14 @@ from samanthas_telegram_bot.conversation.data_structures.constants import (
     TEACHER_PEER_HELP_TYPES,
     Locale,
 )
-from samanthas_telegram_bot.conversation.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.conversation.data_structures.enums import (
+from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.enums import (
     AgeRangeType,
     CommonCallbackData,
     Role,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.conversation.data_structures.helper_classes import AssessmentQuestion
+from samanthas_telegram_bot.data_structures.helper_classes import AssessmentQuestion
 
 logger = logging.getLogger(__name__)
 

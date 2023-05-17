@@ -4,7 +4,7 @@ import typing
 from collections.abc import Iterator
 from pathlib import Path
 
-from samanthas_telegram_bot.conversation.data_structures.constants import LOCALES
+from samanthas_telegram_bot.data_structures.constants import LOCALES
 
 logger = logging.getLogger(__name__)
 

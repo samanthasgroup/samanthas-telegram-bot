@@ -1,6 +1,8 @@
 import re
 from typing import Literal
 
+API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
+
 DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 

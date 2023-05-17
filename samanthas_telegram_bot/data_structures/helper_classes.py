@@ -6,7 +6,7 @@ custom classes for attribute hinting, but related to inner workings of python-te
 from dataclasses import dataclass
 from typing import NamedTuple, Optional, TypedDict
 
-from samanthas_telegram_bot.conversation.data_structures.enums import AgeRangeType
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 
 
 @dataclass

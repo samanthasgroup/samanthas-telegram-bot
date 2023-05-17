@@ -7,9 +7,9 @@ import logging
 
 import httpx
 
-from samanthas_telegram_bot.api_queries import PREFIX
-from samanthas_telegram_bot.conversation.data_structures.enums import AgeRangeType
-from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
+from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType
+from samanthas_telegram_bot.data_structures.helper_classes import (
     AgeRange,
     Assessment,
     AssessmentQuestion,
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
-    """Gets age ranges, assigns IDs (for bot phrases) to age ranges for teacher.
+    """Gets age ranges from the backend, assigns IDs (for bot phrases) to age ranges for teacher.
 
     The bot asks the teacher about students' ages, adding words like "teenager" or "adult"
     to the number ranges (e.g. "children (5-11)", in user's language).
@@ -32,7 +32,7 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     logger.info("Getting age ranges from the backend...")
 
     # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{PREFIX}/age_ranges/")
+    r = httpx.get(f"{API_URL_PREFIX}/age_ranges/")
 
     data = json.loads(r.content)
     logger.info("... age ranges loaded successfully.")
@@ -57,7 +57,7 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
 
 
 def get_assessments(lang_code: str) -> dict[int, Assessment]:
-    """Gets assessment questions, based on language.
+    """Gets assessment questions from the backend, based on language.
 
     Returns a dictionary matching an age range ID to assessment.
 
@@ -68,7 +68,7 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     logger.info(f"Getting assessment questions for {lang_code=}...")
 
     # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{PREFIX}/enrollment_test/", params={"language": lang_code})
+    r = httpx.get(f"{API_URL_PREFIX}/enrollment_test/", params={"language": lang_code})
 
     data = json.loads(r.content)
 
@@ -103,7 +103,7 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
 
 
 def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
-    """Gets day and time slots.
+    """Gets day and time slots from the backend.
 
     Note: this is a **synchronous** function because it runs once before the application start.
     It being synchronous enables us to include it into ``BotData.__init__()``
@@ -116,7 +116,7 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
     logger.info("Getting day and time slots...")
 
     # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{PREFIX}/day_and_time_slots/")
+    r = httpx.get(f"{API_URL_PREFIX}/day_and_time_slots/")
 
     data = json.loads(r.content)
 

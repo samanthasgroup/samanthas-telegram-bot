@@ -5,13 +5,9 @@ from typing import Literal, cast
 from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
-from samanthas_telegram_bot.conversation.data_structures.constants import Locale
-from samanthas_telegram_bot.conversation.data_structures.enums import (
-    AgeRangeType,
-    ConversationMode,
-    Role,
-)
-from samanthas_telegram_bot.conversation.data_structures.helper_classes import (
+from samanthas_telegram_bot.data_structures.constants import Locale
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, ConversationMode, Role
+from samanthas_telegram_bot.data_structures.helper_classes import (
     Assessment,
     AssessmentAnswer,
     DayAndTimeSlot,

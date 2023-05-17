@@ -55,12 +55,8 @@ from samanthas_telegram_bot.conversation.callbacks.teacher import (
     store_teachers_additional_skills_ask_if_review_needed,
     store_teaching_preference_ask_groups_or_frequency_or_student_age,
 )
-from samanthas_telegram_bot.conversation.data_structures.context_types import (
-    BotData,
-    ChatData,
-    UserData,
-)
-from samanthas_telegram_bot.conversation.data_structures.enums import ConversationState as State
+from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
+from samanthas_telegram_bot.data_structures.enums import ConversationState as State
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
