@@ -4,6 +4,7 @@
 # Their being synchronous enables us to include them into BotData.__init__() without workarounds.
 import json
 import logging
+from typing import Any
 
 import httpx
 
@@ -29,13 +30,8 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     For example: `phrases.csv` contains the phrase with ID ``option_adults``, so the age range
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
     """
-    logger.info("Getting age ranges from the backend...")
 
-    # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{API_URL_PREFIX}/age_ranges/")
-
-    data = json.loads(r.content)
-    logger.info("... age ranges loaded successfully.")
+    data = _get_json(url_infix="age_ranges")
 
     age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
         type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -65,12 +61,11 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     It being synchronous enables us to include it into ``BotData.__init__()``
     """
 
-    logger.info(f"Getting assessment questions for {lang_code=}...")
-
-    # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{API_URL_PREFIX}/enrollment_test/", params={"language": lang_code})
-
-    data = json.loads(r.content)
+    data = _get_json(
+        url_infix="enrollment_test",
+        name_for_logger=f"assessments for {lang_code=}",
+        params={"language": lang_code},
+    )
 
     assessments = tuple(
         Assessment(
@@ -89,7 +84,6 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
         )
         for item in data
     )
-    logger.info(f"... received {len(assessments)} assessments for {lang_code=}.")
 
     # Each assessment has a sequence of age range IDs. We have to match every single age range ID
     # in this sequence to a respective assessment.
@@ -113,14 +107,7 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
         """Takes a string like 05:00:00 and returns hours (5 in this example)."""
         return int(str_.split(":")[0])
 
-    logger.info("Getting day and time slots...")
-
-    # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{API_URL_PREFIX}/day_and_time_slots/")
-
-    data = json.loads(r.content)
-
-    logger.info(f"... received {len(data)} day and time slots.")
+    data = _get_json(url_infix="day_and_time_slots")
 
     return tuple(
         DayAndTimeSlot(
@@ -131,3 +118,20 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
         )
         for item in data
     )
+
+
+def _get_json(
+    url_infix: str, name_for_logger: str | None = None, params: dict[str, str] | None = None
+) -> Any:
+    if not name_for_logger:
+        name_for_logger = url_infix.replace("_", " ")
+
+    logger.info(f"Getting {name_for_logger} from the backend...")
+
+    # this operation is run at application startup, so no exception handling needed
+    r = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
+
+    data = json.loads(r.content)
+    logger.info(f"...received {len(data)} {name_for_logger}.")
+
+    return data
