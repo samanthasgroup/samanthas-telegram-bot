@@ -7,8 +7,6 @@ from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.data_structures.constants import (
-    LANGUAGE_CODES,
-    LEVELS,
     NON_TEACHING_HELP_TYPES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     TEACHER_PEER_HELP_TYPES,
@@ -136,9 +134,16 @@ class CallbackQueryReplySender:
             f"{language_name}?"
         )
 
+        # different languages have different set of levels they can be taught at
+        relevant_levels = (
+            item.level
+            for item in context.bot_data.language_and_level_objects_for_language_id[
+                last_language_added
+            ]
+        )
         level_buttons = [
             InlineKeyboardButton(text=level, callback_data=level)
-            for level in LEVELS
+            for level in relevant_levels
             if level not in context.user_data.levels_for_teaching_language[last_language_added]
         ]
 
@@ -535,7 +540,7 @@ class CallbackQueryReplySender:
 
         language_for_callback_data = {
             code: context.bot_data.phrases[code][locale]
-            for code in LANGUAGE_CODES
+            for code in context.bot_data.sorted_language_ids
             if code not in context.user_data.levels_for_teaching_language
         }
 

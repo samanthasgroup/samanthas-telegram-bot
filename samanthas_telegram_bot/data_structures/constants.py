@@ -1,20 +1,20 @@
 import re
 from typing import Literal
 
+# Most of these could come from the backend to avoid duplicate changes, but that would mean
+# the bot phrases will have to be stored in the backend too (since these types are used to identify
+# the phrases).
+# TODO (not necessarily in MVP) maybe this can be changed anyway.
+#  We could check ID's of phrases at the start to make sure there's no mismatch.
+
 API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
 
 DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
-# TODO maybe factor out from phrases; addition of language will require double changes
-LANGUAGE_CODES = ("en", "fr", "de", "es", "it", "pl", "cz", "se")
-LEVELS = ("A0", "A1", "A2", "B1", "B2", "C1")
-
 Locale = Literal["ua", "en", "ru"]
 LOCALES: tuple[Locale, ...] = ("ua", "en", "ru")
 
-# these could come from the backend, but that would mean the bot phrases will have to be stored
-# in the backend too (since these types are used to identify the phrases)
 NON_TEACHING_HELP_TYPES = (
     "cv_write_edit",
     "cv_proofread",

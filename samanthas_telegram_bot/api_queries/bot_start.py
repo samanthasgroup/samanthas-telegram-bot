@@ -121,22 +121,17 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
     )
 
 
-def get_languages_and_levels() -> dict[int, LanguageAndLevel]:
-    """Gets languages and levels from the backend.
-
-    Returns dictionary matching ID of LanguageAndLevel object to the whole object.
-    """
+def get_languages_and_levels() -> tuple[LanguageAndLevel, ...]:
+    """Gets languages and levels from the backend."""
 
     data = _get_json(
         url_infix="languages_and_levels", name_for_logger="combinations of languages and levels"
     )
 
-    return {
-        item["id"]: LanguageAndLevel(
-            id=item["id"], language_id=item["language"]["id"], level=item["level"]
-        )
+    return tuple(
+        LanguageAndLevel(id=item["id"], language_id=item["language"]["id"], level=item["level"])
         for item in data
-    }
+    )
 
 
 def _get_json(

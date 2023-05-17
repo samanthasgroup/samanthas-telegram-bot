@@ -11,6 +11,7 @@ from samanthas_telegram_bot.data_structures.helper_classes import (
     Assessment,
     AssessmentAnswer,
     DayAndTimeSlot,
+    LanguageAndLevel,
     MultilingualBotPhrase,
     TeacherPeerHelp,
 )
@@ -49,8 +50,30 @@ class BotData:
         time slots day by day, so for each day we have to select slots with the correct day index.
          """
 
-        self.language_and_level_for_id = get_languages_and_levels()
-        """Matches IDs of `LanguageAndLevel` objects to whole `LanguageAndLevel` objects."""
+        languages_and_levels = get_languages_and_levels()
+        unique_language_ids = {item.language_id for item in languages_and_levels}
+
+        # make sure English comes first as it has to be displayed first to the user
+        self.sorted_language_ids = ["en"] + sorted(unique_language_ids - {"en"})
+        """Language IDs sorted by language code (but English always comes first)."""
+
+        self.language_and_level_for_id: dict[int, LanguageAndLevel] = {
+            item.id: item for item in languages_and_levels
+        }
+        """Matches IDs of `LanguageAndLevel` objects to same `LanguageAndLevel` objects."""
+
+        self.language_and_level_objects_for_language_id: dict[
+            str, tuple[LanguageAndLevel, ...]
+        ] = {
+            language_id: tuple(
+                language_and_level
+                for language_and_level in languages_and_levels
+                if language_and_level.language_id == language_id
+            )
+            for language_id in self.sorted_language_ids
+        }
+        """Matches IDs of languages (strings like "en", "de" etc.) to sequences of corresponding
+        `LanguageAndLevel` objects."""
 
         self.phrases = cast(dict[str, MultilingualBotPhrase], load_phrases())
         """Matches internal ID of a bot phrase to localized versions of this phrase."""
