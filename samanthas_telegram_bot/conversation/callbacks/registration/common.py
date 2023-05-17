@@ -16,7 +16,7 @@ from samanthas_telegram_bot.api_queries.check import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
 )
-from samanthas_telegram_bot.api_queries.send import send_student_info
+from samanthas_telegram_bot.api_queries.send import send_student_info, send_teacher_info
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -840,8 +840,15 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
 
     if context.user_data.role == Role.STUDENT:
         result = await send_student_info(update, context.user_data)
+    elif context.user_data.role == Role.TEACHER:
+        if context.user_data.teacher_is_under_18:
+            result = False  # TODO young teacher
+        else:
+            result = await send_teacher_info(update, context.user_data)
     else:
-        result = False  # TODO teacher
+        logger.error(f"Cannot send to backend: {context.user_data=}")
+        result = False
+
     if result is True:
         await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
     return ConversationHandler.END

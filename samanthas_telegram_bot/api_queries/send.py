@@ -70,6 +70,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 "non_teaching_help_required": user_data.non_teaching_help_types,
                 "teaching_languages_and_levels": user_data.language_and_level_ids,
             },
+            # TODO status
             # TODO send answers to assessment here (backend cannot store them earlier when
             #  determining student's level because student is not created yet at that point).
         )
@@ -78,6 +79,53 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
         return True
     logger.error(
         f"Chat {user_data.chat_id}: Failed to create student (code {r.status_code}, {r.content})"
+    )
+    return False
+
+
+async def send_teacher_info(update: Update, user_data: UserData) -> bool:  # TODO young teacher
+    """Sends a POST request to create a teacher."""
+
+    personal_info_id = await _send_personal_info_get_id(user_data)
+    peer_help = user_data.teacher_peer_help
+
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{API_URL_PREFIX}/teachers/",
+            data={
+                "personal_info": personal_info_id,
+                "comment": user_data.comment,
+                "status_since": update.effective_message.date.isoformat().replace(
+                    "+00:00", "Z"
+                ),  # TODO can backend do this?
+                "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
+                "has_hosted_speaking_club": False,
+                "is_validated": False,
+                "has_prior_teaching_experience": user_data.teacher_has_prior_experience,
+                "non_teaching_help_provided_comment": user_data.teacher_additional_skills_comment,
+                "peer_support_can_check_syllabus": peer_help.can_check_syllabus,
+                "peer_support_can_host_mentoring_sessions": peer_help.can_host_mentoring_sessions,
+                "peer_support_can_give_feedback": peer_help.can_give_feedback,
+                "peer_support_can_help_with_childrens_groups": (
+                    peer_help.can_help_with_children_group
+                ),
+                "peer_support_can_provide_materials": peer_help.can_provide_materials,
+                "peer_support_can_invite_to_class": peer_help.can_invite_to_class,
+                "peer_support_can_work_in_tandem": peer_help.can_work_in_tandem,
+                "simultaneous_groups": user_data.teacher_number_of_groups,
+                "weekly_frequency_per_group": user_data.teacher_class_frequency,
+                "availability_slots": user_data.day_and_time_slot_ids,
+                "non_teaching_help_provided": user_data.non_teaching_help_types,
+                "student_age_ranges": user_data.teacher_student_age_range_ids,
+                "teaching_languages_and_levels": user_data.language_and_level_ids,
+            },
+            # TODO status
+        )
+    if r.status_code == httpx.codes.CREATED:
+        logger.info(f"Chat {user_data.chat_id}: Created teacher")
+        return True
+    logger.error(
+        f"Chat {user_data.chat_id}: Failed to create teacher (code {r.status_code}, {r.content})"
     )
     return False
 
