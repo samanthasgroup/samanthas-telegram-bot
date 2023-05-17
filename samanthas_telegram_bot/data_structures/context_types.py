@@ -4,6 +4,7 @@ from typing import Literal, cast
 
 from telegram.ext import CallbackContext, ExtBot
 
+from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, ConversationMode, Role
 from samanthas_telegram_bot.data_structures.helper_classes import (
@@ -14,7 +15,6 @@ from samanthas_telegram_bot.data_structures.helper_classes import (
     MultilingualBotPhrase,
     TeacherPeerHelp,
 )
-from samanthas_telegram_bot.registration.auxil.load_phrases import load_phrases
 
 
 class BotData:
@@ -22,7 +22,7 @@ class BotData:
 
     def __init__(self) -> None:
         # can't be imported at top of the module: it will lead to circular import error
-        from samanthas_telegram_bot.api_queries.bot_start import (
+        from samanthas_telegram_bot.api_queries.bot_init import (
             get_age_ranges,
             get_assessments,
             get_day_and_time_slots,
