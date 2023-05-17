@@ -12,11 +12,17 @@ from telegram import (
 )
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_queries.conversation import (
+from samanthas_telegram_bot.api_queries.check import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
-    send_student_info,
 )
+from samanthas_telegram_bot.api_queries.send import send_student_info
+from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
+    CallbackQueryReplySender as CQReplySender,
+)
+from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
+from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.constants import (
     EMAIL_PATTERN,
     LOCALES,
@@ -31,12 +37,6 @@ from samanthas_telegram_bot.data_structures.enums import (
     Role,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.registration.auxil.callback_query_reply_sender import (
-    CallbackQueryReplySender as CQReplySender,
-)
-from samanthas_telegram_bot.registration.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.registration.auxil.prepare_assessment import prepare_assessment
-from samanthas_telegram_bot.registration.auxil.shortcuts import answer_callback_query_and_get_data
 
 logger = logging.getLogger(__name__)
 
