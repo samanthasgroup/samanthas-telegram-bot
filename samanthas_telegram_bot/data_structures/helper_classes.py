@@ -51,6 +51,12 @@ class DayAndTimeSlot:
     to_utc_hour: int
 
 
+class LanguageAndLevel(NamedTuple):
+    id: int
+    language_id: str
+    level: str
+
+
 # using TypedDict for phrases to allow simple dict-like usage with dynamically determined locale
 class MultilingualBotPhrase(TypedDict):
     en: str

@@ -16,6 +16,7 @@ from samanthas_telegram_bot.data_structures.helper_classes import (
     AssessmentQuestion,
     AssessmentQuestionOption,
     DayAndTimeSlot,
+    LanguageAndLevel,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,6 +119,24 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
         )
         for item in data
     )
+
+
+def get_languages_and_levels() -> dict[int, LanguageAndLevel]:
+    """Gets languages and levels from the backend.
+
+    Returns dictionary matching ID of LanguageAndLevel object to the whole object.
+    """
+
+    data = _get_json(
+        url_infix="languages_and_levels", name_for_logger="combinations of languages and levels"
+    )
+
+    return {
+        item["id"]: LanguageAndLevel(
+            id=item["id"], language_id=item["language"]["id"], level=item["level"]
+        )
+        for item in data
+    }
 
 
 def _get_json(

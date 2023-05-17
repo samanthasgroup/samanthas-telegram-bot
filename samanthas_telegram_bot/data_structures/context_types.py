@@ -25,6 +25,7 @@ class BotData:
             get_age_ranges,
             get_assessments,
             get_day_and_time_slots,
+            get_languages_and_levels,
         )
 
         self.age_ranges_for_type = get_age_ranges()
@@ -47,6 +48,9 @@ class BotData:
         """Matches indexes of days of the week to DayAndTimeSlot objects. We ask the user
         time slots day by day, so for each day we have to select slots with the correct day index.
          """
+
+        self.language_and_level_for_id = get_languages_and_levels()
+        """Matches IDs of `LanguageAndLevel` objects to whole `LanguageAndLevel` objects."""
 
         self.phrases = cast(dict[str, MultilingualBotPhrase], load_phrases())
         """Matches internal ID of a bot phrase to localized versions of this phrase."""
