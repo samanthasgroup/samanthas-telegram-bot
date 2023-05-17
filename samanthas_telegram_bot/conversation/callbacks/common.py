@@ -12,7 +12,7 @@ from telegram import (
 )
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_queries import (
+from samanthas_telegram_bot.api_queries.conversation import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
     send_student_info,
