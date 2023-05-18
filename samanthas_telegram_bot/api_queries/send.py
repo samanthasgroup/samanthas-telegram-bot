@@ -9,6 +9,9 @@ from samanthas_telegram_bot.data_structures.context_types import UserData
 
 logger = logging.getLogger(__name__)
 
+STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
+STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
+
 
 async def get_smalltalk_url(
     first_name: str,
@@ -59,6 +62,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
             data={
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,
+                "status": STATUS_AT_CREATION_STUDENT_TEACHER,
                 "status_since": _format_status_since(update),
                 "can_read_in_english": user_data.student_can_read_in_english,  # TODO what if None?
                 "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
@@ -68,7 +72,6 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 "non_teaching_help_required": user_data.non_teaching_help_types,
                 "teaching_languages_and_levels": user_data.language_and_level_ids,
             },
-            # TODO status
             # TODO send answers to assessment here (backend cannot store them earlier when
             #  determining student's level because student is not created yet at that point).
         )
@@ -93,6 +96,7 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
             data={
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,
+                "status": STATUS_AT_CREATION_STUDENT_TEACHER,
                 "status_since": _format_status_since(update),
                 "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
                 "has_hosted_speaking_club": False,
@@ -115,7 +119,6 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
                 "student_age_ranges": user_data.teacher_student_age_range_ids,
                 "teaching_languages_and_levels": user_data.language_and_level_ids,
             },
-            # TODO status
         )
     if r.status_code == httpx.codes.CREATED:
         logger.info(f"Chat {user_data.chat_id}: Created adult teacher")
@@ -139,11 +142,11 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,
                 "status_since": _format_status_since(update),
+                "status": STATUS_AT_CREATION_TEACHER_UNDER_18,
                 "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
                 "has_hosted_speaking_club": False,
                 "is_validated": False,
             },
-            # TODO status
         )
     if r.status_code == httpx.codes.CREATED:
         logger.info(f"Chat {user_data.chat_id}: Created young teacher")

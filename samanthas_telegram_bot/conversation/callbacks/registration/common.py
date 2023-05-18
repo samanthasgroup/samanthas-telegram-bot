@@ -411,7 +411,7 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
             await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
                 context, query
             )
-            return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+            return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP  # FIXME timezone
 
     if context.user_data.role == Role.STUDENT:
         age_range_id = int(data)
