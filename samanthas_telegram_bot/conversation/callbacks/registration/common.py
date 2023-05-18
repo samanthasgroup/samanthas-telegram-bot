@@ -174,7 +174,6 @@ async def store_timezone_ask_first_name(update: Update, context: CUSTOM_CONTEXT_
     )
 
     if context.chat_data.mode == ConversationMode.REVIEW:
-        await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -465,7 +464,6 @@ async def store_age_ask_slots_for_one_day_or_teaching_language(
         )
         if context.chat_data.mode == ConversationMode.REVIEW:
             await query.answer()
-            await query.delete_message()
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -508,7 +506,6 @@ async def store_age_ask_slots_for_one_day_or_teaching_language(
     await query.answer()
 
     if context.chat_data.mode == ConversationMode.REVIEW:
-        await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -555,7 +552,6 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     # for a teacher, but we'll keep it explicit here
     if data == CommonCallbackData.DONE and context.user_data.role == Role.TEACHER:
         if context.chat_data.mode == ConversationMode.REVIEW:
-            await query.delete_message()
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -659,7 +655,6 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
     # Students can only choose one language and one level
     if role == Role.STUDENT:
         if context.chat_data.mode == ConversationMode.REVIEW:
-            await query.delete_message()
             await MessageSender.ask_review(update, context)
             return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
@@ -766,7 +761,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_SOURCE
-    elif data == UserDataReviewCategory.PHONE_NUMBER:
+    elif data == UserDataReviewCategory.PHONE_NUMBER:  # FIXME delete big "share" button
         # no need to check user_data here since the user couldn't have selected this option
         # if it wasn't there.
         # edit_message_text not possible here because of a button for sharing phone number
