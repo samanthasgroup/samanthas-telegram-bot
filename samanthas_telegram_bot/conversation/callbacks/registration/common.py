@@ -1,5 +1,4 @@
 import logging
-import re
 import typing
 
 import phonenumbers
@@ -28,6 +27,7 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.constants import (
+    DIGIT_PATTERN,
     EMAIL_PATTERN,
     LOCALES,
     NON_TEACHING_HELP_TYPES,
@@ -62,6 +62,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
     # Methods handling these iterables can be called from different callbacks, so better to set
     # them here, in one place.
+    context.user_data.day_and_time_slot_ids = []
+    context.user_data.language_and_level_ids = []
+    context.user_data.levels_for_teaching_language = {}
     context.user_data.non_teaching_help_types = []
     context.user_data.student_assessment_answers = []
     context.user_data.teacher_student_age_range_ids = []
@@ -109,20 +112,20 @@ async def store_locale_ask_if_already_registered(
         question_phrase_internal_id="ask_already_with_us",
     )
 
-    return ConversationState.CHECK_CHAT_ID_ASK_FIRST_NAME
+    return ConversationState.CHECK_CHAT_ID_ASK_TIMEZONE
 
 
-async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
+async def redirect_to_coordinator_if_registered_check_chat_id_ask_timezone(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Checks user's answer if they are registered, checks chat ID, asks for first name.
+    """Checks user's answer if they are registered, checks chat ID, asks timezone.
 
     If user is already registered (as per their answer), redirects to coordinator.
     Otherwise, checks if Telegram chat ID is already present in the back end.
     If it is, asks the user if they still want to proceed with registration.
 
     If the user said they were not registered and chat ID was not found,
-    asks for first name.
+    asks timezone.
     """
 
     query, data = await answer_callback_query_and_get_data(update)
@@ -138,19 +141,16 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_first_name(
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
-        return ConversationState.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME
+        return ConversationState.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE
 
-    await query.edit_message_text(
-        context.bot_data.phrases["ask_first_name"][context.user_data.locale],
-        reply_markup=InlineKeyboardMarkup([]),
-    )
-    return ConversationState.ASK_LAST_NAME
+    await CQReplySender.ask_timezone(context, query)
+    return ConversationState.ASK_FIRST_NAME
 
 
-async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
+async def say_bye_if_does_not_want_to_register_another_or_ask_timezone(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If user does not want to register another person, says bye. Otherwise, asks first name."""
+    """If user does not want to register another person, says bye. Otherwise, asks timezone."""
 
     query, data = await answer_callback_query_and_get_data(update)
 
@@ -160,6 +160,23 @@ async def say_bye_if_does_not_want_to_register_another_or_ask_first_name(
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationHandler.END
+
+    await CQReplySender.ask_timezone(context, query)
+    return ConversationState.ASK_FIRST_NAME
+
+
+async def store_timezone_ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores UTC offset, asks first name."""
+    query, data = await answer_callback_query_and_get_data(update)
+
+    context.user_data.utc_offset_hour, context.user_data.utc_offset_minute = (
+        int(item) for item in data.split(":")
+    )
+
+    if context.chat_data.mode == ConversationMode.REVIEW:
+        await query.delete_message()
+        await MessageSender.ask_review(update, context)
+        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
     await query.edit_message_text(
         context.bot_data.phrases["ask_first_name"][context.user_data.locale],
@@ -391,29 +408,48 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
     else:
         await CQReplySender.ask_student_age(context, query)
 
-    return ConversationState.ASK_TIMEZONE
+    return ConversationState.TIME_SLOTS_START
 
 
-async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_age_ask_slots_for_one_day_or_teaching_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
     """Stores age group for student, asks timezone. Action for teacher depends on their age.
 
     If user is a teacher under 18, informs that teachers under 18 are not allowed and asks
     whether they are at least 16, in which case they can host speaking clubs.
+
+    If this is a student or adult teacher:
+
+    * If this function is called for the first time in a conversation, **stores age** and gives
+      time slots for Monday.
+    * If this function is called after choosing time slots for a day, asks for time slots for the
+      next day.
+    * If this is the last day, makes asks for the first language to learn/teach.
     """
 
-    query, data = await answer_callback_query_and_get_data(update)
+    # Not using helper function here because query.answer() will happen at different points
+    # depending on scenario
+    query = update.callback_query
+    data = query.data
 
-    if context.user_data.role == Role.TEACHER:
+    # If this is a teacher replying to question about age
+    if context.user_data.role == Role.TEACHER and data in (
+        CommonCallbackData.YES,
+        CommonCallbackData.NO,
+    ):
         if data == CommonCallbackData.YES:  # yes, the teacher is 18 or older
             context.user_data.teacher_is_under_18 = False
         else:
             context.user_data.teacher_is_under_18 = True
+            await query.answer()
             await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
                 context, query
             )
-            return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP  # FIXME timezone
+            return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
 
-    if context.user_data.role == Role.STUDENT:
+    # If this is a student that has chosen their age group (callback data is ID of age range)
+    if context.user_data.role == Role.STUDENT and DIGIT_PATTERN.match(data):
         age_range_id = int(data)
         context.user_data.student_age_range_id = age_range_id
         context.user_data.student_age_from = context.bot_data.student_ages_for_age_range_id[
@@ -427,91 +463,60 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
             f"Age group of the student: ID {context.user_data.student_age_range_id} "
             f"({context.user_data.student_age_from}-{context.user_data.student_age_to} years old)"
         )
+        if context.chat_data.mode == ConversationMode.REVIEW:
+            await query.answer()
+            await query.delete_message()
+            await MessageSender.ask_review(update, context)
+            return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
+    # If this is a user choosing time slots that has just chosen one time slot
+    if query.data != CommonCallbackData.NEXT:
+        await query.answer()
+        await CQReplySender.ask_time_slot(context, query)
+        return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+
+    # If this is a user choosing time slots that pressed "next" button after choosing slots...
+    if context.chat_data.day_index < 6:  # ...but we haven't yet reached Sunday
+        context.chat_data.day_index += 1
+        await query.answer()
+        await CQReplySender.ask_time_slot(context, query)
+        return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+
+    # ...or if we have reached Sunday
+    slots_for_logging = (
+        context.bot_data.day_and_time_slot_for_slot_id[slot_id]
+        for slot_id in sorted(context.user_data.day_and_time_slot_ids)
+    )
+    logger.info(
+        f"Chat {update.effective_chat.id}. "
+        f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}"
+    )
+
+    # reset day of week to Monday for possible review
+    context.chat_data.day_index = 0
+
+    if not any(context.user_data.day_and_time_slot_ids):
+        await query.answer(
+            context.bot_data.phrases["no_slots_selected"][context.user_data.locale],
+            show_alert=True,
+        )
+        logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
+        context.chat_data.day_index = 0
+        await CQReplySender.ask_time_slot(context, query)
+        return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+
+    await query.answer()
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-    await CQReplySender.ask_timezone(context, query)
-    return ConversationState.TIME_SLOTS_START
-
-
-async def store_timezone_ask_slots_for_one_day_or_teaching_language(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """If this function is called for the first time in a conversation, **stores the timezone**
-    and gives time slots for Monday.
-
-    If this function is called after choosing time slots for a day, asks for time slots for the
-    next day.
-
-    If this is the last day, makes asks for the first language to learn/teach.
-    """
-
-    query = update.callback_query
-
-    if re.match(r"^[+-]?\d{1,2}:\d{2}$", query.data):  # this is a UTC offset
-        await query.answer()
-        context.user_data.utc_offset_hour, context.user_data.utc_offset_minute = (
-            int(item) for item in query.data.split(":")
-        )
-
-        if context.chat_data.mode == ConversationMode.REVIEW:
-            await query.delete_message()
-            await MessageSender.ask_review(update, context)
-            return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
-
-        context.user_data.day_and_time_slot_ids = []
-
-    elif query.data == CommonCallbackData.NEXT:  # user pressed "next" button after choosing slots
-        if context.chat_data.day_index == 6:  # we have reached Sunday
-            slots_for_logging = (
-                context.bot_data.day_and_time_slot_for_slot_id[slot_id]
-                for slot_id in sorted(context.user_data.day_and_time_slot_ids)
-            )
-            logger.info(
-                f"Chat {update.effective_chat.id}. "
-                f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}"
-            )
-
-            # reset day of week to Monday for possible review
-            context.chat_data.day_index = 0
-
-            if not any(context.user_data.day_and_time_slot_ids):
-                await query.answer(
-                    context.bot_data.phrases["no_slots_selected"][context.user_data.locale],
-                    show_alert=True,
-                )
-                logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
-                context.chat_data.day_index = 0
-                await CQReplySender.ask_time_slot(context, query)
-                return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
-
-            await query.answer()
-
-            if context.chat_data.mode == ConversationMode.REVIEW:
-                await query.delete_message()
-                await MessageSender.ask_review(update, context)
-                return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
-
-            context.user_data.language_and_level_ids = []
-            context.user_data.levels_for_teaching_language = {}
-            # if the dictionary is empty, it means that no language was chosen yet.
-            # In this case no "done" button must be shown.
-            show_done_button = True if context.user_data.levels_for_teaching_language else False
-            await CQReplySender.ask_teaching_languages(
-                context, query, show_done_button=show_done_button
-            )
-            return (
-                ConversationState.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
-            )
-        context.chat_data.day_index += 1
-
-    await query.answer()
-    await CQReplySender.ask_time_slot(context, query)
-
-    return ConversationState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+    # if the dictionary is empty, it means that no language was chosen yet.
+    # In this case no "done" button must be shown.
+    show_done_button = True if context.user_data.levels_for_teaching_language else False
+    await CQReplySender.ask_teaching_languages(context, query, show_done_button=show_done_button)
+    return ConversationState.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 
 async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -775,7 +780,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return ConversationState.ASK_ROLE
     elif data == UserDataReviewCategory.TIMEZONE:
         await CQReplySender.ask_timezone(context, query)
-        return ConversationState.TIME_SLOTS_START
+        return ConversationState.ASK_FIRST_NAME
     elif data == UserDataReviewCategory.AVAILABILITY:
         context.user_data.day_and_time_slot_ids = []
         await CQReplySender.ask_time_slot(context, query)
@@ -794,7 +799,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     elif data == UserDataReviewCategory.STUDENT_AGE_GROUP:
         if context.user_data.role == Role.STUDENT:  # TODO maybe add students' ages for teachers
             await CQReplySender.ask_student_age(context, query)
-            return ConversationState.ASK_TIMEZONE
+            return ConversationState.TIME_SLOTS_START
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
         return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
     else:

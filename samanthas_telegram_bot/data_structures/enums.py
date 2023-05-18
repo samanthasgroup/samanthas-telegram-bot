@@ -32,8 +32,9 @@ class ConversationState(IntEnum):
     """Provides integer keys for the dictionary of states for ConversationHandler."""
 
     IS_REGISTERED = auto()
-    CHECK_CHAT_ID_ASK_FIRST_NAME = auto()
-    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME = auto()
+    CHECK_CHAT_ID_ASK_TIMEZONE = auto()
+    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE = auto()
+    ASK_FIRST_NAME = auto()
     ASK_LAST_NAME = auto()
     ASK_SOURCE = auto()
     CHECK_USERNAME = auto()
@@ -41,7 +42,6 @@ class ConversationState(IntEnum):
     ASK_EMAIL = auto()
     ASK_ROLE = auto()
     ASK_AGE = auto()
-    ASK_TIMEZONE = auto()
     TIME_SLOTS_START = auto()
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
     ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()

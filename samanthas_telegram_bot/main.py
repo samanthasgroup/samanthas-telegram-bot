@@ -71,16 +71,17 @@ def main() -> None:
             State.IS_REGISTERED: [
                 CallbackQueryHandler(common.store_locale_ask_if_already_registered)
             ],
-            State.CHECK_CHAT_ID_ASK_FIRST_NAME: [
+            State.CHECK_CHAT_ID_ASK_TIMEZONE: [
                 CallbackQueryHandler(
-                    common.redirect_to_coordinator_if_registered_check_chat_id_ask_first_name
+                    common.redirect_to_coordinator_if_registered_check_chat_id_ask_timezone
                 )
             ],
-            State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME: [
+            State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE: [
                 CallbackQueryHandler(
-                    common.say_bye_if_does_not_want_to_register_another_or_ask_first_name
+                    common.say_bye_if_does_not_want_to_register_another_or_ask_timezone
                 )
             ],
+            State.ASK_FIRST_NAME: [CallbackQueryHandler(common.store_timezone_ask_first_name)],
             State.ASK_LAST_NAME: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND, common.store_first_name_ask_last_name
@@ -112,15 +113,12 @@ def main() -> None:
                     teacher.store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye
                 )
             ],
-            State.ASK_TIMEZONE: [CallbackQueryHandler(common.store_age_ask_timezone)],
             State.TIME_SLOTS_START: [
-                CallbackQueryHandler(
-                    common.store_timezone_ask_slots_for_one_day_or_teaching_language
-                )
+                CallbackQueryHandler(common.store_age_ask_slots_for_one_day_or_teaching_language)
             ],
             State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
                 CallbackQueryHandler(
-                    common.store_timezone_ask_slots_for_one_day_or_teaching_language,
+                    common.store_age_ask_slots_for_one_day_or_teaching_language,
                     pattern="^next$",
                 ),
                 CallbackQueryHandler(common.store_one_time_slot_ask_another),
