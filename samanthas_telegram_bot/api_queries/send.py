@@ -45,9 +45,15 @@ async def _send_personal_info_get_id(user_data: UserData) -> int:
         )
     if r.status_code == httpx.codes.CREATED:
         data = json.loads(r.content)
-        logger.info(f"Chat {user_data.chat_id}: Created personal data record, ID {data['id']}")
+        logger.info(
+            f"Chat {user_data.chat_id}: Created personal data record for {user_data.first_name} "
+            f"{user_data.last_name} ({user_data.email}), ID {data['id']}"
+        )
         return data["id"]
-    logger.error(f"Chat {user_data.chat_id}: Failed to create personal data record")
+    logger.error(
+        f"Chat {user_data.chat_id}: Failed to create personal data record "
+        f"(code {r.status_code}, {r.content})"
+    )
     return 0
 
 
@@ -137,7 +143,7 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{API_URL_PREFIX}/teachers/",
+            f"{API_URL_PREFIX}/teachers_under_18/",
             data={
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,

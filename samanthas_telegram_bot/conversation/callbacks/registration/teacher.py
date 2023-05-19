@@ -22,10 +22,29 @@ from samanthas_telegram_bot.data_structures.enums import (
 logger = logging.getLogger(__name__)
 
 
-async def store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye(
+async def young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If teacher is ready to host speaking clubs, asks for additional skills, else says bye.
+    """If teacher is ready to host speaking clubs, asks for communication language, else says bye.
+
+    This callback is for young teachers only.
+    """
+    query, data = await answer_callback_query_and_get_data(update)
+    locale: Locale = context.user_data.locale
+
+    if data == CommonCallbackData.YES:  # yes, I can host speaking clubs
+        context.user_data.teacher_can_host_speaking_club = True
+        await CQReplySender.ask_class_communication_languages(context, query)
+        return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+
+    await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
+    return ConversationHandler.END
+
+
+async def young_teacher_store_communication_language_ask_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores communication language, asks for additional skills.
 
     This callback is for young teachers only.
     """
@@ -33,16 +52,12 @@ async def store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye(
     locale: Locale = context.user_data.locale
 
     await query.delete_message()
+    context.user_data.communication_language_in_class = data
 
-    if data == CommonCallbackData.YES:  # yes, I can host speaking clubs
-        context.user_data.teacher_can_host_speaking_club = True
-        await update.effective_chat.send_message(
-            context.bot_data.phrases["ask_teacher_any_additional_help"][locale]
-        )
-        return ConversationState.ASK_FINAL_COMMENT
-
-    await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
-    return ConversationHandler.END
+    await update.effective_chat.send_message(
+        context.bot_data.phrases["ask_teacher_any_additional_help"][locale]
+    )
+    return ConversationState.ASK_FINAL_COMMENT
 
 
 async def store_communication_language_ask_teaching_experience(

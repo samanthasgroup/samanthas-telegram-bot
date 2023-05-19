@@ -108,9 +108,14 @@ def main() -> None:
                 )
             ],
             State.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
+            State.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
+                )
+            ],
             State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
                 CallbackQueryHandler(
-                    teacher.store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye
+                    teacher.young_teacher_store_communication_language_ask_additional_help
                 )
             ],
             State.TIME_SLOTS_START: [

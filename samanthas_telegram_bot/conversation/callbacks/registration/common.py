@@ -445,7 +445,7 @@ async def store_age_ask_slots_for_one_day_or_teaching_language(
             await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
                 context, query
             )
-            return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+            return ConversationState.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
 
     # If this is a student that has chosen their age group (callback data is ID of age range)
     if context.user_data.role == Role.STUDENT and DIGIT_PATTERN.match(data):
