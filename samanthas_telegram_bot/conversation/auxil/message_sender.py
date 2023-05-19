@@ -34,11 +34,12 @@ class MessageSender:
         """Sends a message to ask for phone number."""
         locale: Locale = context.user_data.locale
 
-        await update.effective_chat.send_message(
-            context.bot_data.phrases["ask_phone"][locale],
-            disable_web_page_preview=True,  # the message contains link to site with country codes
-            parse_mode=ParseMode.MARKDOWN_V2,
-            reply_markup=ReplyKeyboardMarkup(
+        # The button "share my contact details" only makes sense in normal mode, not in review:
+        # if the user is reviewing their phone number, they most likely want to enter it manually.
+        reply_markup = (
+            None
+            if context.chat_data.mode == ConversationMode.REVIEW
+            else ReplyKeyboardMarkup(
                 [
                     [
                         KeyboardButton(
@@ -47,7 +48,14 @@ class MessageSender:
                         )
                     ]
                 ]
-            ),
+            )
+        )
+
+        await update.effective_chat.send_message(
+            context.bot_data.phrases["ask_phone"][locale],
+            disable_web_page_preview=True,  # the message contains link to site with country codes
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=reply_markup,
         )
 
     @classmethod

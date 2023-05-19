@@ -761,7 +761,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             reply_markup=InlineKeyboardMarkup([]),
         )
         return ConversationState.ASK_SOURCE
-    elif data == UserDataReviewCategory.PHONE_NUMBER:  # FIXME delete big "share" button
+    elif data == UserDataReviewCategory.PHONE_NUMBER:
         # no need to check user_data here since the user couldn't have selected this option
         # if it wasn't there.
         # edit_message_text not possible here because of a button for sharing phone number
