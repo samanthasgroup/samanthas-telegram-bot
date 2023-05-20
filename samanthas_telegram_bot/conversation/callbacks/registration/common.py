@@ -75,6 +75,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # callback_data somewhere.
     context.chat_data.peer_help_callback_data = set()
 
+    # set day of week to Monday to start asking about slots for each day
+    context.chat_data.day_index = 0
+
     greeting = "👋 "
     for locale in LOCALES:
         greeting += (
