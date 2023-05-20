@@ -21,7 +21,6 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
     context.user_data.student_assessment = context.bot_data.assessment_for_age_range_id[
         age_range_id
     ]
-    context.chat_data.current_assessment_question_index = 0
     context.chat_data.current_assessment_question_id = (
         context.user_data.student_assessment.questions[0].id
     )

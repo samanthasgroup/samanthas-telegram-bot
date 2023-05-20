@@ -95,9 +95,9 @@ class BotData:
 class ChatData:
     """Class for data only relevant for one particular conversation."""
 
-    current_assessment_question_index: int | None = None
-    current_assessment_question_id: str | None = None
-    day_index: int | None = None
+    current_assessment_question_index: int = 0
+    current_assessment_question_id: int | None = None
+    day_index: int = 0
     mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
 
