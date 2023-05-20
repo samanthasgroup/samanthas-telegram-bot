@@ -75,8 +75,6 @@ async def store_communication_language_ask_teaching_experience(
         await MessageSender.ask_review(update, context)
         return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-    logger.info(context.user_data.communication_language_in_class)
-
     await CQReplySender.ask_yes_no(
         context, query, question_phrase_internal_id="ask_teacher_experience"
     )

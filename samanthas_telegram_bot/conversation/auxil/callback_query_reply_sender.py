@@ -167,7 +167,7 @@ class CallbackQueryReplySender:
         index = context.chat_data.current_assessment_question_index
         current_question: AssessmentQuestion = questions[index]
 
-        logger.info(
+        logger.debug(
             f"Preparing to ask question #{index + 1}"
             f" of {len(context.user_data.student_assessment.questions)}, QID {current_question.id}"
         )
