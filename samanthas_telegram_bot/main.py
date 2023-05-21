@@ -113,9 +113,14 @@ def main() -> None:
                     teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
                 )
             ],
+            State.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_communication_language_ask_speaking_club_language
+                )
+            ],
             State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
                 CallbackQueryHandler(
-                    teacher.young_teacher_store_communication_language_ask_additional_help
+                    teacher.young_teacher_store_teaching_language_ask_additional_help
                 )
             ],
             State.TIME_SLOTS_START: [

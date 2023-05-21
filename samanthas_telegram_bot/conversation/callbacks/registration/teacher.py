@@ -35,27 +35,48 @@ async def young_teacher_store_readiness_to_host_speaking_clubs_ask_communication
     if data == CommonCallbackData.YES:  # yes, I can host speaking clubs
         context.user_data.teacher_can_host_speaking_club = True
         await CQReplySender.ask_class_communication_languages(context, query)
-        return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+        return ConversationState.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE
 
     await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
     return ConversationHandler.END
 
 
-async def young_teacher_store_communication_language_ask_additional_help(
+async def young_teacher_store_communication_language_ask_speaking_club_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores communication language, asks for additional skills.
+    """Stores communication language, asks language of speaking clubs they want to host.
 
     This callback is for young teachers only.
     """
     query, data = await answer_callback_query_and_get_data(update)
-    locale: Locale = context.user_data.locale
-
-    await query.delete_message()
     context.user_data.communication_language_in_class = data
 
+    await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
+    return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+
+
+async def young_teacher_store_teaching_language_ask_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores teaching language, asks additional skills."""
+    query, lang_id = await answer_callback_query_and_get_data(update)
+    await query.delete_message()
+
+    logger.info(
+        f"Chat {update.effective_chat.id}. Young teacher wants to host speaking clubs in {lang_id}"
+    )
+
+    # TODO this is a temporary measure to keep things simple as there are very few young teachers.
+    #  For now we just say that a young teacher who wants to host speaking club only chooses
+    #  one single language and we automatically add pre-intermediate level to it (one cannot choose
+    #  level higher than A2 for any language other than English).
+    #  Maybe we will need to add some more logic, but maybe not.  Speaking clubs are informal.
+    context.user_data.language_and_level_ids = [
+        context.bot_data.language_and_level_id_for_language_id_and_level[(lang_id, "A2")]
+    ]
+
     await update.effective_chat.send_message(
-        context.bot_data.phrases["ask_teacher_any_additional_help"][locale]
+        context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale]
     )
     return ConversationState.ASK_FINAL_COMMENT
 
@@ -163,12 +184,15 @@ async def store_student_age_group_ask_another_or_non_teaching_help(
 
     if data != CommonCallbackData.DONE:
         context.user_data.teacher_student_age_range_ids.append(int(data))
-        logger.info(f"IDs of student ages {context.user_data.teacher_student_age_range_ids}")
 
     # teacher pressed "Done" or chose all age groups
     if data == CommonCallbackData.DONE or len(
         context.user_data.teacher_student_age_range_ids
     ) == len(context.bot_data.age_ranges_for_type[AgeRangeType.TEACHER]):
+        logger.info(
+            f"Chat {update.effective_chat.id}. IDs of student ages "
+            f"{context.user_data.teacher_student_age_range_ids}"
+        )
         await CQReplySender.ask_non_teaching_help(context, query)
         return (
             ConversationState.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
