@@ -15,7 +15,7 @@ from samanthas_telegram_bot.api_queries.check import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
 )
-from samanthas_telegram_bot.api_queries.send import (
+from samanthas_telegram_bot.api_queries.send_get import (
     send_student_info,
     send_teacher_info,
     send_teacher_under_18_info,

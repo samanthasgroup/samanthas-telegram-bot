@@ -2,7 +2,7 @@ import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
-from samanthas_telegram_bot.api_queries.send import (
+from samanthas_telegram_bot.api_queries.send_get import (
     get_smalltalk_url,
     send_written_answers_get_level,
 )
