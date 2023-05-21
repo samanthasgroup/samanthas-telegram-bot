@@ -1,3 +1,5 @@
+import logging
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 
 from samanthas_telegram_bot.api_queries.send import (
@@ -10,10 +12,12 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.data_structures.constants import DIGIT_PATTERN, Locale
+from samanthas_telegram_bot.data_structures.constants import LEVELS_ELIGIBLE_FOR_ORAL_TEST, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import CommonCallbackData, ConversationState
 from samanthas_telegram_bot.data_structures.helper_classes import AssessmentAnswer
+
+logger = logging.getLogger(__name__)
 
 
 async def store_communication_language_ask_non_teaching_help_or_start_review(
@@ -66,12 +70,29 @@ async def assessment_store_answer_ask_question(
     """Stores answer to the question (unless this is the beginning of the test), asks next one."""
     query, data = await answer_callback_query_and_get_data(update)
 
+    if data not in (CommonCallbackData.ABORT, CommonCallbackData.OK):
+        context.user_data.student_assessment_answers.append(
+            AssessmentAnswer(
+                question_id=context.chat_data.current_assessment_question_id,
+                answer_id=int(data),
+            )
+        )
+
+    # just starting the test: send first question
+    if data == CommonCallbackData.OK:
+        await CQReplySender.ask_next_assessment_question(context, query)
+        return ConversationState.ASK_ASSESSMENT_QUESTION
+
+    # get level if user has finished or aborted the test
     if (
-        context.chat_data.current_assessment_question_index
-        == len(context.user_data.student_assessment.questions) - 1
-    ):
-        level = await send_written_answers_get_level({})  # TODO
-        if level == "A2":  # TODO A2 or higher
+        len(context.user_data.student_assessment_answers)
+        == len(context.chat_data.assessment.questions)
+    ) or data == CommonCallbackData.ABORT:
+        level = await send_written_answers_get_level(
+            chat_data=context.chat_data,
+            user_data=context.user_data,
+        )
+        if level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
             await CQReplySender.ask_yes_no(
                 context,
                 query,
@@ -84,19 +105,16 @@ async def assessment_store_answer_ask_question(
             await CQReplySender.ask_class_communication_languages(context, query)
             return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
-    if DIGIT_PATTERN.match(data):  # this is ID of student's answer
-        context.user_data.student_assessment_answers.append(
-            AssessmentAnswer(
-                question_id=context.chat_data.current_assessment_question_id,
-                answer_id=data,
-            )
-        )
-        context.chat_data.current_assessment_question_index += 1
-        context.chat_data.current_assessment_question_id = (
-            context.user_data.student_assessment.questions[
-                context.chat_data.current_assessment_question_index
-            ].id
-        )
+    if int(data) in context.chat_data.ids_of_dont_know_options_in_assessment:
+        logger.debug(f"Chat {update.effective_chat.id}. User replied 'I don't know'")
+        context.chat_data.assessment_dont_knows_in_a_row += 1
+    else:
+        context.chat_data.assessment_dont_knows_in_a_row = 0
+
+    context.chat_data.current_assessment_question_index += 1
+    context.chat_data.current_assessment_question_id = context.chat_data.assessment.questions[
+        context.chat_data.current_assessment_question_index
+    ].id
 
     await CQReplySender.ask_next_assessment_question(context, query)
     return ConversationState.ASK_ASSESSMENT_QUESTION

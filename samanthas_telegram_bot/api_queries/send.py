@@ -5,7 +5,7 @@ import httpx
 from telegram import Update
 
 from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
-from samanthas_telegram_bot.data_structures.context_types import UserData
+from samanthas_telegram_bot.data_structures.context_types import ChatData, UserData
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +170,33 @@ def _format_status_since(update: Update) -> str:
     return update.effective_message.date.isoformat().replace("+00:00", "Z")
 
 
-async def send_written_answers_get_level(answers: dict[str, str]) -> str:
+async def send_written_answers_get_level(chat_data: ChatData, user_data: UserData) -> str | None:
     """Sends answers to written assessment to the backend, gets level and returns it."""
-    logger.info("Sending the results to the backend and receiving the level...")
-    return "A2"  # TODO
+    answer_ids = tuple(
+        item.answer_id for item in user_data.student_assessment_answers  # type: ignore[union-attr]
+    )
+    number_of_questions = len(chat_data.assessment.questions)  # type: ignore[union-attr]
+
+    logger.info(
+        f"Chat {user_data.chat_id}: Sending answers ({len(answer_ids)} out of "
+        f"{number_of_questions} questions were answered) to backend and receiving level..."
+    )
+
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            f"{API_URL_PREFIX}/enrollment_test_result/get_level/",
+            data={
+                "answers": answer_ids,
+                "number_of_questions": number_of_questions,
+            },
+        )
+    if r.status_code == httpx.codes.OK:
+        data = json.loads(r.content)
+        level = data["resulting_level"]
+        logger.info(f"Chat {user_data.chat_id}: Received level {level}.")
+        return level
+    logger.error(
+        f"Chat {user_data.chat_id}: Failed to send results and receive level "
+        f"(code {r.status_code}, {r.content})"
+    )
+    return None

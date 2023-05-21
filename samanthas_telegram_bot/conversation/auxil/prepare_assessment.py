@@ -18,11 +18,15 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
         f"Using assessment for {age_range_id=} ({context.user_data.student_age_from}-"
         f"{context.user_data.student_age_to} years old)"
     )
-    context.user_data.student_assessment = context.bot_data.assessment_for_age_range_id[
-        age_range_id
-    ]
+    context.chat_data.assessment = context.bot_data.assessment_for_age_range_id[age_range_id]
+    context.user_data.student_assessment_answers = []
     context.chat_data.current_assessment_question_index = 0
-    context.chat_data.current_assessment_question_id = (
-        context.user_data.student_assessment.questions[0].id
-    )
+    context.chat_data.current_assessment_question_id = context.chat_data.assessment.questions[0].id
+    context.chat_data.ids_of_dont_know_options_in_assessment = {
+        option.id
+        for question in context.chat_data.assessment.questions
+        for option in question.options
+        if "i don't know" in option.text.lower()
+    }
+    context.chat_data.assessment_dont_knows_in_a_row = 0
     await CallbackQueryReplySender.ask_start_assessment(context, query)

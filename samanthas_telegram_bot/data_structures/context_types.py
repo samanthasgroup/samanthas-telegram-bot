@@ -95,9 +95,18 @@ class BotData:
 class ChatData:
     """Class for data only relevant for one particular conversation."""
 
+    # assessment flow
+    assessment: Assessment | None = None
     current_assessment_question_index: int | None = None
-    current_assessment_question_id: str | None = None
+    current_assessment_question_id: int | None = None
     day_index: int | None = None
+
+    # for tracking "Don't know"s during assessment
+    assessment_dont_knows_in_a_row: int | None = None
+    ids_of_dont_know_options_in_assessment: set[int] | None = None
+    """IDs of all question options whose text is 'I don't know'."""
+
+    # misc
     mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
 
@@ -133,8 +142,7 @@ class UserData:
     student_age_range_id: int | None = None  # for passing back to backend
     student_age_from: int | None = None  # for assessment
     student_age_to: int | None = None  # for assessment
-    student_assessment: Assessment | None = None
-    student_assessment_answers = list[AssessmentAnswer]
+    student_assessment_answers: list[AssessmentAnswer] | None = None
     student_can_read_in_english: bool | None = None
     # False instead of None is intended, because the value is set based on other answers.
     # By default, the student doesn't need an oral interview before they are included

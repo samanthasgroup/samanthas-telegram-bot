@@ -20,10 +20,8 @@ class AgeRange:
 
 @dataclass
 class AssessmentAnswer:
-    # Those will be numbers, but both CallbackData and API work with strings,
-    # and no math operations are performed, so no need to convert back and forth.
-    question_id: str
-    answer_id: str
+    question_id: int
+    answer_id: int
 
 
 class AssessmentQuestionOption(NamedTuple):

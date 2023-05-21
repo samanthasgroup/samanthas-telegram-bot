@@ -163,29 +163,36 @@ class CallbackQueryReplySender:
         query: CallbackQuery,
     ) -> None:
         """Asks user the next assessment question."""
-        questions = context.user_data.student_assessment.questions
+        questions = context.chat_data.assessment.questions
         index = context.chat_data.current_assessment_question_index
         current_question: AssessmentQuestion = questions[index]
 
         logger.debug(
             f"Preparing to ask question #{index + 1}"
-            f" of {len(context.user_data.student_assessment.questions)}, QID {current_question.id}"
+            f" of {len(context.chat_data.assessment.questions)}, QID {current_question.id}"
         )
 
         buttons = [
             InlineKeyboardButton(text=option.text, callback_data=option.id)
             for option in current_question.options
         ]
+        abort_button = InlineKeyboardButton(
+            text=context.bot_data.phrases["assessment_option_abort"][context.user_data.locale],
+            callback_data=CommonCallbackData.ABORT,
+        )
 
         await query.edit_message_text(
             **cls._make_dict_for_message_with_inline_keyboard(
                 message_text=(
                     f"Question {index + 1} out of "
-                    f"{len(context.user_data.student_assessment.questions)}\n\n"
+                    f"{len(context.chat_data.assessment.questions)}\n\n"
                     f"{current_question.text}"
                 ),
                 buttons=buttons,
                 buttons_per_row=2,
+                bottom_row_button=abort_button
+                if context.chat_data.assessment_dont_knows_in_a_row >= 5
+                else None
                 # TODO remove context.bot_data.phrases["assessment_option_dont_know"]
             )
         )

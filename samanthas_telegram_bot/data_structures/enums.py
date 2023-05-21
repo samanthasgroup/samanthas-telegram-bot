@@ -14,6 +14,7 @@ class CommonCallbackData(str, Enum):
     strings.
     """
 
+    ABORT = "abort"
     DONE = "done"
     NEXT = "next"
     NO = "no"
