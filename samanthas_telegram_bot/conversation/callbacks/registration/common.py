@@ -828,10 +828,7 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     data = context.user_data
     locale: Locale = data.locale
 
-    if data.role == Role.TEACHER and data.teacher_is_under_18 is True:
-        data.teacher_additional_skills_comment = update.message.text
-    else:
-        data.comment = update.message.text
+    data.comment = update.message.text
 
     # number of groups is None for young teachers and 0 for adults that only want speaking club
     if data.role == Role.TEACHER and not data.teacher_number_of_groups:

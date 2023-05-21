@@ -148,10 +148,11 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
                 "personal_info": personal_info_id,
                 "comment": user_data.comment,
                 "status_since": _format_status_since(update),
-                "status": STATUS_AT_CREATION_TEACHER_UNDER_18,
+                "status": STATUS_AT_CREATION_TEACHER_UNDER_18,  # FIXME why is it not in backend?
                 "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
                 "has_hosted_speaking_club": False,
                 "is_validated": False,
+                # FIXME where are additional skills?
             },
         )
     if r.status_code == httpx.codes.CREATED:
