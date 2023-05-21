@@ -25,16 +25,6 @@ async def chat_id_is_registered(chat_id: int) -> bool:
     return False
 
 
-async def get_smalltalk_url(
-    first_name: str,
-    last_name: str,
-    email: str,
-) -> str:
-    """Gets Smalltalk test URL from the back-end"""
-    logger.info("Getting Smalltalk URL from backend...")
-    return "(URL)"  # TODO
-
-
 async def person_with_first_name_last_name_email_exists_in_database(
     first_name: str,
     last_name: str,
