@@ -1,3 +1,4 @@
+"""Functions for sending data to backend to create entities and get required data in return."""
 import json
 import logging
 
@@ -11,16 +12,6 @@ logger = logging.getLogger(__name__)
 
 STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
 STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
-
-
-async def get_smalltalk_url(
-    first_name: str,
-    last_name: str,
-    email: str,
-) -> str:
-    """Gets Smalltalk test URL from the back-end"""
-    logger.info("Getting Smalltalk URL from backend...")
-    return "(URL)"  # TODO
 
 
 async def _send_personal_info_get_id(user_data: UserData) -> int:

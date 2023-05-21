@@ -1,3 +1,4 @@
+"""Functions for checking existence of entities with the backend."""
 import logging
 
 import httpx
