@@ -1,11 +1,10 @@
 import logging
 
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.send_get import (
-    get_smalltalk_url,
-    send_written_answers_get_level,
-)
+from samanthas_telegram_bot.api_queries.send_get import send_written_answers_get_level
+from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -88,11 +87,13 @@ async def assessment_store_answer_ask_question(
         len(context.user_data.student_assessment_answers)
         == len(context.chat_data.assessment.questions)
     ) or data == CommonCallbackData.ABORT:
-        level = await send_written_answers_get_level(
-            chat_data=context.chat_data,
-            user_data=context.user_data,
+        context.user_data.student_assessment_resulting_level = (
+            await send_written_answers_get_level(
+                chat_data=context.chat_data,
+                user_data=context.user_data,
+            )
         )
-        if level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
+        if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
             await CQReplySender.ask_yes_no(
                 context,
                 query,
@@ -102,6 +103,11 @@ async def assessment_store_answer_ask_question(
             return ConversationState.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
         else:
             # TODO add some compliment on completing the test even without oral test?
+            context.user_data.language_and_level_ids = [
+                context.bot_data.language_and_level_id_for_language_id_and_level[
+                    ("en", context.user_data.student_assessment_resulting_level)
+                ]
+            ]
             await CQReplySender.ask_class_communication_languages(context, query)
             return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
@@ -128,14 +134,15 @@ async def send_smalltalk_url_or_ask_communication_language(
     locale: Locale = context.user_data.locale
 
     if data == CommonCallbackData.YES:
-        url = await get_smalltalk_url(
+        context.user_data.student_smalltalk_test_id, url = await send_user_data_get_smalltalk_test(
             first_name=context.user_data.first_name,
             last_name=context.user_data.last_name,
             email=context.user_data.email,
         )
         await query.edit_message_text(
             context.bot_data.phrases["give_smalltalk_url"][locale]
-            + f"\n{url}",  # TODO add link onto a text
+            + f"\n\n[*{context.bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=InlineKeyboardMarkup(
                 [
                     [
@@ -149,6 +156,13 @@ async def send_smalltalk_url_or_ask_communication_language(
         )
         return ConversationState.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
 
+    # Without SmallTalk, just take whatever level we got after the "written" assessment
+    context.user_data.language_and_level_ids = [
+        context.bot_data.language_and_level_id_for_language_id_and_level[
+            ("en", context.user_data.student_assessment_resulting_level)
+        ]
+    ]
+
     await CQReplySender.ask_class_communication_languages(context, query)
     return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
@@ -158,7 +172,6 @@ async def ask_communication_language_after_smalltalk(
 ) -> int:
     """Stores nothing, just asks about communication language in class."""
     query, _ = await answer_callback_query_and_get_data(update)
-    # TODO store something in user_data to signal that the user passed the test and that
-    #  the backend should try and load results?
+    # We will request results from SmallTalk later to make sure that it's ready.
     await CQReplySender.ask_class_communication_languages(context, query)
     return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW

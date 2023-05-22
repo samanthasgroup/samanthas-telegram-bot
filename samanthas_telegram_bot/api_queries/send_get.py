@@ -63,11 +63,11 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 "status_since": _format_status_since(update),
                 "can_read_in_english": user_data.student_can_read_in_english,  # TODO what if None?
                 "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
-                "smalltalk_test_result": {},  # TODO
                 "age_range": user_data.student_age_range_id,
                 "availability_slots": user_data.day_and_time_slot_ids,
                 "non_teaching_help_required": user_data.non_teaching_help_types,
                 "teaching_languages_and_levels": user_data.language_and_level_ids,
+                "smalltalk_test_result": user_data.student_smalltalk_results,
             },
             # TODO send answers to assessment here (backend cannot store them earlier when
             #  determining student's level because student is not created yet at that point).

@@ -20,6 +20,7 @@ from samanthas_telegram_bot.api_queries.send_get import (
     send_teacher_info,
     send_teacher_under_18_info,
 )
+from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -839,6 +840,28 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
         phrase_id = "bye_wait_for_message_from_bot"
 
     if context.user_data.role == Role.STUDENT:
+        if not context.user_data.language_and_level_ids:
+            # it means that it's English and user took Smalltalk test (level was not set yet)
+            context.user_data.student_smalltalk_results = await get_smalltalk_result(
+                context.user_data.student_smalltalk_test_id
+            )
+            # set level of English to either a Smalltalk result or, if it is not available,
+            # to level of "written" assessment.  TODO add comment about failed loading of results?
+            # TODO factor out?
+            smalltalk_level = (
+                context.user_data.student_smalltalk_results.get(  # type:ignore[union-attr]
+                    "score", None
+                )
+            )
+            if smalltalk_level:
+                # To get "B2" from possible "B2p" that SmallTalk can give
+                level = smalltalk_level[:2]
+            else:
+                level = context.user_data.student_assessment_resulting_level
+
+            context.user_data.language_and_level_ids = [
+                context.bot_data.language_and_level_id_for_language_id_and_level[("en", level)]
+            ]
         result = await send_student_info(update, context.user_data)
     elif context.user_data.role == Role.TEACHER:
         if context.user_data.teacher_is_under_18:

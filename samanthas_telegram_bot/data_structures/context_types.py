@@ -143,7 +143,10 @@ class UserData:
     student_age_from: int | None = None  # for assessment
     student_age_to: int | None = None  # for assessment
     student_assessment_answers: list[AssessmentAnswer] | None = None
+    student_assessment_resulting_level: str | None = None
     student_can_read_in_english: bool | None = None
+    student_smalltalk_test_id: str | None = None
+    student_smalltalk_results: dict[str, str] | None = None
     # False instead of None is intended, because the value is set based on other answers.
     # By default, the student doesn't need an oral interview before they are included
     # in a waiting list for the group matching algorithm.
