@@ -49,7 +49,8 @@ async def send_user_data_get_smalltalk_test(
 async def get_smalltalk_result(test_id: str) -> dict[str, str] | None:
     """Gets results of Smalltalk interview."""
 
-    # TODO arrange for some retries? Or just wait until we set up a webhook?
+    # FIXME arrange for some retries? Or just wait until we set up a webhook?
+    #  status can be "processing"
     async with httpx.AsyncClient() as client:
         r = await client.get(
             url=f"{URL_PREFIX}/test_status",

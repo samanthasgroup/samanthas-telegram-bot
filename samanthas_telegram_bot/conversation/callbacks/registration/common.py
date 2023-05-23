@@ -30,7 +30,9 @@ from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_
 from samanthas_telegram_bot.data_structures.constants import (
     DIGIT_PATTERN,
     EMAIL_PATTERN,
+    LEVELS_ELIGIBLE_FOR_ORAL_TEST,
     LOCALES,
+    LOW_LEVELS,
     NON_TEACHING_HELP_TYPES,
     Locale,
 )
@@ -859,6 +861,10 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
             context.user_data.student_smalltalk_results = await get_smalltalk_result(
                 context.user_data.student_smalltalk_test_id
             )
+            logger.info(
+                f"Chat {update.effective_chat.id}. {context.user_data.student_smalltalk_results=}"
+            )
+
             # set level of English to either a Smalltalk result or, if it is not available,
             # to level of "written" assessment.  TODO add comment about failed loading of results?
             # TODO factor out?
@@ -870,6 +876,10 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
             if smalltalk_level:
                 # To get "B2" from possible "B2p" that SmallTalk can give
                 level = smalltalk_level[:2]
+                if level not in LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST:
+                    # Smalltalk can return "Undefined" if user clicked through the assessment
+                    logger.error(f"Chat {update.effective_chat.id}. Invalid {level=}. Setting A0")
+                    level = "A0"
             else:
                 level = context.user_data.student_assessment_resulting_level
 

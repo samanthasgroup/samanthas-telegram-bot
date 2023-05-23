@@ -67,8 +67,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
     }
 
     if user_data.student_smalltalk_results:
-        # FIXME check what happens with results
-        data["smalltalk_test_result"] = user_data.student_smalltalk_results  # type:ignore
+        data["smalltalk_test_result"] = json.dumps(user_data.student_smalltalk_results)
 
     async with httpx.AsyncClient() as client:
         r = await client.post(f"{API_URL_PREFIX}/students/", data=data)

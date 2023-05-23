@@ -12,6 +12,7 @@ API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
 DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
+LOW_LEVELS = ("A0", "A1")
 LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
 
 Locale = Literal["ua", "en", "ru"]
