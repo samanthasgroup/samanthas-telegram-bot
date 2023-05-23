@@ -5,8 +5,6 @@ import os
 
 import httpx
 
-from samanthas_telegram_bot.data_structures.constants import BOT_URL
-
 logger = logging.getLogger(__name__)
 
 URL_PREFIX = "https://app.smalltalk2.me/api/integration"
@@ -31,7 +29,6 @@ async def send_user_data_get_smalltalk_test(
                 "first_name": first_name,
                 "last_name": last_name,
                 "email": email,
-                "profile_url": BOT_URL,
             },  # TODO possibly webhook
         )
 

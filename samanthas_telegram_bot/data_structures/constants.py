@@ -8,7 +8,6 @@ from typing import Literal
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
 API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
-BOT_URL = "https://t.me/SamanthasRegistrationBot"
 
 DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")

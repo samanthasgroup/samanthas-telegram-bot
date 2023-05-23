@@ -54,9 +54,17 @@ async def ask_communication_language_or_start_assessment_depending_on_learning_e
     query, data = await answer_callback_query_and_get_data(update)
 
     if data == "year_or_more":
+        logger.info(
+            f"Chat {update.effective_chat.id}. "
+            f"Student has learned English for year or more. Starting assessment"
+        )
         await prepare_assessment(context, query)
         return ConversationState.ASK_ASSESSMENT_QUESTION
 
+    logger.info(
+        f"Chat {update.effective_chat.id}. "
+        f"Student has learned English for less than a year. Will need oral interview"
+    )
     context.user_data.student_needs_oral_interview = True
 
     await CQReplySender.ask_class_communication_languages(context, query)
@@ -134,6 +142,7 @@ async def send_smalltalk_url_or_ask_communication_language(
     locale: Locale = context.user_data.locale
 
     if data == CommonCallbackData.YES:
+        context.user_data.student_agreed_to_smalltalk = True
         context.user_data.student_smalltalk_test_id, url = await send_user_data_get_smalltalk_test(
             first_name=context.user_data.first_name,
             last_name=context.user_data.last_name,
@@ -157,6 +166,7 @@ async def send_smalltalk_url_or_ask_communication_language(
         return ConversationState.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
 
     # Without SmallTalk, just take whatever level we got after the "written" assessment
+    context.user_data.student_agreed_to_smalltalk = False
     context.user_data.language_and_level_ids = [
         context.bot_data.language_and_level_id_for_language_id_and_level[
             ("en", context.user_data.student_assessment_resulting_level)

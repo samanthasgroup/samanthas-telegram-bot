@@ -145,6 +145,7 @@ class UserData:
     student_assessment_answers: list[AssessmentAnswer] | None = None
     student_assessment_resulting_level: str | None = None
     student_can_read_in_english: bool | None = None
+    student_agreed_to_smalltalk: bool | None = None
     student_smalltalk_test_id: str | None = None
     student_smalltalk_results: dict[str, str] | None = None
     # False instead of None is intended, because the value is set based on other answers.

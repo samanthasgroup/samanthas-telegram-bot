@@ -49,36 +49,58 @@ async def _send_personal_info_get_id(user_data: UserData) -> int:
 
 
 async def send_student_info(update: Update, user_data: UserData) -> bool:
-    """Sends a POST request to create a student."""
+    """Sends a POST request to create a student and send results of assessment if any."""
 
     personal_info_id = await _send_personal_info_get_id(user_data)
 
+    data = {
+        "personal_info": personal_info_id,
+        "comment": user_data.comment,
+        "status": STATUS_AT_CREATION_STUDENT_TEACHER,
+        "status_since": _format_status_since(update),
+        "can_read_in_english": user_data.student_can_read_in_english,
+        "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
+        "age_range": user_data.student_age_range_id,
+        "availability_slots": user_data.day_and_time_slot_ids,
+        "non_teaching_help_required": user_data.non_teaching_help_types,
+        "teaching_languages_and_levels": user_data.language_and_level_ids,
+    }
+
+    if user_data.student_smalltalk_results:
+        # FIXME check what happens with results
+        data["smalltalk_test_result"] = user_data.student_smalltalk_results  # type:ignore
+
+    async with httpx.AsyncClient() as client:
+        r = await client.post(f"{API_URL_PREFIX}/students/", data=data)
+
+    if r.status_code != httpx.codes.CREATED:
+        logger.error(
+            f"Chat {user_data.chat_id}: Failed to create student ({r.status_code=}, {r.content=})"
+        )
+        return False
+
+    logger.info(f"Chat {user_data.chat_id}: Created student ({personal_info_id=})")
+
+    if not user_data.student_assessment_answers:
+        logger.info(f"Chat {user_data.chat_id}: no assessment answers to send")
+        return True
+
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{API_URL_PREFIX}/students/",
+            f"{API_URL_PREFIX}/enrollment_test_result/",
             data={
-                "personal_info": personal_info_id,
-                "comment": user_data.comment,
-                "status": STATUS_AT_CREATION_STUDENT_TEACHER,
-                "status_since": _format_status_since(update),
-                "can_read_in_english": user_data.student_can_read_in_english,  # TODO what if None?
-                "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
-                "age_range": user_data.student_age_range_id,
-                "availability_slots": user_data.day_and_time_slot_ids,
-                "non_teaching_help_required": user_data.non_teaching_help_types,
-                "teaching_languages_and_levels": user_data.language_and_level_ids,
-                "smalltalk_test_result": user_data.student_smalltalk_results,
+                "student": personal_info_id,
+                "answers": [item.answer_id for item in user_data.student_assessment_answers],
             },
-            # TODO send answers to assessment here (backend cannot store them earlier when
-            #  determining student's level because student is not created yet at that point).
         )
-    if r.status_code == httpx.codes.CREATED:
-        logger.info(f"Chat {user_data.chat_id}: Created student")
-        return True
-    logger.error(
-        f"Chat {user_data.chat_id}: Failed to create student (code {r.status_code}, {r.content})"
-    )
-    return False
+    if r.status_code != httpx.codes.CREATED:
+        logger.error(
+            f"Chat {user_data.chat_id}: Failed to send assessment ({r.status_code=}, {r.content=})"
+        )
+        return False
+
+    logger.info(f"Chat {user_data.chat_id}: Added assessment answers for {personal_info_id=}")
+    return True
 
 
 async def send_teacher_info(update: Update, user_data: UserData) -> bool:

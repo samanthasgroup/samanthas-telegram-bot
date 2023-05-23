@@ -640,6 +640,9 @@ async def store_data_ask_another_level_or_communication_language_or_start_assess
             # ...while young students get no level and are marked to require oral interview.
             user_data.student_needs_oral_interview = True
 
+        if user_data.student_needs_oral_interview:
+            logger.info(f"Chat {update.effective_chat.id}. User needs oral interview in English.")
+
         await CQReplySender.ask_class_communication_languages(context, query)
         return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
 
@@ -711,7 +714,8 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
 
     logger.info(
         f"Chat {update.effective_chat.id}. Language(s) and level(s): "
-        f"{context.user_data.levels_for_teaching_language}"
+        f"{context.user_data.language_and_level_ids} "
+        f"(if they were chosen manually: {context.user_data.levels_for_teaching_language})"
     )
 
     if data == CommonCallbackData.YES:
@@ -840,8 +844,18 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
         phrase_id = "bye_wait_for_message_from_bot"
 
     if context.user_data.role == Role.STUDENT:
-        if not context.user_data.language_and_level_ids:
-            # it means that it's English and user took Smalltalk test (level was not set yet)
+        if context.user_data.student_needs_oral_interview:
+            context.user_data.language_and_level_ids = [
+                context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
+            ]
+            logger.info(
+                f"Chat {update.effective_chat.id}. "
+                f"Setting level formally to A0 ({context.user_data.language_and_level_ids}) "
+                f"because user needs oral interview in English"
+            )
+            data.comment = f"{data.comment} (!NEEDS ORAL INTERVIEW!)"
+
+        elif context.user_data.student_agreed_to_smalltalk:
             context.user_data.student_smalltalk_results = await get_smalltalk_result(
                 context.user_data.student_smalltalk_test_id
             )
