@@ -19,7 +19,11 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
         f"{context.user_data.student_age_to} years old)"
     )
     context.chat_data.assessment = context.bot_data.assessment_for_age_range_id[age_range_id]
+    # TODO move to startup area? What happens if someone passes the test and then registers
+    #  another user and chooses a different language?
     context.user_data.student_assessment_answers = []
+    context.user_data.student_assessment_resulting_level = None
+    context.user_data.student_agreed_to_smalltalk = False
     context.chat_data.current_assessment_question_index = 0
     context.chat_data.current_assessment_question_id = context.chat_data.assessment.questions[0].id
     context.chat_data.ids_of_dont_know_options_in_assessment = {

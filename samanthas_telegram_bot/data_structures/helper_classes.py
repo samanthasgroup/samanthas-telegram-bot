@@ -66,7 +66,7 @@ class SmalltalkResult(NamedTuple):
     status: SmalltalkTestStatus
     level: str | None = None
     url: str | None = None
-    full_json: str | None = None
+    original_json: bytes | None = None
 
 
 @dataclass

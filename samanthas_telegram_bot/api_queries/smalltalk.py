@@ -1,11 +1,14 @@
 """Functions for interaction with SmallTalk oral test service."""
+import asyncio
 import json
 import logging
 import os
 
 import httpx
+from telegram import Update
 
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
+from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
 from samanthas_telegram_bot.data_structures.helper_classes import SmalltalkResult
 
@@ -50,11 +53,35 @@ async def send_user_data_get_smalltalk_test(
     return data["interview_id"], url
 
 
-async def get_smalltalk_result(test_id: str) -> dict[str, str] | None:
+async def get_smalltalk_result(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> SmalltalkResult | None:
     """Gets results of Smalltalk interview."""
 
-    # FIXME arrange for some retries? Or just wait until we set up a webhook?
-    #  status can be "processing"
+    user_data = context.user_data
+
+    while True:
+        data = await get_json_with_results(user_data.student_smalltalk_test_id)
+        result = process_smalltalk_json(data)
+
+        if result is None:
+            logger.error(f"Chat {user_data.chat_id}: Failed to receive data from Smalltalk")
+            await update.effective_chat.send_message("Could not load results")  # FIXME phrase
+            return None
+
+        if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
+            await update.effective_chat.send_message(
+                "You didn't finish the test. Start the registration again"
+            )  # FIXME phrase
+            return None
+        elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
+            await update.effective_chat.send_message("Results not ready. Waiting 30s")  # FIXME
+            await asyncio.sleep(30)  # TODO set limit
+        else:
+            return result
+
+
+async def get_json_with_results(test_id: str) -> bytes:
     async with httpx.AsyncClient() as client:
         r = await client.get(
             url=f"{URL_PREFIX}/test_status",
@@ -67,15 +94,14 @@ async def get_smalltalk_result(test_id: str) -> dict[str, str] | None:
             },
         )
 
-    logger.debug(f"Request headers: {r.request.headers}, request content: {r.request.content}")
-    data = json.loads(r.content)
-    logger.debug(f"Response: {r.status_code=}, {r.headers=}, {r.content=}, {data=}")
-    logger.info(f"Status: {data.get('status', None)}, score: {data.get('score', None),}")
+    logger.debug(
+        f"Request headers: {r.request.headers}. "
+        f"Response: {r.status_code=}, {r.headers=}, {r.content=}"
+    )
+    return r.content
 
-    return data
 
-
-def process_smalltalk_json(json_data: str) -> SmalltalkResult | None:
+def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
     def level_is_undefined(str_: str) -> bool:
         return str_.lower().strip() == "undefined"
 
@@ -105,16 +131,18 @@ def process_smalltalk_json(json_data: str) -> SmalltalkResult | None:
 
     if level_is_undefined(level):
         logger.info("User did not pass enough oral tasks for level to be determined")
-        level_id = "A0"
+        level_id = None
 
     if not (level_id in ALL_LEVELS or level_is_undefined(level)):
         logger.error(f"Unrecognized language level returned by SmallTalk: {level}")
 
     results_url = loaded_data["report_url"]
 
+    logger.info(f"SmallTalk results: {status=}, {level=}, {results_url=}")
+
     return SmalltalkResult(
         status=status,
         level=level_id,
         url=results_url,
-        full_json=json_data,
+        original_json=json_data,
     )

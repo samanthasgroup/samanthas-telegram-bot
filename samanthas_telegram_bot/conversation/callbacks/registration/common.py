@@ -30,9 +30,7 @@ from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_
 from samanthas_telegram_bot.data_structures.constants import (
     DIGIT_PATTERN,
     EMAIL_PATTERN,
-    LEVELS_ELIGIBLE_FOR_ORAL_TEST,
     LOCALES,
-    LOW_LEVELS,
     NON_TEACHING_HELP_TYPES,
     Locale,
 )
@@ -832,7 +830,8 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
 
     For a would-be teacher that is under 18, stores their comment about potential useful skills.
     For others, stores the general comment. Ends the conversation."""
-    data = context.user_data
+    user_data = context.user_data
+    data = user_data
     locale: Locale = data.locale
 
     data.comment = update.message.text
@@ -845,55 +844,43 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     else:
         phrase_id = "bye_wait_for_message_from_bot"
 
-    if context.user_data.role == Role.STUDENT:
-        if context.user_data.student_needs_oral_interview:
-            context.user_data.language_and_level_ids = [
+    if user_data.role == Role.STUDENT:
+        if user_data.student_needs_oral_interview:
+            user_data.language_and_level_ids = [
                 context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
             ]
             logger.info(
                 f"Chat {update.effective_chat.id}. "
-                f"Setting level formally to A0 ({context.user_data.language_and_level_ids}) "
+                f"Setting level formally to A0 ({user_data.language_and_level_ids}) "
                 f"because user needs oral interview in English"
             )
             data.comment = f"{data.comment} (!NEEDS ORAL INTERVIEW!)"
 
-        elif context.user_data.student_agreed_to_smalltalk:
-            context.user_data.student_smalltalk_results = await get_smalltalk_result(
-                context.user_data.student_smalltalk_test_id
-            )
-            logger.info(
-                f"Chat {update.effective_chat.id}. {context.user_data.student_smalltalk_results=}"
-            )
-
-            # set level of English to either a Smalltalk result or, if it is not available,
-            # to level of "written" assessment.  TODO add comment about failed loading of results?
-            # TODO factor out?
-            smalltalk_level = (
-                context.user_data.student_smalltalk_results.get(  # type:ignore[union-attr]
-                    "score", None
+        elif user_data.student_agreed_to_smalltalk:
+            user_data.student_smalltalk_result = await get_smalltalk_result(update, context)
+            if user_data.student_smalltalk_result and user_data.student_smalltalk_result.level:
+                level = user_data.student_smalltalk_result.level
+                logger.info(
+                    f"Chat {update.effective_chat.id}. Setting {level=} based on SmallTalk test."
                 )
-            )
-            if smalltalk_level:
-                # To get "B2" from possible "B2p" that SmallTalk can give
-                level = smalltalk_level[:2]
-                if level not in LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST:
-                    # Smalltalk can return "Undefined" if user clicked through the assessment
-                    logger.error(f"Chat {update.effective_chat.id}. Invalid {level=}. Setting A0")
-                    level = "A0"
             else:
-                level = context.user_data.student_assessment_resulting_level
+                level = user_data.student_assessment_resulting_level
+                logger.info(
+                    f"Chat {update.effective_chat.id}. No SmallTalk result loaded or level "
+                    f"is None. Using {level=} from written assessment."
+                )
 
-            context.user_data.language_and_level_ids = [
+            user_data.language_and_level_ids = [
                 context.bot_data.language_and_level_id_for_language_id_and_level[("en", level)]
             ]
-        result = await send_student_info(update, context.user_data)
-    elif context.user_data.role == Role.TEACHER:
-        if context.user_data.teacher_is_under_18:
-            result = await send_teacher_under_18_info(update, context.user_data)
+        result = await send_student_info(update, user_data)
+    elif user_data.role == Role.TEACHER:
+        if user_data.teacher_is_under_18:
+            result = await send_teacher_under_18_info(update, user_data)
         else:
-            result = await send_teacher_info(update, context.user_data)
+            result = await send_teacher_info(update, user_data)
     else:
-        logger.error(f"Cannot send to backend: {context.user_data=}")
+        logger.error(f"Cannot send to backend: { user_data=}")
         result = False
 
     if result is True:

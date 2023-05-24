@@ -13,16 +13,17 @@ def test_process_smalltalk_json():
     for file in DATA_FILES:
         result = smalltalk.process_smalltalk_json(file.read_text())
 
-        if "completed" in file.stem or "undefined" in file.stem:
+        if "completed" in file.stem and "undefined" not in file.stem:
             assert result.status == SmalltalkTestStatus.RESULTS_READY
-            assert all(getattr(result, attr) for attr in ("level", "url", "full_json"))
+            assert all(getattr(result, attr) for attr in ("level", "url", "original_json"))
             assert result.level in ALL_LEVELS
+        elif "undefined" in file.stem:
+            assert result.status == SmalltalkTestStatus.RESULTS_READY
+            assert result.level is None
+            assert all(getattr(result, attr) for attr in ("url", "original_json"))
         elif "processing" in file.stem:
             assert result.status == SmalltalkTestStatus.RESULTS_NOT_READY
-            assert not any(getattr(result, attr) for attr in ("level", "url", "full_json"))
+            assert not any(getattr(result, attr) for attr in ("level", "url", "original_json"))
         else:
             assert result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS
-            assert not any(getattr(result, attr) for attr in ("level", "url", "full_json"))
-
-        if "undefined" in file.stem:
-            assert result.level == "A0"
+            assert not any(getattr(result, attr) for attr in ("level", "url", "original_json"))
