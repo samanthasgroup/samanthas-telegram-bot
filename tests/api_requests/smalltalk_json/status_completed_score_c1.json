@@ -1,0 +1,18 @@
+{
+    "status":"completed",
+    "score":"C1",
+    "report_url":"https://app.smalltalk2.me/shared/chlpcrkjdjn3lfquq1c0",
+    "additional_fields":{
+        "strength_weaknesses":{
+            "strengths":[
+
+            ],
+            "weaknesses":[
+
+            ]
+        }
+    },
+    "audio_recordings":[
+        "https://smalltalk2.s3.us-east-2.amazonaws.com/audio_uploads/chlpcrkjdjn3lfquq1bg.webm?X-Amz-Algorithm=AWS4-HMAC-SHA256\u0026X-Amz-Credential=AKIASET46FOPFSBIYI5U%2F20230524%2Fus-east-2%2Fs3%2Faws4_request\u0026X-Amz-Date=20230524T104306Z\u0026X-Amz-Expires=900\u0026X-Amz-SignedHeaders=host\u0026response-expires=Wed%2C%2024%20May%202023%2011%3A43%3A06%20GMT\u0026x-id=GetObject\u0026X-Amz-Signature=1cae2a8e35e43815d6cd8d1bddae09f27da04cb153d8c8434645987c8482c036"
+    ]
+}

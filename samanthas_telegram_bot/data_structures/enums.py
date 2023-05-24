@@ -77,6 +77,14 @@ class Role(str, Enum):
     TEACHER = "teacher"
 
 
+class SmalltalkTestStatus(str, Enum):
+    """Enumeration of possible statuses of a SmallTalk oral test, returned by its API."""
+
+    NOT_STARTED_OR_IN_PROGRESS = "sent"  # meaning "link to interview was sent to user"
+    RESULTS_NOT_READY = "processing"
+    RESULTS_READY = "completed"
+
+
 class TeachingMode(str, Enum):
     """Enumeration for names of options that teacher can choose for their mode of work.
 

@@ -5,6 +5,10 @@ import os
 
 import httpx
 
+from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
+from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
+from samanthas_telegram_bot.data_structures.helper_classes import SmalltalkResult
+
 logger = logging.getLogger(__name__)
 
 URL_PREFIX = "https://app.smalltalk2.me/api/integration"
@@ -69,3 +73,48 @@ async def get_smalltalk_result(test_id: str) -> dict[str, str] | None:
     logger.info(f"Status: {data.get('status', None)}, score: {data.get('score', None),}")
 
     return data
+
+
+def process_smalltalk_json(json_data: str) -> SmalltalkResult | None:
+    def level_is_undefined(str_: str) -> bool:
+        return str_.lower().strip() == "undefined"
+
+    try:
+        loaded_data = json.loads(json_data)
+    except json.decoder.JSONDecodeError:
+        logger.error(f"Could not load JSON from {json_data=}")
+        return None
+
+    status = loaded_data["status"]
+
+    # TODO Don't want to raise NotImplementedError here, but think about it
+    if status not in SmalltalkTestStatus._value2member_map_:  # noqa
+        logger.warning(f"Smalltalk returned {status=} but we have no logic for it.")
+
+    if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
+        logger.info("User has not yet completed the interview")
+
+    if status == SmalltalkTestStatus.RESULTS_NOT_READY:
+        logger.info("User has completed the interview but the results are not ready")
+
+    if status != SmalltalkTestStatus.RESULTS_READY:
+        return SmalltalkResult(status=status)
+
+    level = loaded_data["score"]
+    level_id = level[:2]  # strip off "p" in "B2p" and the like
+
+    if level_is_undefined(level):
+        logger.info("User did not pass enough oral tasks for level to be determined")
+        level_id = "A0"
+
+    if not (level_id in ALL_LEVELS or level_is_undefined(level)):
+        logger.error(f"Unrecognized language level returned by SmallTalk: {level}")
+
+    results_url = loaded_data["report_url"]
+
+    return SmalltalkResult(
+        status=status,
+        level=level_id,
+        url=results_url,
+        full_json=json_data,
+    )

@@ -6,7 +6,7 @@ custom classes for attribute hinting, but related to inner workings of python-te
 from dataclasses import dataclass
 from typing import NamedTuple, Optional, TypedDict
 
-from samanthas_telegram_bot.data_structures.enums import AgeRangeType
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, SmalltalkTestStatus
 
 
 @dataclass
@@ -60,6 +60,13 @@ class MultilingualBotPhrase(TypedDict):
     en: str
     ru: str
     ua: str
+
+
+class SmalltalkResult(NamedTuple):
+    status: SmalltalkTestStatus
+    level: str | None = None
+    url: str | None = None
+    full_json: str | None = None
 
 
 @dataclass

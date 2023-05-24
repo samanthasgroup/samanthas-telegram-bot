@@ -14,6 +14,7 @@ EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
 LOW_LEVELS = ("A0", "A1")
 LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
+ALL_LEVELS = LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST
 
 Locale = Literal["ua", "en", "ru"]
 LOCALES: tuple[Locale, ...] = ("ua", "en", "ru")
