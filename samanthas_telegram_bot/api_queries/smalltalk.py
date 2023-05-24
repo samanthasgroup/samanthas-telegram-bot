@@ -61,22 +61,38 @@ async def get_smalltalk_result(
     user_data = context.user_data
 
     while True:
+        logger.info(f"Chat {user_data.chat_id}: Trying to receive results from Smalltalk")
         data = await get_json_with_results(user_data.student_smalltalk_test_id)
         result = process_smalltalk_json(data)
+        attempts = 0
 
         if result is None:
             logger.error(f"Chat {user_data.chat_id}: Failed to receive data from Smalltalk")
-            await update.effective_chat.send_message("Could not load results")  # FIXME phrase
+            user_data.comment = (
+                f"{user_data.comment}\n- Could not load results of Smalltalk assessment\n"
+                f"Interview ID: {user_data.student_smalltalk_test_id}"
+            )
             return None
 
         if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
-            await update.effective_chat.send_message(
-                "You didn't finish the test. Start the registration again"
-            )  # FIXME phrase
+            logger.info(f"Chat {user_data.chat_id}: User didn't finish the assessment.")
+            user_data.comment = (
+                f"{user_data.comment}\n- Smalltalk assessment not finished\nCheck {result.url}"
+            )
             return None
         elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
-            await update.effective_chat.send_message("Results not ready. Waiting 30s")  # FIXME
-            await asyncio.sleep(30)  # TODO set limit
+            if attempts > 10:
+                logger.error(
+                    f"Chat {user_data.chat_id}: Smalltalk results still not ready after 5 minutes"
+                )
+                user_data.comment = (
+                    f"{user_data.comment}\n- Smalltalk assessment results were not ready\n"
+                    f"Check {result.url}"
+                )
+
+            logger.info(f"Chat {user_data.chat_id}: Smalltalk results not ready. Waiting...")
+            attempts += 1
+            await asyncio.sleep(30)
         else:
             return result
 
@@ -94,7 +110,7 @@ async def get_json_with_results(test_id: str) -> bytes:
             },
         )
 
-    logger.debug(
+    logger.info(
         f"Request headers: {r.request.headers}. "
         f"Response: {r.status_code=}, {r.headers=}, {r.content=}"
     )

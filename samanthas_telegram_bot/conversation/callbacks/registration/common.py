@@ -53,6 +53,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """
 
     # TODO if user clears the history after starting, they won't be able to start until they cancel
+    context.user_data.clear_student_data()
     context.user_data.chat_id = update.effective_chat.id
     logger.info(f"Chat ID: {context.user_data.chat_id}")
 
@@ -831,48 +832,25 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     For a would-be teacher that is under 18, stores their comment about potential useful skills.
     For others, stores the general comment. Ends the conversation."""
     user_data = context.user_data
-    data = user_data
-    locale: Locale = data.locale
+    locale: Locale = user_data.locale
 
-    data.comment = update.message.text
+    user_data.comment = update.message.text
+
+    await update.effective_chat.send_message(context.bot_data.phrases["processing_wait"][locale])
 
     # number of groups is None for young teachers and 0 for adults that only want speaking club
-    if data.role == Role.TEACHER and not data.teacher_number_of_groups:
+    if user_data.role == Role.TEACHER and not user_data.teacher_number_of_groups:
         phrase_id = "bye_wait_for_message_from_coordinator"
-    elif data.role == Role.STUDENT and data.student_needs_oral_interview is True:
+    elif user_data.role == Role.STUDENT and user_data.student_needs_oral_interview is True:
         phrase_id = "bye_go_to_chat_with_coordinator"
     else:
         phrase_id = "bye_wait_for_message_from_bot"
 
     if user_data.role == Role.STUDENT:
         if user_data.student_needs_oral_interview:
-            user_data.language_and_level_ids = [
-                context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
-            ]
-            logger.info(
-                f"Chat {update.effective_chat.id}. "
-                f"Setting level formally to A0 ({user_data.language_and_level_ids}) "
-                f"because user needs oral interview in English"
-            )
-            data.comment = f"{data.comment} (!NEEDS ORAL INTERVIEW!)"
-
+            await _set_student_language_and_level_for_english_starters(update, context)
         elif user_data.student_agreed_to_smalltalk:
-            user_data.student_smalltalk_result = await get_smalltalk_result(update, context)
-            if user_data.student_smalltalk_result and user_data.student_smalltalk_result.level:
-                level = user_data.student_smalltalk_result.level
-                logger.info(
-                    f"Chat {update.effective_chat.id}. Setting {level=} based on SmallTalk test."
-                )
-            else:
-                level = user_data.student_assessment_resulting_level
-                logger.info(
-                    f"Chat {update.effective_chat.id}. No SmallTalk result loaded or level "
-                    f"is None. Using {level=} from written assessment."
-                )
-
-            user_data.language_and_level_ids = [
-                context.bot_data.language_and_level_id_for_language_id_and_level[("en", level)]
-            ]
+            await _process_student_language_and_level_from_smalltalk(update, context)
         result = await send_student_info(update, user_data)
     elif user_data.role == Role.TEACHER:
         if user_data.teacher_is_under_18:
@@ -880,11 +858,16 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
         else:
             result = await send_teacher_info(update, user_data)
     else:
-        logger.error(f"Cannot send to backend: { user_data=}")
+        logger.error(f"Cannot send to backend: {user_data=}")
         result = False
 
-    if result is True:
-        await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
+    message_text = (
+        context.bot_data.phrases[phrase_id][locale]
+        if result is True
+        else f"Service message: failed to send data {user_data}"
+    )  # TODO this "service message" may or may not be needed (and localized)
+
+    await update.effective_chat.send_message(message_text)
     return ConversationHandler.END
 
 
@@ -912,3 +895,45 @@ async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     await update.message.reply_text(
         "Enter /start to start the conversation!", reply_markup=ReplyKeyboardRemove()
     )
+
+
+async def _process_student_language_and_level_from_smalltalk(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> None:
+    """Performs operations that are necessary to determine student's level of English.
+
+    For all other languages, the logic is simple because there are no assessments.
+    Language level is stored right after user chooses it during the conversation.
+    """
+    user_data = context.user_data
+    user_data.student_smalltalk_result = await get_smalltalk_result(update, context)
+
+    if user_data.student_smalltalk_result and user_data.student_smalltalk_result.level:
+        level = user_data.student_smalltalk_result.level
+        logger.info(f"Chat {update.effective_chat.id}. Setting {level=} based on SmallTalk test.")
+    else:
+        level = user_data.student_assessment_resulting_level
+        logger.info(
+            f"Chat {update.effective_chat.id}. No SmallTalk result loaded or level "
+            f"is None. Using {level=} from written assessment."
+        )
+
+    user_data.language_and_level_ids = [
+        context.bot_data.language_and_level_id_for_language_id_and_level[("en", level)]
+    ]
+
+
+async def _set_student_language_and_level_for_english_starters(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> None:
+    user_data = context.user_data
+    if user_data.student_needs_oral_interview:
+        user_data.language_and_level_ids = [
+            context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
+        ]
+        logger.info(
+            f"Chat {update.effective_chat.id}. "
+            f"Setting level formally to A0 ({user_data.language_and_level_ids}) "
+            f"because user needs oral interview in English"
+        )
+        user_data.comment = f"{user_data.comment}\n- NEEDS ORAL INTERVIEW!"

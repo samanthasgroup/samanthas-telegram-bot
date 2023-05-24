@@ -162,6 +162,13 @@ class UserData:
     teacher_peer_help = TeacherPeerHelp()
     teacher_additional_skills_comment: str | None = None
 
+    def clear_student_data(self) -> None:
+        """Sets all student-related attributes to None. This may be needed because multiple
+        students can be registered from one device.
+        """
+        for attr in (attr for attr in dir(self) if attr.startswith("student_")):
+            setattr(self, attr, None)
+
 
 # Include custom classes into ContextTypes to get attribute hinting (replacing standard dicts with
 # UserData for "user_data" etc.).

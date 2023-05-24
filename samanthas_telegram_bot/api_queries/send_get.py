@@ -67,10 +67,10 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
     }
 
     if user_data.student_smalltalk_result:
-        data[
-            "smalltalk_test_result"
-        ] = user_data.student_smalltalk_result.original_json  # type:ignore
-        # TODO url
+        data["smalltalk_test_result"] = json.dumps(
+            str(user_data.student_smalltalk_result.original_json)
+        )
+        # TODO url (when field in backend is created)
 
     async with httpx.AsyncClient() as client:
         r = await client.post(f"{API_URL_PREFIX}/students/", data=data)
