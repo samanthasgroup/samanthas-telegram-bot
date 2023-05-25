@@ -4,8 +4,10 @@ import logging
 
 import httpx
 from telegram import Bot, Update
+from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report_error
+from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report
+from samanthas_telegram_bot.conversation.auxil.send_to_admin_group import send_to_admin_group
 from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
 from samanthas_telegram_bot.data_structures.context_types import ChatData, UserData
 
@@ -43,7 +45,7 @@ async def _send_personal_info_get_id(user_data: UserData, bot: Bot) -> int:
         )
         return data["id"]
 
-    await log_and_report_error(
+    await log_and_report(
         text=(
             f"Chat {user_data.chat_id}: Failed to create personal data record "
             f"(code {r.status_code}, {r.content})"
@@ -51,6 +53,7 @@ async def _send_personal_info_get_id(user_data: UserData, bot: Bot) -> int:
         bot=bot,
         parse_mode=None,
         logger=logger,
+        level="error",
     )
     return 0
 
@@ -83,18 +86,27 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
         r = await client.post(f"{API_URL_PREFIX}/students/", data=data)
 
     if r.status_code != httpx.codes.CREATED:
-        await log_and_report_error(
+        await log_and_report(
             text=(
                 f"Chat {user_data.chat_id}: Failed to create student ({r.status_code=}, "
                 f"{r.content=})"
             ),
             logger=logger,
+            level="error",
             bot=update.get_bot(),
             parse_mode=None,
         )
         return False
 
     logger.info(f"Chat {user_data.chat_id}: Created student ({personal_info_id=})")
+    await send_to_admin_group(
+        bot=update.get_bot(),
+        text=(
+            f"New student: [{user_data.first_name} {user_data.last_name}]"
+            f"({API_URL_PREFIX}/student/{personal_info_id})"
+        ),
+        parse_mode=ParseMode.MARKDOWN_V2,
+    )
 
     if not user_data.student_assessment_answers:
         logger.info(f"Chat {user_data.chat_id}: no assessment answers to send")
@@ -109,12 +121,13 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
             },
         )
     if r.status_code != httpx.codes.CREATED:
-        await log_and_report_error(
+        await log_and_report(
             text=(
                 f"Chat {user_data.chat_id}: Failed to send assessment "
                 f"({r.status_code=}, {r.content=})"
             ),
             logger=logger,
+            level="error",
             bot=update.get_bot(),
             parse_mode=None,
         )
@@ -161,15 +174,24 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
             },
         )
     if r.status_code == httpx.codes.CREATED:
+        await send_to_admin_group(
+            bot=update.get_bot(),
+            text=(
+                f"New adult teacher: [{user_data.first_name} {user_data.last_name}]"
+                f"({API_URL_PREFIX}/student/{personal_info_id})"
+            ),
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
         logger.info(f"Chat {user_data.chat_id}: Created adult teacher")
         return True
 
-    await log_and_report_error(
+    await log_and_report(
         text=(
             f"Chat {user_data.chat_id}: Failed to create adult teacher "
             f"(code {r.status_code}, {r.content})"
         ),
         logger=logger,
+        level="error",
         bot=update.get_bot(),
         parse_mode=None,
     )
@@ -196,14 +218,23 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
             },
         )
     if r.status_code == httpx.codes.CREATED:
+        await send_to_admin_group(
+            bot=update.get_bot(),
+            text=(
+                f"New **young** teacher: [{user_data.first_name} {user_data.last_name}]"
+                f"({API_URL_PREFIX}/student/{personal_info_id})"
+            ),
+            parse_mode=ParseMode.MARKDOWN_V2,
+        )
         logger.info(f"Chat {user_data.chat_id}: Created young teacher")
         return True
-    await log_and_report_error(
+    await log_and_report(
         text=(
             f"Chat {user_data.chat_id}: Failed to create young teacher "
             f"(code {r.status_code}, {r.content})"
         ),
         logger=logger,
+        level="error",
         bot=update.get_bot(),
         parse_mode=None,
     )
@@ -243,12 +274,13 @@ async def send_written_answers_get_level(
         level = data["resulting_level"]
         logger.info(f"Chat {user_data.chat_id}: Received level {level}.")
         return level
-    await log_and_report_error(
+    await log_and_report(
         text=(
             f"Chat {user_data.chat_id}: Failed to send results and receive level "
             f"(code {r.status_code}, {r.content})"
         ),
         logger=logger,
+        level="error",
         bot=update.get_bot(),
         parse_mode=None,
     )
