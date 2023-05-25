@@ -24,6 +24,7 @@ from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
+from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report_error
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
@@ -858,16 +859,18 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
         else:
             result = await send_teacher_info(update, user_data)
     else:
-        logger.error(f"Cannot send to backend: {user_data=}")
         result = False
 
-    message_text = (
-        context.bot_data.phrases[phrase_id][locale]
-        if result is True
-        else f"Service message: failed to send data {user_data}"
-    )  # TODO this "service message" may or may not be needed (and localized)
+    if result is True:
+        await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
+    else:
+        await log_and_report_error(
+            text=f"Cannot send to backend: {user_data=}",
+            bot=context.bot,
+            parse_mode=None,
+            logger=logger,
+        )
 
-    await update.effective_chat.send_message(message_text)
     return ConversationHandler.END
 
 

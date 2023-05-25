@@ -3,8 +3,9 @@ import json
 import logging
 
 import httpx
-from telegram import Update
+from telegram import Bot, Update
 
+from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report_error
 from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
 from samanthas_telegram_bot.data_structures.context_types import ChatData, UserData
 
@@ -14,7 +15,7 @@ STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
 STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
 
 
-async def _send_personal_info_get_id(user_data: UserData) -> int:
+async def _send_personal_info_get_id(user_data: UserData, bot: Bot) -> int:
     """Creates a personal info item. This function is meant to be called from other functions."""
     async with httpx.AsyncClient() as client:
         r = await client.post(
@@ -41,9 +42,15 @@ async def _send_personal_info_get_id(user_data: UserData) -> int:
             f"{user_data.last_name} ({user_data.email}), ID {data['id']}"
         )
         return data["id"]
-    logger.error(
-        f"Chat {user_data.chat_id}: Failed to create personal data record "
-        f"(code {r.status_code}, {r.content})"
+
+    await log_and_report_error(
+        text=(
+            f"Chat {user_data.chat_id}: Failed to create personal data record "
+            f"(code {r.status_code}, {r.content})"
+        ),
+        bot=bot,
+        parse_mode=None,
+        logger=logger,
     )
     return 0
 
@@ -51,7 +58,7 @@ async def _send_personal_info_get_id(user_data: UserData) -> int:
 async def send_student_info(update: Update, user_data: UserData) -> bool:
     """Sends a POST request to create a student and send results of assessment if any."""
 
-    personal_info_id = await _send_personal_info_get_id(user_data)
+    personal_info_id = await _send_personal_info_get_id(user_data=user_data, bot=update.get_bot())
 
     data = {
         "personal_info": personal_info_id,
@@ -76,8 +83,14 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
         r = await client.post(f"{API_URL_PREFIX}/students/", data=data)
 
     if r.status_code != httpx.codes.CREATED:
-        logger.error(
-            f"Chat {user_data.chat_id}: Failed to create student ({r.status_code=}, {r.content=})"
+        await log_and_report_error(
+            text=(
+                f"Chat {user_data.chat_id}: Failed to create student ({r.status_code=}, "
+                f"{r.content=})"
+            ),
+            logger=logger,
+            bot=update.get_bot(),
+            parse_mode=None,
         )
         return False
 
@@ -96,8 +109,14 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
             },
         )
     if r.status_code != httpx.codes.CREATED:
-        logger.error(
-            f"Chat {user_data.chat_id}: Failed to send assessment ({r.status_code=}, {r.content=})"
+        await log_and_report_error(
+            text=(
+                f"Chat {user_data.chat_id}: Failed to send assessment "
+                f"({r.status_code=}, {r.content=})"
+            ),
+            logger=logger,
+            bot=update.get_bot(),
+            parse_mode=None,
         )
         return False
 
@@ -108,7 +127,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
 async def send_teacher_info(update: Update, user_data: UserData) -> bool:
     """Sends a POST request to create an adult teacher."""
 
-    personal_info_id = await _send_personal_info_get_id(user_data)
+    personal_info_id = await _send_personal_info_get_id(user_data=user_data, bot=update.get_bot())
     peer_help = user_data.teacher_peer_help
 
     async with httpx.AsyncClient() as client:
@@ -144,9 +163,15 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
     if r.status_code == httpx.codes.CREATED:
         logger.info(f"Chat {user_data.chat_id}: Created adult teacher")
         return True
-    logger.error(
-        f"Chat {user_data.chat_id}: Failed to create adult teacher "
-        f"(code {r.status_code}, {r.content})"
+
+    await log_and_report_error(
+        text=(
+            f"Chat {user_data.chat_id}: Failed to create adult teacher "
+            f"(code {r.status_code}, {r.content})"
+        ),
+        logger=logger,
+        bot=update.get_bot(),
+        parse_mode=None,
     )
     return False
 
@@ -154,7 +179,7 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
 async def send_teacher_under_18_info(update: Update, user_data: UserData) -> bool:
     """Sends a POST request to create a teacher under 18 years old."""
 
-    personal_info_id = await _send_personal_info_get_id(user_data)
+    personal_info_id = await _send_personal_info_get_id(user_data=user_data, bot=update.get_bot())
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
@@ -173,9 +198,14 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
     if r.status_code == httpx.codes.CREATED:
         logger.info(f"Chat {user_data.chat_id}: Created young teacher")
         return True
-    logger.error(
-        f"Chat {user_data.chat_id}: Failed to create young teacher "
-        f"(code {r.status_code}, {r.content})"
+    await log_and_report_error(
+        text=(
+            f"Chat {user_data.chat_id}: Failed to create young teacher "
+            f"(code {r.status_code}, {r.content})"
+        ),
+        logger=logger,
+        bot=update.get_bot(),
+        parse_mode=None,
     )
     return False
 
@@ -186,7 +216,9 @@ def _format_status_since(update: Update) -> str:
     return update.effective_message.date.isoformat().replace("+00:00", "Z")
 
 
-async def send_written_answers_get_level(chat_data: ChatData, user_data: UserData) -> str | None:
+async def send_written_answers_get_level(
+    update: Update, chat_data: ChatData, user_data: UserData
+) -> str | None:
     """Sends answers to written assessment to the backend, gets level and returns it."""
     answer_ids = tuple(
         item.answer_id for item in user_data.student_assessment_answers  # type: ignore[union-attr]
@@ -211,8 +243,13 @@ async def send_written_answers_get_level(chat_data: ChatData, user_data: UserDat
         level = data["resulting_level"]
         logger.info(f"Chat {user_data.chat_id}: Received level {level}.")
         return level
-    logger.error(
-        f"Chat {user_data.chat_id}: Failed to send results and receive level "
-        f"(code {r.status_code}, {r.content})"
+    await log_and_report_error(
+        text=(
+            f"Chat {user_data.chat_id}: Failed to send results and receive level "
+            f"(code {r.status_code}, {r.content})"
+        ),
+        logger=logger,
+        bot=update.get_bot(),
+        parse_mode=None,
     )
     return None

@@ -97,6 +97,7 @@ async def assessment_store_answer_ask_question(
     ) or data == CommonCallbackData.ABORT:
         context.user_data.student_assessment_resulting_level = (
             await send_written_answers_get_level(
+                update=update,
                 chat_data=context.chat_data,
                 user_data=context.user_data,
             )
