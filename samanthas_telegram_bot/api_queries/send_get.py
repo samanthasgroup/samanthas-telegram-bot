@@ -178,7 +178,7 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
             bot=update.get_bot(),
             text=(
                 f"New adult teacher: [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_PREFIX}/student/{personal_info_id})"
+                f"({API_URL_PREFIX}/teacher/{personal_info_id})"
             ),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
@@ -222,7 +222,7 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
             bot=update.get_bot(),
             text=(
                 f"New **young** teacher: [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_PREFIX}/student/{personal_info_id})"
+                f"({API_URL_PREFIX}/teacherunder18/{personal_info_id})"
             ),
             parse_mode=ParseMode.MARKDOWN_V2,
         )
