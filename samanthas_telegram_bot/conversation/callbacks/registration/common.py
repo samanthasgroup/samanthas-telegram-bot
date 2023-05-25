@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import typing
 
@@ -53,7 +54,6 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     The interface language may not match the interface language of the phone, so better to ask.
     """
 
-    # TODO if user clears the history after starting, they won't be able to start until they cancel
     context.user_data.clear_student_data()
     context.user_data.chat_id = update.effective_chat.id
     logger.info(f"Chat ID: {context.user_data.chat_id}")
@@ -940,3 +940,15 @@ async def _set_student_language_and_level_for_english_starters(
             f"because user needs oral interview in English"
         )
         user_data.comment = f"{user_data.comment}\n- NEEDS ORAL INTERVIEW!"
+
+
+async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    await update.message.delete()
+    locale = context.user_data.locale
+    if locale is None:
+        locale = "ua"
+    message = await update.effective_chat.send_message(
+        context.bot_data.phrases["message_fallback"][locale]
+    )
+    await asyncio.sleep(5)
+    await message.delete()

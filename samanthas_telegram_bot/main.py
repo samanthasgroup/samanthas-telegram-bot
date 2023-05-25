@@ -15,7 +15,6 @@ from telegram.ext import (
 import samanthas_telegram_bot.conversation.callbacks.registration.common as common
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
-from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report_error
 from samanthas_telegram_bot.conversation.auxil.send_to_admin_group import send_to_admin_group
 from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
 from samanthas_telegram_bot.data_structures.enums import ConversationState as State
@@ -59,12 +58,6 @@ async def post_init(application: Application) -> None:
         text="Registration bot started",
         parse_mode=None,
     )
-    await log_and_report_error(
-        bot=application.bot,
-        text="Just a test",
-        parse_mode=None,
-        logger=logger,
-    )
 
 
 def main() -> None:
@@ -81,6 +74,7 @@ def main() -> None:
     # Add conversation handler
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler("start", common.start)],
+        allow_reentry=True,
         states={
             State.IS_REGISTERED: [
                 CallbackQueryHandler(common.store_locale_ask_if_already_registered)
@@ -228,7 +222,10 @@ def main() -> None:
                 )
             ],
         },
-        fallbacks=[CommandHandler("cancel", common.cancel)],
+        fallbacks=[
+            CommandHandler("cancel", common.cancel),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, common.message_fallback),
+        ],
     )
 
     application.add_handler(conv_handler)
