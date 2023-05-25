@@ -5,6 +5,7 @@ import logging
 import os
 
 import httpx
+from dotenv import load_dotenv
 from telegram import Bot, Update
 from telegram.constants import ParseMode
 
@@ -14,6 +15,7 @@ from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_
 from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
 from samanthas_telegram_bot.data_structures.helper_classes import SmalltalkResult
 
+load_dotenv()
 logger = logging.getLogger(__name__)
 
 URL_PREFIX = "https://app.smalltalk2.me/api/integration"

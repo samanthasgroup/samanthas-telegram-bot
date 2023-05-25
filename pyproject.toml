@@ -11,6 +11,7 @@ packages = [{include = "samanthas_telegram_bot"}]
 python = "^3.10"
 python-telegram-bot = "^20.3"
 phonenumberslite = "^8.13.11"
+python-dotenv = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.3.0"

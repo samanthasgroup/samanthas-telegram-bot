@@ -1,6 +1,7 @@
 import logging
 import os
 
+from dotenv import load_dotenv
 from telegram import BotCommandScopeAllPrivateChats
 from telegram.ext import (
     Application,
@@ -18,6 +19,8 @@ import samanthas_telegram_bot.conversation.callbacks.registration.teacher as tea
 from samanthas_telegram_bot.conversation.auxil.send_to_admin_group import send_to_admin_group
 from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
 from samanthas_telegram_bot.data_structures.enums import ConversationState as State
+
+load_dotenv()
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
@@ -65,7 +68,7 @@ def main() -> None:
     # Create the Application and pass it the bot's token.
     application = (
         Application.builder()
-        .token(os.environ.get("TOKEN"))
+        .token(os.environ.get("BOT_TOKEN"))
         .context_types(ContextTypes(user_data=UserData, chat_data=ChatData, bot_data=BotData))
         .post_init(post_init)
         .build()
