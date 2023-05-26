@@ -184,6 +184,6 @@ async def ask_communication_language_after_smalltalk(
 ) -> int:
     """Stores nothing, just asks about communication language in class."""
     query, _ = await answer_callback_query_and_get_data(update)
-    # We will request results from SmallTalk later to make sure that it's ready.
+    # We will request results from SmallTalk later to increase chance that it's ready.
     await CQReplySender.ask_class_communication_languages(context, query)
     return ConversationState.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW
