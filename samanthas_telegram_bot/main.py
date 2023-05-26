@@ -76,7 +76,12 @@ def main() -> None:
 
     # Add conversation handler
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", common.start)],
+        entry_points=[
+            CommandHandler("start", common.start),
+            # We don't want to automatically start registration after any message.
+            # Let the user do that on their own.
+            MessageHandler(filters.TEXT & ~filters.COMMAND, common.message_fallback),
+        ],
         allow_reentry=True,
         states={
             State.IS_REGISTERED: [
