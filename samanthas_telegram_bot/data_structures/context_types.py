@@ -82,6 +82,8 @@ class BotData:
         """Matches a tuple of language_id and level to an ID of `LanguageAndLevel` object.
         This ID will be passed to the backend."""
 
+        # self.phrase_for_id or even self.multilingual_phrase_for_id would be more accurate,
+        # but it's used so often that it's better to keep the name as short as possible.
         self.phrases = load_phrases()
         """Matches internal ID of a bot phrase to localized versions of this phrase."""
 
