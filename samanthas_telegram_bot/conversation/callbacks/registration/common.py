@@ -80,7 +80,8 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # set day of week to Monday to start asking about slots for each day
     context.chat_data.day_index = 0
 
-    greeting = "👋 "
+    greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # TODO remove when going to production
+    greeting += "👋 "
     for locale in LOCALES:
         greeting += (
             f"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
