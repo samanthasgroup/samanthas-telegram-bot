@@ -189,9 +189,9 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
     if level_is_undefined(level):
         logger.info("User did not pass enough oral tasks for level to be determined")
         level_id = None
-
-    if not (level_id in ALL_LEVELS or level_is_undefined(level)):
+    elif level_id not in ALL_LEVELS:
         logger.error(f"Unrecognized language level returned by SmallTalk: {level}")
+        level_id = None
 
     results_url = loaded_data["report_url"]
 
