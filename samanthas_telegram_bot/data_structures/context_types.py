@@ -18,7 +18,7 @@ from samanthas_telegram_bot.data_structures.helper_classes import (
 
 
 class BotData:
-    """Class for data needed for every conversation and get loaded once at application start."""
+    """Class for data needed for every conversation and loaded once at application start."""
 
     def __init__(self) -> None:
         # can't be imported at top of the module: it will lead to circular import error
