@@ -46,7 +46,7 @@ class BotData:
             index: tuple(slot for slot in day_and_time_slots if slot.day_of_week_index == index)
             for index in range(7)
         }
-        """Matches indexes of days of the week to DayAndTimeSlot objects. We ask the user
+        """Matches indexes of days of the week to `DayAndTimeSlot` objects. We ask the user
         time slots day by day, so for each day we have to select slots with the correct day index.
          """
 
@@ -73,14 +73,14 @@ class BotData:
             )
             for language_id in self.sorted_language_ids
         }
-        """Matches IDs of languages (strings like "en", "de" etc.) to sequences of corresponding
-        `LanguageAndLevel` objects."""
+        """Matches IDs of teaching languages (strings like "en", "de" etc.) to tuples
+        of corresponding `LanguageAndLevel` objects."""
 
         self.language_and_level_id_for_language_id_and_level: dict[tuple[str, str], int] = {
             (item.language_id, item.level): item.id for item in languages_and_levels
         }
         """Matches a tuple of language_id and level to an ID of `LanguageAndLevel` object.
-        This ID will be passed to the backend."""
+        This ID (or these IDs) will be passed to the backend."""
 
         # self.phrase_for_id or even self.multilingual_phrase_for_id would be more accurate,
         # but it's used so often that it's better to keep the name as short as possible.
@@ -164,7 +164,7 @@ class UserData:
     teacher_additional_skills_comment: str | None = None
 
     def clear_student_data(self) -> None:
-        """Sets all student-related attributes to None. This may be needed because multiple
+        """Sets all student-related attributes to ``None``. This may be needed because multiple
         students can be registered from one device.
         """
         for attr in (attr for attr in dir(self) if attr.startswith("student_")):
