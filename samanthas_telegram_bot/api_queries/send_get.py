@@ -17,6 +17,11 @@ STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
 STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
 
 
+# TODO how to best test these functions?  We can't test whether all data was collected by the bot,
+#  but it may make sense to test whether all data is passed to backend (to avoid cases when we
+#  add a new field to model and forget to reflect it here).  Is there some sort of "dry run" mode
+#  in the backend so we can send a post request without the record being created?  Ofc, we can
+#  just create a record and then delete it.
 async def _send_personal_info_get_id(user_data: UserData, bot: Bot) -> int:
     """Creates a personal info item. This function is meant to be called from other functions."""
     async with httpx.AsyncClient() as client:
