@@ -25,8 +25,10 @@ logger = logging.getLogger(__name__)
 def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     """Gets age ranges from the backend, assigns IDs (for bot phrases) to age ranges for teacher.
 
-    The bot asks the teacher about students' ages, adding words like "teenager" or "adult"
-    to the number ranges (e.g. "children (5-11)", in user's language).
+    Reasoning for assigning bot phrase IDs to age ranges: The bot asks the teacher about students'
+    ages, adding words like "teenager" or "adult" to the number ranges (e.g. "children (5-11)",
+    in user's language).
+
     These words have to be assigned to these age ranges for the bot to display the correct phrase.
     For example: `phrases.csv` contains the phrase with ID ``option_adults``, so the age range
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
@@ -57,9 +59,6 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     """Gets assessment questions from the backend, based on language.
 
     Returns a dictionary matching an age range ID to assessment.
-
-    Note: this is a **synchronous** function because it runs once before the application start.
-    It being synchronous enables us to include it into ``BotData.__init__()``
     """
 
     data = _get_json(
@@ -98,11 +97,7 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
 
 
 def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
-    """Gets day and time slots from the backend.
-
-    Note: this is a **synchronous** function because it runs once before the application start.
-    It being synchronous enables us to include it into ``BotData.__init__()``
-    """
+    """Gets day and time slots from the backend."""
 
     def get_hour(str_: str) -> int:
         """Takes a string like 05:00:00 and returns hours (5 in this example)."""
