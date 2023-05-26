@@ -138,7 +138,7 @@ async def assessment_store_answer_ask_question(
 async def send_smalltalk_url_or_ask_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If student wants to take Smalltalk test, give them URL. Else, ask communication language."""
+    """If student wants to take SmallTalk test, give them URL. Else, ask communication language."""
     query, data = await answer_callback_query_and_get_data(update)
     locale: Locale = context.user_data.locale
 

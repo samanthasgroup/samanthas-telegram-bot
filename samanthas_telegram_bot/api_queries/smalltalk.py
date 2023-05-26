@@ -30,7 +30,7 @@ async def send_user_data_get_smalltalk_test(
     email: str,
     bot: Bot,
 ) -> tuple[str | None, str | None]:
-    """Gets Smalltalk interview ID and test URL."""
+    """Gets SmallTalk interview ID and test URL."""
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
@@ -61,12 +61,12 @@ async def send_user_data_get_smalltalk_test(
 async def get_smalltalk_result(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> SmalltalkResult | None:
-    """Gets results of Smalltalk interview."""
+    """Gets results of SmallTalk interview."""
 
     user_data = context.user_data
 
     while True:
-        logger.info(f"Chat {user_data.chat_id}: Trying to receive results from Smalltalk")
+        logger.info(f"Chat {user_data.chat_id}: Trying to receive results from SmallTalk")
         data = await get_json_with_results(user_data.student_smalltalk_test_id)
         result = process_smalltalk_json(data)
         attempts = 0
@@ -77,13 +77,13 @@ async def get_smalltalk_result(
                 logger=logger,
                 level="error",
                 text=(
-                    f"Chat {user_data.chat_id}: Failed to receive data from Smalltalk "
+                    f"Chat {user_data.chat_id}: Failed to receive data from SmallTalk "
                     f"for {user_data.first_name} {user_data.last_name}"
                 ),
                 parse_mode=None,
             )
             user_data.comment = (
-                f"{user_data.comment}\n- Could not load results of Smalltalk assessment\n"
+                f"{user_data.comment}\n- Could not load results of SmallTalk assessment\n"
                 f"Interview ID: {user_data.student_smalltalk_test_id}"
             )
             return None
@@ -95,12 +95,12 @@ async def get_smalltalk_result(
                 level="info",
                 text=(
                     f"Chat {user_data.chat_id}: {user_data.first_name} {user_data.last_name} "
-                    f"didn't finish the Smalltalk assessment."
+                    f"didn't finish the SmallTalk assessment."
                 ),
                 parse_mode=None,
             )
             user_data.comment = (
-                f"{user_data.comment}\n- Smalltalk assessment not finished\nCheck {result.url}"
+                f"{user_data.comment}\n- SmallTalk assessment not finished\nCheck {result.url}"
             )
             return None
         elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
@@ -110,18 +110,18 @@ async def get_smalltalk_result(
                     logger=logger,
                     level="error",
                     text=(
-                        f"Chat {user_data.chat_id}: Smalltalk results for {user_data.first_name} "
+                        f"Chat {user_data.chat_id}: SmallTalk results for {user_data.first_name} "
                         f"{user_data.last_name} still not ready after 5 minutes. "
                         f"Interview ID {user_data.student_smalltalk_test_id}."
                     ),
                     parse_mode=None,
                 )
                 user_data.comment = (
-                    f"{user_data.comment}\n- Smalltalk assessment results were not ready\n"
+                    f"{user_data.comment}\n- SmallTalk assessment results were not ready\n"
                     f"Interview ID {user_data.student_smalltalk_test_id}"
                 )
 
-            logger.info(f"Chat {user_data.chat_id}: Smalltalk results not ready. Waiting...")
+            logger.info(f"Chat {user_data.chat_id}: SmallTalk results not ready. Waiting...")
             attempts += 1
             await asyncio.sleep(30)
         else:
@@ -130,7 +130,7 @@ async def get_smalltalk_result(
                 logger=logger,
                 level="info",
                 text=(
-                    f"Chat {user_data.chat_id}: Received [Smalltalk results for "
+                    f"Chat {user_data.chat_id}: Received [SmallTalk results for "
                     f"{user_data.first_name} {user_data.last_name}]({result.url})"
                 ),
                 parse_mode=ParseMode.MARKDOWN_V2,
@@ -172,7 +172,7 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
 
     # TODO Don't want to raise NotImplementedError here, but think about it
     if status not in SmalltalkTestStatus._value2member_map_:  # noqa
-        logger.warning(f"Smalltalk returned {status=} but we have no logic for it.")
+        logger.warning(f"SmallTalk returned {status=} but we have no logic for it.")
 
     if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
         logger.info("User has not yet completed the interview")
