@@ -1,6 +1,6 @@
 """Module with context types to be used with python-telegram-bot instead of plain dictionaries."""
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Literal
 
 from telegram.ext import CallbackContext, ExtBot
 
@@ -12,7 +12,6 @@ from samanthas_telegram_bot.data_structures.helper_classes import (
     AssessmentAnswer,
     DayAndTimeSlot,
     LanguageAndLevel,
-    MultilingualBotPhrase,
     SmalltalkResult,
     TeacherPeerHelp,
 )
@@ -83,7 +82,7 @@ class BotData:
         """Matches a tuple of language_id and level to an ID of `LanguageAndLevel` object.
         This ID will be passed to the backend."""
 
-        self.phrases = cast(dict[str, MultilingualBotPhrase], load_phrases())
+        self.phrases = load_phrases()
         """Matches internal ID of a bot phrase to localized versions of this phrase."""
 
         self.student_ages_for_age_range_id = {
