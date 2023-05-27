@@ -10,6 +10,7 @@ from telegram import (
     ReplyKeyboardRemove,
     Update,
 )
+from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.api_queries.check import (
@@ -80,16 +81,17 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # set day of week to Monday to start asking about slots for each day
     context.chat_data.day_index = 0
 
-    greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # TODO remove when going to production
+    greeting = "🚧 ТЕСТОВИЙ РЕЖИМ \| TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
     greeting += "👋 "
     for locale in LOCALES:
         greeting += (
-            f"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
-            f"{context.bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
+            rf"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}\!"
+            f" {context.bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
         )
 
     await update.message.reply_text(
         greeting,
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(text="українською", callback_data="ua")],
@@ -97,6 +99,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
                 [InlineKeyboardButton(text="по-русски", callback_data="ru")],
             ]
         ),
+        disable_web_page_preview=True,
     )
 
     return ConversationState.IS_REGISTERED
