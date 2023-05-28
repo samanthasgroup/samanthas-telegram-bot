@@ -19,11 +19,9 @@ async def chat_id_is_registered(chat_id: int) -> bool:
             f"{API_URL_PREFIX}/personal_info/check_existence_of_chat_id/",
             params={"registration_telegram_bot_chat_id": chat_id},
         )
-    if r.status_code == httpx.codes.OK:
-        logger.info(f"... {chat_id} already exists")
-        return True
-    logger.info(f"... {chat_id} doesn't exist (response code {r.status_code})")
-    return False
+    exists = r.status_code == httpx.codes.OK
+    logger.info(f"... {chat_id} {exists=} ({r.status_code=})")
+    return exists
 
 
 async def person_with_first_name_last_name_email_exists_in_database(
@@ -40,8 +38,8 @@ async def person_with_first_name_last_name_email_exists_in_database(
             f"{API_URL_PREFIX}/personal_info/check_existence/",
             data={"first_name": first_name, "last_name": last_name, "email": email},
         )
-    if r.status_code == httpx.codes.OK:
-        logger.info(f"... {data_to_check} does not exist")
-        return False
-    logger.info(f"... {data_to_check} already exists")
-    return True
+
+    # this is correct: `exists` is False if status is 200 OK
+    exists = r.status_code != httpx.codes.OK
+    logger.info(f"... {data_to_check} {exists=} ({r.status_code=})")
+    return exists
