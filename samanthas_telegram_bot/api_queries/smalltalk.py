@@ -44,10 +44,7 @@ async def send_user_data_get_smalltalk_test(
             },  # TODO possibly webhook
         )
 
-    logger.debug(f"Request headers: {r.request.headers}, request content: {r.request.content}")
     data = json.loads(r.content)
-    logger.debug(f"Response: {r.status_code=}, {r.headers=}, {r.content=}, {data=}")
-
     url = data.get("test_link", None)
     if url is None:
         logger.error("No oral test URL received")
