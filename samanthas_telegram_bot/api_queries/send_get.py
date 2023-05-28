@@ -58,7 +58,7 @@ async def _send_personal_info_get_id(user_data: UserData, bot: Bot) -> int:
         bot=bot,
         parse_mode=None,
         logger=logger,
-        level="error",
+        level="critical",
     )
     return 0
 
@@ -97,7 +97,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 f"{r.content=})"
             ),
             logger=logger,
-            level="error",
+            level="critical",
             bot=update.get_bot(),
             parse_mode=None,
         )
@@ -132,7 +132,7 @@ async def send_student_info(update: Update, user_data: UserData) -> bool:
                 f"({r.status_code=}, {r.content=})"
             ),
             logger=logger,
-            level="error",
+            level="critical",
             bot=update.get_bot(),
             parse_mode=None,
         )
@@ -196,7 +196,7 @@ async def send_teacher_info(update: Update, user_data: UserData) -> bool:
             f"(code {r.status_code}, {r.content})"
         ),
         logger=logger,
-        level="error",
+        level="critical",
         bot=update.get_bot(),
         parse_mode=None,
     )
@@ -240,7 +240,7 @@ async def send_teacher_under_18_info(update: Update, user_data: UserData) -> boo
             f"(code {r.status_code}, {r.content})"
         ),
         logger=logger,
-        level="error",
+        level="critical",
         bot=update.get_bot(),
         parse_mode=None,
     )
@@ -286,7 +286,7 @@ async def send_written_answers_get_level(
             f"(code {r.status_code}, {r.content})"
         ),
         logger=logger,
-        level="error",
+        level="critical",
         bot=update.get_bot(),
         parse_mode=None,
     )
