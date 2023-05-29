@@ -16,6 +16,7 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
     SMALLTALK_URL_GET_TEST,
 )
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiRequestError
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -174,14 +175,12 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
 
     status = loaded_data["status"]
 
-    # TODO Don't want to raise NotImplementedError here, but think about it
     if status not in SmalltalkTestStatus._value2member_map_:  # noqa
-        logger.warning(f"SmallTalk returned {status=} but we have no logic for it.")
+        raise ApiRequestError(f"SmallTalk returned {status=} but we have no logic for it.")
 
     if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
         logger.info("User has not yet completed the interview")
-
-    if status == SmalltalkTestStatus.RESULTS_NOT_READY:
+    elif status == SmalltalkTestStatus.RESULTS_NOT_READY:
         logger.info("User has completed the interview but the results are not ready")
 
     if status != SmalltalkTestStatus.RESULTS_READY:
