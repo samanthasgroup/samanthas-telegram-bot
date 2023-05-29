@@ -1,20 +1,38 @@
 """Functions for sending data to backend to create entities and get required data in return."""
 import json
 import logging
+import typing
 
 import httpx
-from telegram import Bot, Update
+from telegram import Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report
-from samanthas_telegram_bot.conversation.auxil.send_to_admin_group import send_to_admin_group
-from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
-from samanthas_telegram_bot.data_structures.context_types import ChatData, UserData
+from samanthas_telegram_bot.api_queries.auxil.constants import (
+    API_URL_ENROLLMENT_TEST_GET_LEVEL,
+    API_URL_ENROLLMENT_TEST_SEND_RESULT,
+    API_URL_PERSONAL_INFO_LIST_CREATE,
+    API_URL_STUDENT_RETRIEVE,
+    API_URL_STUDENTS_LIST_CREATE,
+    API_URL_TEACHER_RETRIEVE,
+    API_URL_TEACHERS_LIST_CREATE,
+    API_URL_YOUNG_TEACHER_RETRIEVE,
+    API_URL_YOUNG_TEACHERS_LIST_CREATE,
+)
+from samanthas_telegram_bot.api_queries.auxil.data_maker import DataMaker
+from samanthas_telegram_bot.api_queries.auxil.enums import (
+    HttpMethod,
+    LoggingLevel,
+    SendToAdminGroupMode,
+)
+from samanthas_telegram_bot.api_queries.auxil.make_request_get_data import make_request_get_data
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.data_structures.context_types import (
+    CUSTOM_CONTEXT_TYPES,
+    ChatData,
+    UserData,
+)
 
 logger = logging.getLogger(__name__)
-
-STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
-STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
 
 
 # TODO how to best test these functions?  We can't test whether all data was collected by the bot,
@@ -22,235 +40,129 @@ STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
 #  add a new field to model and forget to reflect it here).  Is there some sort of "dry run" mode
 #  in the backend so we can send a post request without the record being created?  Ofc, we can
 #  just create a record and then delete it.
-async def _send_personal_info_get_id(user_data: UserData, bot: Bot) -> int:
+async def _send_personal_info_get_id(context: CUSTOM_CONTEXT_TYPES) -> int:
     """Creates a personal info item. This function is meant to be called from other functions."""
-    async with httpx.AsyncClient() as client:
-        r = await client.post(
-            f"{API_URL_PREFIX}/personal_info/",
-            data={
-                "communication_language_mode": user_data.communication_language_in_class,
-                "first_name": user_data.first_name,
-                "last_name": user_data.last_name,
-                "telegram_username": user_data.tg_username if user_data.tg_username else "",
-                "email": user_data.email,
-                "phone": user_data.phone_number,
-                "utc_timedelta": (
-                    f"{user_data.utc_offset_hour:02d}:{user_data.utc_offset_minute}:00"
-                ),
-                "information_source": user_data.source,
-                "registration_telegram_bot_chat_id": user_data.chat_id,
-                "registration_telegram_bot_language": user_data.locale,
-            },
-        )
-    if r.status_code == httpx.codes.CREATED:
-        data = json.loads(r.content)
-        logger.info(
-            f"Chat {user_data.chat_id}: Created personal data record for {user_data.first_name} "
-            f"{user_data.last_name} ({user_data.email}), ID {data['id']}"
-        )
-        return data["id"]
-
-    await log_and_report(
-        text=(
-            f"Chat {user_data.chat_id}: Failed to create personal data record "
-            f"(code {r.status_code}, {r.content})"
-        ),
-        bot=bot,
-        parse_mode=None,
-        logger=logger,
-        level="critical",
+    user_data = context.user_data
+    common_message_part = (
+        f"personal data record for {user_data.first_name} "
+        f"{user_data.last_name} ({user_data.email})"
     )
+
+    data = await make_request_get_data(
+        context=context,
+        method=HttpMethod.POST,
+        url=API_URL_PERSONAL_INFO_LIST_CREATE,
+        data=DataMaker.personal_info(user_data),
+        expected_status_code=httpx.codes.CREATED,
+        logger=logger,
+        success_message=f"Created {common_message_part}",
+        failure_message=f"Failed to create {common_message_part}",
+        failure_logging_level=LoggingLevel.CRITICAL,
+    )
+    if data:
+        logger.info(f"{data['id']=}")
+        return typing.cast(int, data["id"])
     return 0
 
 
-async def send_student_info(update: Update, user_data: UserData) -> bool:
+async def send_student_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
     """Sends a POST request to create a student and send results of assessment if any."""
 
-    personal_info_id = await _send_personal_info_get_id(user_data=user_data, bot=update.get_bot())
+    personal_info_id = await _send_personal_info_get_id(context)
+    user_data = context.user_data
 
-    data = {
-        "personal_info": personal_info_id,
-        "comment": user_data.comment,
-        "status": STATUS_AT_CREATION_STUDENT_TEACHER,
-        "status_since": _format_status_since(update),
-        "can_read_in_english": user_data.student_can_read_in_english,
-        "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
-        "age_range": user_data.student_age_range_id,
-        "availability_slots": user_data.day_and_time_slot_ids,
-        "non_teaching_help_required": user_data.non_teaching_help_types,
-        "teaching_languages_and_levels": user_data.language_and_level_ids,
-    }
-
-    if user_data.student_smalltalk_result:
-        data["smalltalk_test_result"] = json.dumps(
-            str(user_data.student_smalltalk_result.original_json)
-        )
-        # TODO url (when field in backend is created)
-
-    async with httpx.AsyncClient() as client:
-        r = await client.post(f"{API_URL_PREFIX}/students/", data=data)
-
-    if r.status_code != httpx.codes.CREATED:
-        await log_and_report(
-            text=(
-                f"Chat {user_data.chat_id}: Failed to create student ({r.status_code=}, "
-                f"{r.content=})"
-            ),
-            logger=logger,
-            level="critical",
-            bot=update.get_bot(),
-            parse_mode=None,
-        )
-        return False
-
-    logger.info(f"Chat {user_data.chat_id}: Created student ({personal_info_id=})")
-    await send_to_admin_group(
-        bot=update.get_bot(),
-        text=(
-            f"New student: [{user_data.first_name} {user_data.last_name}]"
-            f"({API_URL_PREFIX}/student/{personal_info_id})"
+    result = await make_request_get_data(
+        context=context,
+        method=HttpMethod.POST,
+        url=API_URL_STUDENTS_LIST_CREATE,
+        data=DataMaker.student(
+            update=update, personal_info_id=personal_info_id, user_data=user_data
         ),
-        parse_mode=ParseMode.MARKDOWN_V2,
+        expected_status_code=httpx.codes.CREATED,
+        logger=logger,
+        success_message=(
+            f"Created student [{user_data.first_name} {user_data.last_name}]"
+            f"({API_URL_STUDENT_RETRIEVE}{personal_info_id}), ID {personal_info_id}"
+        ),
+        failure_message=f"Failed to create student with ID {personal_info_id}",
+        failure_logging_level=LoggingLevel.CRITICAL,
+        notify_admins_mode=SendToAdminGroupMode.SUCCESS_AND_FAILURE,
+        parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
     )
 
     if not user_data.student_assessment_answers:
         logger.info(f"Chat {user_data.chat_id}: no assessment answers to send")
-        return True
+        return result is not None
 
-    async with httpx.AsyncClient() as client:
-        r = await client.post(
-            f"{API_URL_PREFIX}/enrollment_test_result/",
-            data={
-                "student": personal_info_id,
-                "answers": [item.answer_id for item in user_data.student_assessment_answers],
-            },
-        )
-    if r.status_code != httpx.codes.CREATED:
-        await log_and_report(
-            text=(
-                f"Chat {user_data.chat_id}: Failed to send assessment "
-                f"({r.status_code=}, {r.content=})"
-            ),
-            logger=logger,
-            level="critical",
-            bot=update.get_bot(),
-            parse_mode=None,
-        )
-        return False
-
-    logger.info(f"Chat {user_data.chat_id}: Added assessment answers for {personal_info_id=}")
-    return True
+    result = await make_request_get_data(
+        context=context,
+        method=HttpMethod.POST,
+        url=API_URL_ENROLLMENT_TEST_SEND_RESULT,
+        data=DataMaker.student_enrollment_test(
+            personal_info_id=personal_info_id, user_data=user_data
+        ),
+        expected_status_code=httpx.codes.CREATED,
+        logger=logger,
+        success_message=f"Added assessment answers for {personal_info_id=}",
+        failure_message=f"Failed to send written assessment for {personal_info_id=})",
+        failure_logging_level=LoggingLevel.CRITICAL,
+        parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
+    )
+    return result is not None
 
 
-async def send_teacher_info(update: Update, user_data: UserData) -> bool:
+async def send_teacher_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
     """Sends a POST request to create an adult teacher."""
 
-    personal_info_id = await _send_personal_info_get_id(user_data=user_data, bot=update.get_bot())
-    peer_help = user_data.teacher_peer_help
+    personal_info_id = await _send_personal_info_get_id(context)
+    user_data = context.user_data
 
-    async with httpx.AsyncClient() as client:
-        r = await client.post(
-            f"{API_URL_PREFIX}/teachers/",
-            data={
-                "personal_info": personal_info_id,
-                "comment": user_data.comment,
-                "status": STATUS_AT_CREATION_STUDENT_TEACHER,
-                "status_since": _format_status_since(update),
-                "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
-                "has_hosted_speaking_club": False,
-                "is_validated": False,
-                "has_prior_teaching_experience": user_data.teacher_has_prior_experience,
-                "non_teaching_help_provided_comment": user_data.teacher_additional_skills_comment,
-                "peer_support_can_check_syllabus": peer_help.can_check_syllabus,
-                "peer_support_can_host_mentoring_sessions": peer_help.can_host_mentoring_sessions,
-                "peer_support_can_give_feedback": peer_help.can_give_feedback,
-                "peer_support_can_help_with_childrens_groups": (
-                    peer_help.can_help_with_children_group
-                ),
-                "peer_support_can_provide_materials": peer_help.can_provide_materials,
-                "peer_support_can_invite_to_class": peer_help.can_invite_to_class,
-                "peer_support_can_work_in_tandem": peer_help.can_work_in_tandem,
-                "simultaneous_groups": user_data.teacher_number_of_groups,
-                "weekly_frequency_per_group": user_data.teacher_class_frequency,
-                "availability_slots": user_data.day_and_time_slot_ids,
-                "non_teaching_help_provided": user_data.non_teaching_help_types,
-                "student_age_ranges": user_data.teacher_student_age_range_ids,
-                "teaching_languages_and_levels": user_data.language_and_level_ids,
-            },
-        )
-    if r.status_code == httpx.codes.CREATED:
-        await send_to_admin_group(
-            bot=update.get_bot(),
-            text=(
-                f"New adult teacher: [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_PREFIX}/teacher/{personal_info_id})"
-            ),
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
-        logger.info(f"Chat {user_data.chat_id}: Created adult teacher")
-        return True
-
-    await log_and_report(
-        text=(
-            f"Chat {user_data.chat_id}: Failed to create adult teacher "
-            f"(code {r.status_code}, {r.content})"
+    result = await make_request_get_data(
+        context=context,
+        method=HttpMethod.POST,
+        url=API_URL_TEACHERS_LIST_CREATE,
+        data=DataMaker.teacher(
+            update=update, personal_info_id=personal_info_id, user_data=user_data
         ),
+        expected_status_code=httpx.codes.CREATED,
         logger=logger,
-        level="critical",
-        bot=update.get_bot(),
-        parse_mode=None,
+        success_message=(
+            f"Created adult teacher [{user_data.first_name} {user_data.last_name}]"
+            f"({API_URL_TEACHER_RETRIEVE}{personal_info_id}), ID {personal_info_id}"
+        ),
+        failure_message=f"Failed to create adult teacher with ID {personal_info_id}",
+        failure_logging_level=LoggingLevel.CRITICAL,
+        notify_admins_mode=SendToAdminGroupMode.SUCCESS_AND_FAILURE,
+        parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
     )
-    return False
+    return result is not None
 
 
-async def send_teacher_under_18_info(update: Update, user_data: UserData) -> bool:
+async def send_teacher_under_18_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
     """Sends a POST request to create a teacher under 18 years old."""
 
-    personal_info_id = await _send_personal_info_get_id(user_data=user_data, bot=update.get_bot())
+    personal_info_id = await _send_personal_info_get_id(context)
+    user_data = context.user_data
 
-    async with httpx.AsyncClient() as client:
-        r = await client.post(
-            f"{API_URL_PREFIX}/teachers_under_18/",
-            data={
-                "personal_info": personal_info_id,
-                "comment": user_data.comment,
-                "status_since": _format_status_since(update),
-                "status": STATUS_AT_CREATION_TEACHER_UNDER_18,
-                "can_host_speaking_club": user_data.teacher_can_host_speaking_club,
-                "has_hosted_speaking_club": False,
-                "is_validated": False,
-                "non_teaching_help_provided_comment": user_data.teacher_additional_skills_comment,
-                "teaching_languages_and_levels": user_data.language_and_level_ids,
-            },
-        )
-    if r.status_code == httpx.codes.CREATED:
-        await send_to_admin_group(
-            bot=update.get_bot(),
-            text=(
-                f"New *young* teacher: [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_PREFIX}/teacherunder18/{personal_info_id})"
-            ),
-            parse_mode=ParseMode.MARKDOWN_V2,
-        )
-        logger.info(f"Chat {user_data.chat_id}: Created young teacher")
-        return True
-    await log_and_report(
-        text=(
-            f"Chat {user_data.chat_id}: Failed to create young teacher "
-            f"(code {r.status_code}, {r.content})"
+    result = await make_request_get_data(
+        context=context,
+        method=HttpMethod.POST,
+        url=API_URL_YOUNG_TEACHERS_LIST_CREATE,
+        data=DataMaker.teacher_under_18(
+            update=update, personal_info_id=personal_info_id, user_data=user_data
         ),
+        expected_status_code=httpx.codes.CREATED,
         logger=logger,
-        level="critical",
-        bot=update.get_bot(),
-        parse_mode=None,
+        success_message=(
+            f"Created young teacher [{user_data.first_name} {user_data.last_name}]"
+            f"({API_URL_YOUNG_TEACHER_RETRIEVE}{personal_info_id}), ID {personal_info_id}"
+        ),
+        failure_message=f"Failed to create young teacher with ID {personal_info_id}",
+        failure_logging_level=LoggingLevel.CRITICAL,
+        notify_admins_mode=SendToAdminGroupMode.SUCCESS_AND_FAILURE,
+        parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
     )
-    return False
-
-
-def _format_status_since(update: Update) -> str:
-    """Converts a datetime object into suitable format for `status_since` field."""
-    # TODO can/should backend do this?
-    return update.effective_message.date.isoformat().replace("+00:00", "Z")
+    return result is not None
 
 
 async def send_written_answers_get_level(
@@ -263,13 +175,13 @@ async def send_written_answers_get_level(
     number_of_questions = len(chat_data.assessment.questions)  # type: ignore[union-attr]
 
     logger.info(
-        f"Chat {user_data.chat_id}: Sending answers ({len(answer_ids)} out of "
-        f"{number_of_questions} questions were answered) to backend and receiving level..."
+        f"Chat {user_data.chat_id}: {len(answer_ids)} out of "
+        f"{number_of_questions} questions were answered. Receiving level from backend..."
     )
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            f"{API_URL_PREFIX}/enrollment_test_result/get_level/",
+            API_URL_ENROLLMENT_TEST_GET_LEVEL,
             data={
                 "answers": answer_ids,
                 "number_of_questions": number_of_questions,
@@ -280,14 +192,13 @@ async def send_written_answers_get_level(
         level = data["resulting_level"]
         logger.info(f"Chat {user_data.chat_id}: Received level {level}.")
         return level
-    await log_and_report(
+    await log_and_notify(
+        bot=update.get_bot(),
+        logger=logger,
+        level=LoggingLevel.CRITICAL,
         text=(
             f"Chat {user_data.chat_id}: Failed to send results and receive level "
             f"(code {r.status_code}, {r.content})"
         ),
-        logger=logger,
-        level="critical",
-        bot=update.get_bot(),
-        parse_mode=None,
     )
     return None

@@ -16,7 +16,7 @@ from telegram.ext import (
 import samanthas_telegram_bot.conversation.callbacks.registration.common as common
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
-from samanthas_telegram_bot.conversation.auxil.send_to_admin_group import send_to_admin_group
+from samanthas_telegram_bot.auxil.log_and_notify import notify_admins
 from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
 from samanthas_telegram_bot.data_structures.enums import ConversationState as State
 
@@ -57,7 +57,7 @@ async def post_init(application: Application) -> None:
         language_code="ua",
     )
 
-    await send_to_admin_group(
+    await notify_admins(
         bot=application.bot,
         text="Registration bot started",
         parse_mode=None,

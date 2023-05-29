@@ -9,7 +9,8 @@ from dotenv import load_dotenv
 from telegram import Bot, Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
@@ -69,15 +70,14 @@ async def get_smalltalk_result(
         attempts = 0
 
         if result is None:
-            await log_and_report(
+            await log_and_notify(
                 bot=update.get_bot(),
                 logger=logger,
-                level="error",
+                level=LoggingLevel.ERROR,
                 text=(
                     f"Chat {user_data.chat_id}: Failed to receive data from SmallTalk "
                     f"for {user_data.first_name} {user_data.last_name}"
                 ),
-                parse_mode=None,
             )
             user_data.comment = (
                 f"{user_data.comment}\n- Could not load results of SmallTalk assessment\n"
@@ -86,15 +86,14 @@ async def get_smalltalk_result(
             return None
 
         if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
-            await log_and_report(
+            await log_and_notify(
                 bot=update.get_bot(),
                 logger=logger,
-                level="info",
+                level=LoggingLevel.INFO,
                 text=(
                     f"Chat {user_data.chat_id}: {user_data.first_name} {user_data.last_name} "
                     f"didn't finish the SmallTalk assessment."
                 ),
-                parse_mode=None,
             )
             user_data.comment = (
                 f"{user_data.comment}\n- SmallTalk assessment not finished\nCheck {result.url}"
@@ -102,16 +101,15 @@ async def get_smalltalk_result(
             return None
         elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
             if attempts > 10:
-                await log_and_report(
+                await log_and_notify(
                     bot=update.get_bot(),
                     logger=logger,
-                    level="error",
+                    level=LoggingLevel.ERROR,
                     text=(
                         f"Chat {user_data.chat_id}: SmallTalk results for {user_data.first_name} "
                         f"{user_data.last_name} still not ready after 5 minutes. "
                         f"Interview ID {user_data.student_smalltalk_test_id}."
                     ),
-                    parse_mode=None,
                 )
                 user_data.comment = (
                     f"{user_data.comment}\n- SmallTalk assessment results were not ready\n"
@@ -122,15 +120,15 @@ async def get_smalltalk_result(
             attempts += 1
             await asyncio.sleep(30)
         else:
-            await log_and_report(
+            await log_and_notify(
                 bot=update.get_bot(),
                 logger=logger,
-                level="info",
+                level=LoggingLevel.INFO,
                 text=(
                     f"Chat {user_data.chat_id}: Received [SmallTalk results for "
                     f"{user_data.first_name} {user_data.last_name}]({result.url})"
                 ),
-                parse_mode=ParseMode.MARKDOWN_V2,
+                parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
             )
             return result
 

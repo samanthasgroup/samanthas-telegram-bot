@@ -8,7 +8,7 @@ from typing import Any
 
 import httpx
 
-from samanthas_telegram_bot.data_structures.constants import API_URL_PREFIX
+from samanthas_telegram_bot.api_queries.auxil.constants import API_URL_PREFIX
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 from samanthas_telegram_bot.data_structures.helper_classes import (
     AgeRange,

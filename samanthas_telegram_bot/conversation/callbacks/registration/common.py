@@ -13,6 +13,7 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.check import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
@@ -23,10 +24,10 @@ from samanthas_telegram_bot.api_queries.send_get import (
     send_teacher_under_18_info,
 )
 from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.auxil.log_and_report import log_and_report
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
@@ -856,24 +857,23 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
             await _set_student_language_and_level_for_english_starters(update, context)
         elif user_data.student_agreed_to_smalltalk:
             await _process_student_language_and_level_from_smalltalk(update, context)
-        result = await send_student_info(update, user_data)
+        result = await send_student_info(update, context)
     elif user_data.role == Role.TEACHER:
         if user_data.teacher_is_under_18:
-            result = await send_teacher_under_18_info(update, user_data)
+            result = await send_teacher_under_18_info(update, context)
         else:
-            result = await send_teacher_info(update, user_data)
+            result = await send_teacher_info(update, context)
     else:
         result = False
 
     if result is True:
         await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
     else:
-        await log_and_report(
-            text=f"Cannot send to backend: {user_data=}",
+        await log_and_notify(
             bot=context.bot,
-            parse_mode=None,
             logger=logger,
-            level="error",
+            text=f"Cannot send to backend: {user_data=}",
+            level=LoggingLevel.CRITICAL,
         )
 
     return ConversationHandler.END

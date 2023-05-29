@@ -7,8 +7,6 @@ from typing import Literal
 # TODO (not necessarily in MVP) maybe this can be changed anyway.
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
-API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
-
 DIGIT_PATTERN = re.compile(r"^\d+$")
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
 
