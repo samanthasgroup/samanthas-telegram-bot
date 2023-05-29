@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 URL_PREFIX = "https://app.smalltalk2.me/api/integration"
 
 HEADERS = {"Authorization": f"Bearer {os.environ.get('SMALLTALK_TOKEN')}"}
-TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
+ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
 
 
 async def send_user_data_get_smalltalk_test(
@@ -38,7 +38,7 @@ async def send_user_data_get_smalltalk_test(
             url=f"{URL_PREFIX}/send_test",
             headers=HEADERS,
             json={
-                "test_id": TEST_ID,
+                "test_id": ORAL_TEST_ID,
                 "first_name": first_name,
                 "last_name": last_name,
                 "email": email,
