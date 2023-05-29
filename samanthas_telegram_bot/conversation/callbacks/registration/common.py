@@ -28,7 +28,6 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.constants import (
-    DIGIT_PATTERN,
     EMAIL_PATTERN,
     LOCALES,
     NON_TEACHING_HELP_TYPES,
@@ -451,7 +450,7 @@ async def store_age_ask_slots_for_one_day_or_teaching_language(
             return ConversationState.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
 
     # If this is a student that has chosen their age group (callback data is ID of age range)
-    if context.user_data.role == Role.STUDENT and DIGIT_PATTERN.match(data):
+    if context.user_data.role == Role.STUDENT and data.isdigit():
         age_range_id = int(data)
         context.user_data.student_age_range_id = age_range_id
         context.user_data.student_age_from = context.bot_data.student_ages_for_age_range_id[
