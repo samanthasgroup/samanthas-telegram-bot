@@ -96,9 +96,7 @@ async def assessment_store_answer_ask_question(
         == len(context.chat_data.assessment.questions)
     ) or data == CommonCallbackData.ABORT:
         context.user_data.student_assessment_resulting_level = await get_level_of_written_test(
-            update=update,
-            chat_data=context.chat_data,
-            user_data=context.user_data,
+            context=context,
         )
         if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
             await CQReplySender.ask_yes_no(

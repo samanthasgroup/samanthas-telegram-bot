@@ -1,19 +1,24 @@
 """Functions for checking info (e.g. existence of entities) with the backend."""
-import json
 import logging
+import typing
 
 import httpx
-from telegram import Update
 
 from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
 )
-from samanthas_telegram_bot.api_queries.auxil.enums import HttpMethod, LoggingLevel
-from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import make_request
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
-from samanthas_telegram_bot.data_structures.context_types import ChatData, UserData
+from samanthas_telegram_bot.api_queries.auxil.enums import (
+    HttpMethod,
+    LoggingLevel,
+    SendToAdminGroupMode,
+)
+from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import (
+    make_request,
+    send_to_backend,
+)
+from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
 # TODO check for something different in case host is unavailable? Add decorators to all functions?
@@ -57,40 +62,38 @@ async def person_with_first_name_last_name_email_exists_in_database(
 
 
 async def get_level_of_written_test(
-    update: Update, chat_data: ChatData, user_data: UserData
+    context: CUSTOM_CONTEXT_TYPES,
 ) -> str | None:
     """Sends answers to written assessment to the backend, gets level and returns it."""
+    user_data = context.user_data
+
     answer_ids: tuple[int, ...] = tuple(
-        item.answer_id for item in user_data.student_assessment_answers  # type: ignore[union-attr]
+        item.answer_id for item in user_data.student_assessment_answers
     )
-    number_of_questions = len(chat_data.assessment.questions)  # type: ignore[union-attr]
+    number_of_questions = len(context.chat_data.assessment.questions)
 
     logger.info(
         f"Chat {user_data.chat_id}: {len(answer_ids)} out of "
         f"{number_of_questions} questions were answered. Receiving level from backend..."
     )
 
-    response = await make_request(
+    data = await send_to_backend(
+        context=context,
         method=HttpMethod.POST,
         url=API_URL_ENROLLMENT_TEST_GET_LEVEL,
-        data={
-            "answers": answer_ids,
-            "number_of_questions": number_of_questions,
-        },
+        data={"answers": answer_ids, "number_of_questions": number_of_questions},
+        expected_status_code=httpx.codes.OK,
+        logger=logger,
+        success_message="Checked result of written assessment:",
+        failure_message="Failed to send results of written assessment and receive level",
+        failure_logging_level=LoggingLevel.CRITICAL,
+        notify_admins_mode=SendToAdminGroupMode.FAILURE_ONLY,
     )
 
-    if response.status_code == httpx.codes.OK:
-        data = json.loads(response.content)
-        level = data["resulting_level"]
-        logger.info(f"Chat {user_data.chat_id}: Received level {level}.")
-        return level
-    await log_and_notify(
-        bot=update.get_bot(),
-        logger=logger,
-        level=LoggingLevel.CRITICAL,
-        text=(
-            f"Chat {user_data.chat_id}: Failed to send results and receive level "
-            f"(code {response.status_code}, {response.content})"
-        ),
-    )
-    return None
+    try:
+        level = typing.cast(str, data["level"])  # type: ignore[index]
+    except KeyError:
+        return None
+
+    logger.info(f"{level=}")
+    return level
