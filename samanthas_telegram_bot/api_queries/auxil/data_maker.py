@@ -18,7 +18,7 @@ class DataMaker:
             "communication_language_mode": user_data.communication_language_in_class,
             "first_name": user_data.first_name,
             "last_name": user_data.last_name,
-            "telegram_username": user_data.tg_username if user_data.tg_username else "",
+            "telegram_username": user_data.tg_username or "",
             "email": user_data.email,
             "phone": user_data.phone_number,
             "utc_timedelta": f"{user_data.utc_offset_hour:02d}:{user_data.utc_offset_minute}:00",
