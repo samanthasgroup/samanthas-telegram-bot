@@ -28,6 +28,9 @@ class AssessmentQuestionOption(NamedTuple):
     id: int
     text: str
 
+    def means_user_does_not_know_the_answer(self) -> bool:
+        return "i don't know" in self.text.lower()
+
 
 class AssessmentQuestion(NamedTuple):
     id: int

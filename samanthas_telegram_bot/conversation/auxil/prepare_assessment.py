@@ -30,7 +30,7 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
         option.id
         for question in context.chat_data.assessment.questions
         for option in question.options
-        if "i don't know" in option.text.lower()
+        if option.means_user_does_not_know_the_answer()
     }
     context.chat_data.assessment_dont_knows_in_a_row = 0
     await CallbackQueryReplySender.ask_start_assessment(context, query)
