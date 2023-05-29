@@ -1,4 +1,4 @@
-"""Functions for checking existence of entities with the backend."""
+"""Functions for checking info (e.g. existence of entities) with the backend."""
 import json
 import logging
 

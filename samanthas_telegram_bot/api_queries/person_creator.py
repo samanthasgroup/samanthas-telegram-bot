@@ -1,4 +1,4 @@
-"""Functions for sending data to backend to create entities and get required data in return."""
+"""Functionality for sending data to backend to create people and get required data in return."""
 import logging
 import typing
 
@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
 
 
 class PersonCreator:
+    """Class for creating people (students, teachers...) in the backend."""
+
     @classmethod
     async def student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
         """Sends a POST request to create a student and send results of assessment if any."""
