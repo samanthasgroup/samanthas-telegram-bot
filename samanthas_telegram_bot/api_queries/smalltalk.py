@@ -10,6 +10,8 @@ from telegram import Bot, Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_queries.auxil.constants import (
+    SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS,
+    SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS,
     SMALLTALK_URL_GET_RESULTS,
     SMALLTALK_URL_GET_TEST,
 )
@@ -102,14 +104,19 @@ async def get_smalltalk_result(
             )
             return None
         elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
-            if attempts > 10:
+            if attempts > SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS:
+                total_seconds_waiting = (
+                    SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS
+                    * SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS
+                )
                 await log_and_notify(
                     bot=context.bot,
                     logger=logger,
                     level=LoggingLevel.ERROR,
                     text=(
                         f"Chat {user_data.chat_id}: SmallTalk results for {user_data.first_name} "
-                        f"{user_data.last_name} still not ready after 5 minutes. "
+                        f"{user_data.last_name} still not ready after "
+                        f"{total_seconds_waiting / 60} minutes. "
                         f"Interview ID {user_data.student_smalltalk_test_id}."
                     ),
                 )
@@ -120,7 +127,7 @@ async def get_smalltalk_result(
 
             logger.info(f"Chat {user_data.chat_id}: SmallTalk results not ready. Waiting...")
             attempts += 1
-            await asyncio.sleep(30)
+            await asyncio.sleep(SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS)
         else:
             await log_and_notify(
                 bot=context.bot,
