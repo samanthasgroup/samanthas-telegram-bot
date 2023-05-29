@@ -1,5 +1,4 @@
 """Functions for sending data to backend to create entities and get required data in return."""
-import json
 import logging
 import typing
 
@@ -8,7 +7,6 @@ from telegram import Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_queries.auxil.constants import (
-    API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
     API_URL_PERSONAL_INFO_LIST_CREATE,
     API_URL_STUDENT_RETRIEVE,
@@ -25,12 +23,7 @@ from samanthas_telegram_bot.api_queries.auxil.enums import (
     SendToAdminGroupMode,
 )
 from samanthas_telegram_bot.api_queries.auxil.make_request_get_data import make_request_get_data
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
-from samanthas_telegram_bot.data_structures.context_types import (
-    CUSTOM_CONTEXT_TYPES,
-    ChatData,
-    UserData,
-)
+from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +58,7 @@ async def _send_personal_info_get_id(context: CUSTOM_CONTEXT_TYPES) -> int:
     return 0
 
 
-async def send_student_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
+async def create_student(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
     """Sends a POST request to create a student and send results of assessment if any."""
 
     personal_info_id = await _send_personal_info_get_id(context)
@@ -111,7 +104,7 @@ async def send_student_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bo
     return result is not None
 
 
-async def send_teacher_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
+async def create_teacher(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
     """Sends a POST request to create an adult teacher."""
 
     personal_info_id = await _send_personal_info_get_id(context)
@@ -138,7 +131,7 @@ async def send_teacher_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bo
     return result is not None
 
 
-async def send_teacher_under_18_info(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
+async def create_teacher_under_18(update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
     """Sends a POST request to create a teacher under 18 years old."""
 
     personal_info_id = await _send_personal_info_get_id(context)
@@ -163,42 +156,3 @@ async def send_teacher_under_18_info(update: Update, context: CUSTOM_CONTEXT_TYP
         parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
     )
     return result is not None
-
-
-async def send_written_answers_get_level(
-    update: Update, chat_data: ChatData, user_data: UserData
-) -> str | None:
-    """Sends answers to written assessment to the backend, gets level and returns it."""
-    answer_ids = tuple(
-        item.answer_id for item in user_data.student_assessment_answers  # type: ignore[union-attr]
-    )
-    number_of_questions = len(chat_data.assessment.questions)  # type: ignore[union-attr]
-
-    logger.info(
-        f"Chat {user_data.chat_id}: {len(answer_ids)} out of "
-        f"{number_of_questions} questions were answered. Receiving level from backend..."
-    )
-
-    async with httpx.AsyncClient() as client:
-        r = await client.post(
-            API_URL_ENROLLMENT_TEST_GET_LEVEL,
-            data={
-                "answers": answer_ids,
-                "number_of_questions": number_of_questions,
-            },
-        )
-    if r.status_code == httpx.codes.OK:
-        data = json.loads(r.content)
-        level = data["resulting_level"]
-        logger.info(f"Chat {user_data.chat_id}: Received level {level}.")
-        return level
-    await log_and_notify(
-        bot=update.get_bot(),
-        logger=logger,
-        level=LoggingLevel.CRITICAL,
-        text=(
-            f"Chat {user_data.chat_id}: Failed to send results and receive level "
-            f"(code {r.status_code}, {r.content})"
-        ),
-    )
-    return None

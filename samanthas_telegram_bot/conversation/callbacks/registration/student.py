@@ -3,7 +3,7 @@ import logging
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.send_get import send_written_answers_get_level
+from samanthas_telegram_bot.api_queries.check import get_level_of_written_test
 from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -95,12 +95,10 @@ async def assessment_store_answer_ask_question(
         len(context.user_data.student_assessment_answers)
         == len(context.chat_data.assessment.questions)
     ) or data == CommonCallbackData.ABORT:
-        context.user_data.student_assessment_resulting_level = (
-            await send_written_answers_get_level(
-                update=update,
-                chat_data=context.chat_data,
-                user_data=context.user_data,
-            )
+        context.user_data.student_assessment_resulting_level = await get_level_of_written_test(
+            update=update,
+            chat_data=context.chat_data,
+            user_data=context.user_data,
         )
         if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
             await CQReplySender.ask_yes_no(

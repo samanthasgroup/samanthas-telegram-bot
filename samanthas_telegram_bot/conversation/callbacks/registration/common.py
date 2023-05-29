@@ -18,10 +18,10 @@ from samanthas_telegram_bot.api_queries.check import (
     chat_id_is_registered,
     person_with_first_name_last_name_email_exists_in_database,
 )
-from samanthas_telegram_bot.api_queries.send_get import (
-    send_student_info,
-    send_teacher_info,
-    send_teacher_under_18_info,
+from samanthas_telegram_bot.api_queries.create_people import (
+    create_student,
+    create_teacher,
+    create_teacher_under_18,
 )
 from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
@@ -857,12 +857,12 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
             await _set_student_language_and_level_for_english_starters(update, context)
         elif user_data.student_agreed_to_smalltalk:
             await _process_student_language_and_level_from_smalltalk(update, context)
-        result = await send_student_info(update, context)
+        result = await create_student(update, context)
     elif user_data.role == Role.TEACHER:
         if user_data.teacher_is_under_18:
-            result = await send_teacher_under_18_info(update, context)
+            result = await create_teacher_under_18(update, context)
         else:
-            result = await send_teacher_info(update, context)
+            result = await create_teacher(update, context)
     else:
         result = False
 
