@@ -36,7 +36,7 @@ async def send_user_data_get_smalltalk_test(
     """Gets SmallTalk interview ID and test URL."""
 
     async with httpx.AsyncClient() as client:
-        r = await client.post(
+        response = await client.post(
             url=SMALLTALK_URL_GET_TEST,
             headers=HEADERS,
             json={
@@ -47,7 +47,7 @@ async def send_user_data_get_smalltalk_test(
             },  # TODO possibly webhook
         )
 
-    data = json.loads(r.content)
+    data = json.loads(response.content)
     url = data.get("test_link", None)
     if url is None:
         logger.error("No oral test URL received")
@@ -137,7 +137,7 @@ async def get_smalltalk_result(
 
 async def get_json_with_results(test_id: str) -> bytes:
     async with httpx.AsyncClient() as client:
-        r = await client.get(
+        response = await client.get(
             url=SMALLTALK_URL_GET_RESULTS,
             headers=HEADERS,
             params={
@@ -149,10 +149,10 @@ async def get_json_with_results(test_id: str) -> bytes:
         )
 
     logger.info(
-        f"Request headers: {r.request.headers}. "
-        f"Response: {r.status_code=}, {r.headers=}, {r.content=}"
+        f"Request headers: {response.request.headers}. "
+        f"Response: {response.status_code=}, {response.headers=}, {response.content=}"
     )
-    return r.content
+    return response.content
 
 
 def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
