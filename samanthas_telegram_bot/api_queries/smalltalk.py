@@ -71,7 +71,7 @@ async def get_smalltalk_result(
 
         if result is None:
             await log_and_notify(
-                bot=update.get_bot(),
+                bot=context.bot,
                 logger=logger,
                 level=LoggingLevel.ERROR,
                 text=(
@@ -87,7 +87,7 @@ async def get_smalltalk_result(
 
         if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
             await log_and_notify(
-                bot=update.get_bot(),
+                bot=context.bot,
                 logger=logger,
                 level=LoggingLevel.INFO,
                 text=(
@@ -102,7 +102,7 @@ async def get_smalltalk_result(
         elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
             if attempts > 10:
                 await log_and_notify(
-                    bot=update.get_bot(),
+                    bot=context.bot,
                     logger=logger,
                     level=LoggingLevel.ERROR,
                     text=(
@@ -121,7 +121,7 @@ async def get_smalltalk_result(
             await asyncio.sleep(30)
         else:
             await log_and_notify(
-                bot=update.get_bot(),
+                bot=context.bot,
                 logger=logger,
                 level=LoggingLevel.INFO,
                 text=(
