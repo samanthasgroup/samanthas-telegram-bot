@@ -1,8 +1,10 @@
 import logging
 import os
+import traceback
 
 from dotenv import load_dotenv
 from telegram import BotCommandScopeAllPrivateChats
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -16,8 +18,14 @@ from telegram.ext import (
 import samanthas_telegram_bot.conversation.callbacks.registration.common as common
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
-from samanthas_telegram_bot.auxil.log_and_notify import notify_admins
-from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify, notify_admins
+from samanthas_telegram_bot.data_structures.context_types import (
+    CUSTOM_CONTEXT_TYPES,
+    BotData,
+    ChatData,
+    UserData,
+)
 from samanthas_telegram_bot.data_structures.enums import ConversationState as State
 
 load_dotenv()
@@ -61,6 +69,24 @@ async def post_init(application: Application) -> None:
         bot=application.bot,
         text="Registration bot started",
         parse_mode=None,
+    )
+
+
+async def error_handler(update: object, context: CUSTOM_CONTEXT_TYPES) -> None:
+    """Logs the error and send a telegram message to notify the developer."""
+
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = "".join(tb_list)
+
+    await log_and_notify(
+        bot=context.bot,
+        logger=logger,
+        level=LoggingLevel.EXCEPTION,
+        text=(
+            f"@{os.environ.get('BOT_OWNER_USERNAME')} Registration bot encountered an exception:"
+            f"\n<code>\n{tb_string}</code>\n"
+        ),
+        parse_mode_for_admin_group_message=ParseMode.HTML,
     )
 
 
@@ -238,6 +264,8 @@ def main() -> None:
 
     help_handler = CommandHandler("help", common.send_help)
     application.add_handler(help_handler)
+
+    application.add_error_handler(error_handler)
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
