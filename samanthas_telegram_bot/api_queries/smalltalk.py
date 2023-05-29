@@ -48,7 +48,7 @@ async def send_user_data_get_smalltalk_test(
         )
 
     data = json.loads(response.content)
-    url = data.get("test_link", None)
+    url = data.get("test_link")
     if url is None:
         logger.error("No oral test URL received")
         return None, None
