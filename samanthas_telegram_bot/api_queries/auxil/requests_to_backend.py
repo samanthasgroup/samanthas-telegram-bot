@@ -63,7 +63,7 @@ async def send_to_backend(
     response = await make_request(method=method, url=url, data=data)
 
     message_prefix = f"Chat {context.user_data.chat_id}: "  # type: ignore[attr-defined]
-    message_suffix = f" status code {response.status_code}"
+    message_suffix = f", status code {response.status_code}"
     failure_message_suffix = (
         f"{message_suffix} {response.content=} @{os.environ.get('BOT_OWNER_USERNAME')}"
     )
@@ -83,6 +83,7 @@ async def send_to_backend(
             in (SendToAdminGroupMode.SUCCESS_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
             parse_mode_for_admin_group_message=parse_mode_for_admin_group_message,
         )
+        logger.debug(f"{json.loads(response.content)=}")
         return json.loads(response.content)
 
     await log_and_notify(
@@ -98,7 +99,12 @@ async def send_to_backend(
 
 
 async def make_request(
-    method: str, url: str, data: DataDict | None = None, params: DataDict | None = None
+    method: HttpMethod, url: str, data: DataDict | None = None, params: DataDict | None = None
 ) -> Response:
     async with httpx.AsyncClient() as client:
-        return await getattr(client, method)(url, data=data, params=params)
+        if method == HttpMethod.GET:
+            return await client.get(url, params=params)
+        elif method == HttpMethod.POST:
+            return await client.post(url, params=params, data=data)
+        else:
+            raise NotImplementedError(f"{method=} not supported")

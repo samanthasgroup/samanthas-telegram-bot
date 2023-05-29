@@ -84,14 +84,14 @@ async def get_level_of_written_test(
         data={"answers": answer_ids, "number_of_questions": number_of_questions},
         expected_status_code=httpx.codes.OK,
         logger=logger,
-        success_message="Checked result of written assessment:",
+        success_message="Checked result of written assessment",
         failure_message="Failed to send results of written assessment and receive level",
         failure_logging_level=LoggingLevel.CRITICAL,
         notify_admins_mode=SendToAdminGroupMode.FAILURE_ONLY,
     )
 
     try:
-        level = typing.cast(str, data["level"])  # type: ignore[index]
+        level = typing.cast(str, data["resulting_level"])  # type: ignore[index]
     except KeyError:
         return None
 
