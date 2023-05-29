@@ -9,6 +9,10 @@ from dotenv import load_dotenv
 from telegram import Bot, Update
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.api_queries.auxil.constants import (
+    SMALLTALK_URL_GET_RESULTS,
+    SMALLTALK_URL_GET_TEST,
+)
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
@@ -18,8 +22,6 @@ from samanthas_telegram_bot.data_structures.helper_classes import SmalltalkResul
 
 load_dotenv()
 logger = logging.getLogger(__name__)
-
-URL_PREFIX = "https://app.smalltalk2.me/api/integration"
 
 HEADERS = {"Authorization": f"Bearer {os.environ.get('SMALLTALK_TOKEN')}"}
 ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
@@ -35,7 +37,7 @@ async def send_user_data_get_smalltalk_test(
 
     async with httpx.AsyncClient() as client:
         r = await client.post(
-            url=f"{URL_PREFIX}/send_test",
+            url=SMALLTALK_URL_GET_TEST,
             headers=HEADERS,
             json={
                 "test_id": ORAL_TEST_ID,
@@ -136,7 +138,7 @@ async def get_smalltalk_result(
 async def get_json_with_results(test_id: str) -> bytes:
     async with httpx.AsyncClient() as client:
         r = await client.get(
-            url=f"{URL_PREFIX}/test_status",
+            url=SMALLTALK_URL_GET_RESULTS,
             headers=HEADERS,
             params={
                 "id": test_id,

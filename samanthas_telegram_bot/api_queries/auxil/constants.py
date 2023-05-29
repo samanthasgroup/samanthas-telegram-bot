@@ -22,3 +22,7 @@ API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO = f"{API_URL_PREFIX}/personal_info/chec
 API_URL_INFIX_DAY_AND_TIME_SLOTS = "day_and_time_slots"
 API_URL_INFIX_ENROLLMENT_TESTS = "enrollment_test"
 API_URL_INFIX_LANGUAGES_AND_LEVELS = "languages_and_levels"
+
+SMALLTALK_URL_PREFIX = "https://app.smalltalk2.me/api/integration"
+SMALLTALK_URL_GET_TEST = f"{SMALLTALK_URL_PREFIX}/send_test"
+SMALLTALK_URL_GET_RESULTS = f"{SMALLTALK_URL_PREFIX}/test_status"
