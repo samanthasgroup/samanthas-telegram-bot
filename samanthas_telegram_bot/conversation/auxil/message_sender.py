@@ -115,49 +115,45 @@ class MessageSender:
         """Prepares text message with user info for review, depending on role and other factors."""
         data = context.user_data
         locale: Locale = data.locale
+        phrases = context.bot_data.phrases
 
         message = (
-            f"{context.bot_data.phrases['ask_review'][locale]}\n\n"
-            f"{context.bot_data.phrases['review_first_name'][locale]}: {data.first_name}\n"
-            f"{context.bot_data.phrases['review_last_name'][locale]}: {data.last_name}\n"
-            f"{context.bot_data.phrases['review_email'][locale]}: {data.email}\n"
+            f"{phrases['ask_review'][locale]}\n\n"
+            f"{phrases['review_first_name'][locale]}: {data.first_name}\n"
+            f"{phrases['review_last_name'][locale]}: {data.last_name}\n"
+            f"{phrases['review_email'][locale]}: {data.email}\n"
         )
 
         if data.role == Role.STUDENT:
             message += (
-                f"{context.bot_data.phrases['review_student_age_group'][locale]}: "
+                f"{phrases['review_student_age_group'][locale]}: "
                 f"{data.student_age_from}-{data.student_age_to}\n"
             )
 
         if data.tg_username:
-            message += (
-                f"{context.bot_data.phrases['review_username'][locale]} (@{data.tg_username})\n"
-            )
+            message += f"{phrases['review_username'][locale]} (@{data.tg_username})\n"
         if data.phone_number:
-            message += (
-                f"{context.bot_data.phrases['review_phone_number'][locale]}: {data.phone_number}\n"
-            )
+            message += f"{phrases['review_phone_number'][locale]}: {data.phone_number}\n"
 
         offset_hour = data.utc_offset_hour
         offset_minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
 
         if data.utc_offset_hour > 0:
-            message += f"{context.bot_data.phrases['review_timezone'][locale]}: UTC+{offset_hour}"
+            message += f"{phrases['review_timezone'][locale]}: UTC+{offset_hour}"
         elif data.utc_offset_hour < 0:
-            message += f"{context.bot_data.phrases['review_timezone'][locale]}: UTC{offset_hour}"
+            message += f"{phrases['review_timezone'][locale]}: UTC{offset_hour}"
         else:
-            message += f"\n{context.bot_data.phrases['review_timezone'][locale]}: UTC"
+            message += f"\n{phrases['review_timezone'][locale]}: UTC"
 
         utc_time = update.effective_message.date
         now_with_offset = utc_time + datetime.timedelta(
             hours=data.utc_offset_hour, minutes=data.utc_offset_minute
         )
         message += (
-            f" ({context.bot_data.phrases['current_time'][locale]} "
-            f"{now_with_offset.strftime('%H:%M')})\n"
+            f" ({phrases['current_time'][locale]} " f"{now_with_offset.strftime('%H:%M')})\n"
         )
 
-        message += f"\n{context.bot_data.phrases['review_availability'][locale]}:\n"
+        message += f"\n{phrases['review_availability'][locale]}:\n"
 
         slot_ids = sorted(data.day_and_time_slot_ids)
         # creating a dictionary matching days to lists of slots, so that slots can be shown to
@@ -170,7 +166,7 @@ class MessageSender:
             ].append(slot_id)
 
         for day_index in slot_id_for_day_index:
-            message += f"{context.bot_data.phrases['ask_slots_' + str(day_index)][locale]}: "
+            message += f"{phrases['ask_slots_' + str(day_index)][locale]}: "
 
             for slot_id in slot_id_for_day_index[day_index]:
                 slot = context.bot_data.day_and_time_slot_for_slot_id[slot_id]
@@ -188,17 +184,17 @@ class MessageSender:
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
         if data.role == Role.TEACHER:
-            message += f"{context.bot_data.phrases['review_languages_levels'][locale]}:\n"
+            message += f"{phrases['review_languages_levels'][locale]}:\n"
             for language in data.levels_for_teaching_language:
-                message += f"{context.bot_data.phrases[language][locale]}: "
+                message += f"{phrases[language][locale]}: "
                 message += ", ".join(sorted(data.levels_for_teaching_language[language])) + "\n"
             message += "\n"
 
-        message += f"{context.bot_data.phrases['review_communication_language'][locale]}: "
+        message += f"{phrases['review_communication_language'][locale]}: "
         message += (
-            context.bot_data.phrases[
-                f"class_communication_language_option_{data.communication_language_in_class}"
-            ][locale]
+            phrases[f"class_communication_language_option_{data.communication_language_in_class}"][
+                locale
+            ]
             + "\n"
         )
 
