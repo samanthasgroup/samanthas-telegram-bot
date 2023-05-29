@@ -21,7 +21,7 @@ from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
-from samanthas_telegram_bot.data_structures.helper_classes import SmalltalkResult
+from samanthas_telegram_bot.data_structures.models_helper_classes import SmalltalkResult
 
 load_dotenv()
 logger = logging.getLogger(__name__)

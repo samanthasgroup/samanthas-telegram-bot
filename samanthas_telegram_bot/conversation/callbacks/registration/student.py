@@ -14,7 +14,7 @@ from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_
 from samanthas_telegram_bot.data_structures.constants import LEVELS_ELIGIBLE_FOR_ORAL_TEST, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import CommonCallbackData, ConversationState
-from samanthas_telegram_bot.data_structures.helper_classes import AssessmentAnswer
+from samanthas_telegram_bot.data_structures.models_helper_classes import AssessmentAnswer
 
 logger = logging.getLogger(__name__)
 
