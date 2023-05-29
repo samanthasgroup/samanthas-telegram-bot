@@ -22,6 +22,7 @@ from samanthas_telegram_bot.api_queries.auxil.enums import (
     LoggingLevel,
     SendToAdminGroupMode,
 )
+from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiRequestError
 from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import send_to_backend
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
@@ -146,6 +147,7 @@ class PersonCreator:
             f"personal data record for {user_data.first_name} "
             f"{user_data.last_name} ({user_data.email})"
         )
+        failure_message = f"Failed to create {common_message_part}"
 
         data = await send_to_backend(
             context=context,
@@ -155,10 +157,10 @@ class PersonCreator:
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
             success_message=f"Created {common_message_part}",
-            failure_message=f"Failed to create {common_message_part}",
+            failure_message=failure_message,
             failure_logging_level=LoggingLevel.CRITICAL,
         )
         if data:
             logger.info(f"{data['id']=}")
             return typing.cast(int, data["id"])
-        return 0
+        raise ApiRequestError(failure_message)
