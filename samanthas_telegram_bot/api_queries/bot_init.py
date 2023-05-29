@@ -2,13 +2,14 @@
 # All functions in this module are synchronous because they run once before the application start,
 # so speed is irrelevant.
 # Their being synchronous enables us to include them into BotData.__init__() without workarounds.
-import json
 import logging
-from typing import Any
 
-import httpx
-
-from samanthas_telegram_bot.api_queries.auxil.constants import API_URL_PREFIX
+from samanthas_telegram_bot.api_queries.auxil.constants import (
+    API_URL_INFIX_DAY_AND_TIME_SLOTS,
+    API_URL_INFIX_ENROLLMENT_TESTS,
+    API_URL_INFIX_LANGUAGES_AND_LEVELS,
+)
+from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import get_json
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 from samanthas_telegram_bot.data_structures.helper_classes import (
     AgeRange,
@@ -34,7 +35,7 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
     """
 
-    data = _get_json(url_infix="age_ranges")
+    data = get_json(url_infix="age_ranges", logger=logger)
 
     age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
         type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -61,8 +62,9 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     Returns a dictionary matching an age range ID to assessment.
     """
 
-    data = _get_json(
-        url_infix="enrollment_test",
+    data = get_json(
+        url_infix=API_URL_INFIX_ENROLLMENT_TESTS,
+        logger=logger,
         name_for_logger=f"assessments for {lang_code=}",
         params={"language": lang_code},
     )
@@ -103,7 +105,7 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
         """Takes a string like 05:00:00 and returns hours (5 in this example)."""
         return int(str_.split(":")[0])
 
-    data = _get_json(url_infix="day_and_time_slots")
+    data = get_json(url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS, logger=logger)
 
     return tuple(
         DayAndTimeSlot(
@@ -119,28 +121,13 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
 def get_languages_and_levels() -> tuple[LanguageAndLevel, ...]:
     """Gets languages and levels from the backend."""
 
-    data = _get_json(
-        url_infix="languages_and_levels", name_for_logger="combinations of languages and levels"
+    data = get_json(
+        url_infix=API_URL_INFIX_LANGUAGES_AND_LEVELS,
+        logger=logger,
+        name_for_logger="combinations of languages and levels",
     )
 
     return tuple(
         LanguageAndLevel(id=item["id"], language_id=item["language"]["id"], level=item["level"])
         for item in data
     )
-
-
-def _get_json(
-    url_infix: str, name_for_logger: str | None = None, params: dict[str, str] | None = None
-) -> Any:
-    if not name_for_logger:
-        name_for_logger = url_infix.replace("_", " ")
-
-    logger.info(f"Getting {name_for_logger} from the backend...")
-
-    # this operation is run at application startup, so no exception handling needed
-    r = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
-
-    data = json.loads(r.content)
-    logger.info(f"...received {len(data)} {name_for_logger}.")
-
-    return data

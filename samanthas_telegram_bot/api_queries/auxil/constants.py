@@ -18,3 +18,7 @@ API_URL_YOUNG_TEACHERS_LIST_CREATE = f"{API_URL_PREFIX}/teachers_under_18/"
 
 API_URL_CHECK_EXISTENCE_OF_CHAT_ID = f"{API_URL_PREFIX}/personal_info/check_existence_of_chat_id/"
 API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO = f"{API_URL_PREFIX}/personal_info/check_existence/"
+
+API_URL_INFIX_DAY_AND_TIME_SLOTS = "day_and_time_slots"
+API_URL_INFIX_ENROLLMENT_TESTS = "enrollment_test"
+API_URL_INFIX_LANGUAGES_AND_LEVELS = "languages_and_levels"
