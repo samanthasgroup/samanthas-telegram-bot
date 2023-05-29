@@ -22,7 +22,7 @@ from samanthas_telegram_bot.api_queries.auxil.enums import (
     LoggingLevel,
     SendToAdminGroupMode,
 )
-from samanthas_telegram_bot.api_queries.auxil.make_request_get_data import make_request_get_data
+from samanthas_telegram_bot.api_queries.auxil.send_to_backend import send_to_backend
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class PersonCreator:
         personal_info_id = await cls._personal_info_get_id(context)
         user_data = context.user_data
 
-        result = await make_request_get_data(
+        result = await send_to_backend(
             context=context,
             method=HttpMethod.POST,
             url=API_URL_STUDENTS_LIST_CREATE,
@@ -68,7 +68,7 @@ class PersonCreator:
             logger.info(f"Chat {user_data.chat_id}: no assessment answers to send")
             return result is not None
 
-        result = await make_request_get_data(
+        result = await send_to_backend(
             context=context,
             method=HttpMethod.POST,
             url=API_URL_ENROLLMENT_TEST_SEND_RESULT,
@@ -91,7 +91,7 @@ class PersonCreator:
         personal_info_id = await cls._personal_info_get_id(context)
         user_data = context.user_data
 
-        result = await make_request_get_data(
+        result = await send_to_backend(
             context=context,
             method=HttpMethod.POST,
             url=API_URL_TEACHERS_LIST_CREATE,
@@ -118,7 +118,7 @@ class PersonCreator:
         personal_info_id = await cls._personal_info_get_id(context)
         user_data = context.user_data
 
-        result = await make_request_get_data(
+        result = await send_to_backend(
             context=context,
             method=HttpMethod.POST,
             url=API_URL_YOUNG_TEACHERS_LIST_CREATE,
@@ -147,7 +147,7 @@ class PersonCreator:
             f"{user_data.last_name} ({user_data.email})"
         )
 
-        data = await make_request_get_data(
+        data = await send_to_backend(
             context=context,
             method=HttpMethod.POST,
             url=API_URL_PERSONAL_INFO_LIST_CREATE,

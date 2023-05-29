@@ -16,7 +16,7 @@ from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 
-async def make_request_get_data(
+async def send_to_backend(
     context: CUSTOM_CONTEXT_TYPES,
     method: HttpMethod,
     url: str,
@@ -30,7 +30,7 @@ async def make_request_get_data(
     notify_admins_mode: SendToAdminGroupMode = SendToAdminGroupMode.FAILURE_ONLY,
     parse_mode_for_admin_group_message: ParseMode | None = None,
 ) -> DataDict | None:
-    """Sends a request, returns data, logs potential errors."""
+    """Sends a request to backend, returns data, logs and notifies admins of potential errors."""
 
     async with httpx.AsyncClient() as client:
         r = await getattr(client, method)(url, data=data)
