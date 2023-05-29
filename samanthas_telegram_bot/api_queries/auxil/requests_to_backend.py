@@ -3,6 +3,7 @@ import os
 from logging import Logger
 
 import httpx
+from httpx import Response
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
@@ -30,15 +31,19 @@ async def send_to_backend(
     notify_admins_mode: SendToAdminGroupMode = SendToAdminGroupMode.FAILURE_ONLY,
     parse_mode_for_admin_group_message: ParseMode | None = None,
 ) -> DataDict | None:
-    """Sends a request to backend, returns data, logs and notifies admins of potential errors."""
+    """Sends a request to backend, returns data, logs and notifies admins of potential errors.
 
-    async with httpx.AsyncClient() as client:
-        r = await getattr(client, method)(url, data=data)
+    Returns data received from backend in response.
+
+    This method is supposed to be called from within a chat (e.g. from a callback that has
+    a context object passed to it).
+    """
+    response = await make_request(method=method, url=url, data=data)
 
     message_prefix = f"Chat {context.user_data.chat_id}: "
-    message_suffix = f" status code {r.status_code}"
+    message_suffix = f" status code {response.status_code}"
     failure_message_suffix = (
-        f"{message_suffix} {r.content=} @{os.environ.get('BOT_OWNER_USERNAME')}"
+        f"{message_suffix} {response.content=} @{os.environ.get('BOT_OWNER_USERNAME')}"
     )
 
     if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
@@ -46,7 +51,7 @@ async def send_to_backend(
         message_suffix = escape_for_markdown(message_suffix)
         failure_message_suffix = escape_for_markdown(failure_message_suffix)
 
-    if r.status_code == expected_status_code:
+    if response.status_code == expected_status_code:
         await log_and_notify(
             text=f"{message_prefix}{success_message}{message_suffix}",
             logger=logger,
@@ -56,7 +61,7 @@ async def send_to_backend(
             in (SendToAdminGroupMode.SUCCESS_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
             parse_mode_for_admin_group_message=parse_mode_for_admin_group_message,
         )
-        return json.loads(r.content)
+        return json.loads(response.content)
 
     await log_and_notify(
         bot=context.bot,
@@ -68,3 +73,10 @@ async def send_to_backend(
         parse_mode_for_admin_group_message=parse_mode_for_admin_group_message,
     )
     return None
+
+
+async def make_request(
+    method: str, url: str, data: DataDict | None = None, params: DataDict | None = None
+) -> Response:
+    async with httpx.AsyncClient() as client:
+        return await getattr(client, method)(url, data=data, params=params)

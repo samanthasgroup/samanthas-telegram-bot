@@ -1,4 +1,4 @@
-DataDict = dict[str, int | str | list[str] | list[int] | None]
+DataDict = dict[str, int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | None]
 
 API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
 
@@ -15,3 +15,6 @@ API_URL_TEACHERS_LIST_CREATE = f"{API_URL_PREFIX}/teachers/"
 
 API_URL_YOUNG_TEACHER_RETRIEVE = f"{API_URL_PREFIX}/teacherunder18/"
 API_URL_YOUNG_TEACHERS_LIST_CREATE = f"{API_URL_PREFIX}/teachers_under_18/"
+
+API_URL_CHECK_EXISTENCE_OF_CHAT_ID = f"{API_URL_PREFIX}/personal_info/check_existence_of_chat_id/"
+API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO = f"{API_URL_PREFIX}/personal_info/check_existence/"

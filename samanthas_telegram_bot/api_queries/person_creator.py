@@ -22,7 +22,7 @@ from samanthas_telegram_bot.api_queries.auxil.enums import (
     LoggingLevel,
     SendToAdminGroupMode,
 )
-from samanthas_telegram_bot.api_queries.auxil.send_to_backend import send_to_backend
+from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import send_to_backend
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)

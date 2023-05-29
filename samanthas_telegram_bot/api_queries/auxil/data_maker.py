@@ -29,7 +29,7 @@ class DataMaker:
 
     @classmethod
     def student(cls, update: Update, personal_info_id: int, user_data: UserData) -> DataDict:
-        data = {
+        data: DataDict = {
             "personal_info": personal_info_id,
             "comment": user_data.comment,
             "status": cls.STATUS_AT_CREATION_STUDENT_TEACHER,
