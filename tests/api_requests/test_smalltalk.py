@@ -1,29 +1,42 @@
+import pytest
+
 import samanthas_telegram_bot.api_queries.smalltalk as smalltalk
-from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
 from tests.constants import TEST_DIR
 
 API_TEST_DIR = TEST_DIR / "api_requests"
+SMALLTALK_TEST_DIR = API_TEST_DIR / "smalltalk_json"
 
 
-DATA_FILES = tuple((API_TEST_DIR / "smalltalk_json").glob("*.json"))
+@pytest.mark.parametrize(
+    "file_stem, expected_level",
+    [
+        ("status_completed_score_b2", "B2"),
+        ("status_completed_score_b2p", "B2"),
+        ("status_completed_score_c1", "C1"),
+        ("status_completed_score_undefined", None),
+    ],
+)
+def test_process_smalltalk_json_status_complete_with_valid_level(file_stem, expected_level):
+    file = SMALLTALK_TEST_DIR / f"{file_stem}.json"
+    result = smalltalk.process_smalltalk_json(file.read_text())
+    assert result.status == SmalltalkTestStatus.RESULTS_READY
+    assert result.level == expected_level
+    assert all(getattr(result, attr) for attr in ("url", "original_json"))
 
 
-def test_process_smalltalk_json():
-    for file in DATA_FILES:
-        result = smalltalk.process_smalltalk_json(file.read_text())
-
-        if "completed" in file.stem and "undefined" not in file.stem:
-            assert result.status == SmalltalkTestStatus.RESULTS_READY
-            assert all(getattr(result, attr) for attr in ("level", "url", "original_json"))
-            assert result.level in ALL_LEVELS
-        elif "undefined" in file.stem:
-            assert result.status == SmalltalkTestStatus.RESULTS_READY
-            assert result.level is None
-            assert all(getattr(result, attr) for attr in ("url", "original_json"))
-        elif "processing" in file.stem:
-            assert result.status == SmalltalkTestStatus.RESULTS_NOT_READY
-            assert not any(getattr(result, attr) for attr in ("level", "url", "original_json"))
-        else:
-            assert result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS
-            assert not any(getattr(result, attr) for attr in ("level", "url", "original_json"))
+@pytest.mark.parametrize(
+    "file_stem, expected_status",
+    [
+        ("status_processing", SmalltalkTestStatus.RESULTS_NOT_READY),
+        (
+            "status_sent_(interview_not_started_or_in_progress)",
+            SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS,
+        ),
+    ],
+)
+def test_process_smalltalk_json_status_processing_or_sent(file_stem, expected_status):
+    file = SMALLTALK_TEST_DIR / f"{file_stem}.json"
+    result = smalltalk.process_smalltalk_json(file.read_text())
+    assert result.status == expected_status
+    assert not any(getattr(result, attr) for attr in ("level", "url", "original_json"))
