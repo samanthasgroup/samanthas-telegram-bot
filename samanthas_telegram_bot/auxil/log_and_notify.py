@@ -20,12 +20,8 @@ async def log_and_notify(
 ) -> None:
     getattr(logger, level)(text)
     if needs_to_notify_admin_group:
-        await notify_admins(bot=bot, text=text, parse_mode=parse_mode_for_admin_group_message)
-
-
-async def notify_admins(bot: Bot, text: str, parse_mode: ParseMode | None) -> None:
-    await bot.send_message(
-        chat_id=os.environ.get("ADMIN_CHAT_ID"),
-        text=text,
-        parse_mode=parse_mode,
-    )
+        await bot.send_message(
+            chat_id=os.environ.get("ADMIN_CHAT_ID"),
+            text=text,
+            parse_mode=parse_mode_for_admin_group_message,
+        )

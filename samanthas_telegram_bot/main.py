@@ -19,7 +19,7 @@ import samanthas_telegram_bot.conversation.callbacks.registration.common as comm
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify, notify_admins
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
@@ -65,8 +65,8 @@ async def post_init(application: Application) -> None:
         language_code="ua",
     )
 
-    await notify_admins(
-        bot=application.bot,
+    await application.bot.send_message(
+        chat_id=os.environ.get("ADMIN_CHAT_ID"),
         text="Registration bot started",
         parse_mode=None,
     )
