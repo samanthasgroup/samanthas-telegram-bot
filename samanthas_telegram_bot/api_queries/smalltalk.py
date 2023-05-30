@@ -164,9 +164,6 @@ async def get_json_with_results(test_id: str) -> bytes:
 
 
 def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
-    def level_is_undefined(str_: str) -> bool:
-        return str_.lower().strip() == "undefined"
-
     try:
         loaded_data = json.loads(json_data)
     except json.decoder.JSONDecodeError:
@@ -189,7 +186,7 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
     level = loaded_data["score"]
     level_id = level[:2]  # strip off "p" in "B2p" and the like
 
-    if level_is_undefined(level):
+    if level.lower().strip() == "undefined":
         logger.info("User did not pass enough oral tasks for level to be determined")
         level_id = None
     elif level_id not in ALL_LEVELS:
