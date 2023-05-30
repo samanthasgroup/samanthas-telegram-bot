@@ -1,9 +1,6 @@
 """Various dataclasses, NamedTuples and TypedDicts for attribute hinting and easy unpacking.
 
 Most of the classes correspond to models in the backend.
-
-The module is called helper_classes to distinguish it from context_types module that also contains
-custom classes for attribute hinting, but related to inner workings of python-telegram-bot.
 """
 from dataclasses import dataclass
 from typing import NamedTuple, Optional, TypedDict

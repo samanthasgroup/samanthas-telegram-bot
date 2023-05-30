@@ -19,7 +19,7 @@ from samanthas_telegram_bot.data_structures.enums import (
     Role,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.data_structures.models_helper_classes import AssessmentQuestion
+from samanthas_telegram_bot.data_structures.models import AssessmentQuestion
 
 logger = logging.getLogger(__name__)
 

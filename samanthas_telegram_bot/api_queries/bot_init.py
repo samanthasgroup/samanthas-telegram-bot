@@ -11,7 +11,7 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
 )
 from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import get_json
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
-from samanthas_telegram_bot.data_structures.models_helper_classes import (
+from samanthas_telegram_bot.data_structures.models import (
     AgeRange,
     Assessment,
     AssessmentQuestion,

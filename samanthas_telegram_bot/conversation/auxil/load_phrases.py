@@ -5,7 +5,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from samanthas_telegram_bot.data_structures.constants import LOCALES
-from samanthas_telegram_bot.data_structures.models_helper_classes import MultilingualBotPhrase
+from samanthas_telegram_bot.data_structures.models import MultilingualBotPhrase
 
 logger = logging.getLogger(__name__)
 
