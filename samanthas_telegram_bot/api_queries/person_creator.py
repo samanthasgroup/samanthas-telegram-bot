@@ -16,7 +16,6 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_YOUNG_TEACHER_RETRIEVE,
     API_URL_YOUNG_TEACHERS_LIST_CREATE,
 )
-from samanthas_telegram_bot.api_queries.auxil.data_maker import DataMaker
 from samanthas_telegram_bot.api_queries.auxil.enums import (
     HttpMethod,
     LoggingLevel,
@@ -50,9 +49,7 @@ class PersonCreator:
             context=context,
             method=HttpMethod.POST,
             url=API_URL_STUDENTS_LIST_CREATE,
-            data=DataMaker.student(
-                update=update, personal_info_id=personal_info_id, user_data=user_data
-            ),
+            data=user_data.student_as_dict(update=update, personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
             success_message=(
@@ -73,9 +70,7 @@ class PersonCreator:
             context=context,
             method=HttpMethod.POST,
             url=API_URL_ENROLLMENT_TEST_SEND_RESULT,
-            data=DataMaker.student_enrollment_test(
-                personal_info_id=personal_info_id, user_data=user_data
-            ),
+            data=user_data.student_enrollment_test_as_dict(personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
             success_message=f"Added assessment answers for {personal_info_id=}",
@@ -96,9 +91,7 @@ class PersonCreator:
             context=context,
             method=HttpMethod.POST,
             url=API_URL_TEACHERS_LIST_CREATE,
-            data=DataMaker.teacher(
-                update=update, personal_info_id=personal_info_id, user_data=user_data
-            ),
+            data=user_data.teacher_as_dict(update=update, personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
             success_message=(
@@ -123,8 +116,8 @@ class PersonCreator:
             context=context,
             method=HttpMethod.POST,
             url=API_URL_YOUNG_TEACHERS_LIST_CREATE,
-            data=DataMaker.teacher_under_18(
-                update=update, personal_info_id=personal_info_id, user_data=user_data
+            data=user_data.teacher_under_18_as_dict(
+                update=update, personal_info_id=personal_info_id
             ),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
@@ -153,7 +146,7 @@ class PersonCreator:
             context=context,
             method=HttpMethod.POST,
             url=API_URL_PERSONAL_INFO_LIST_CREATE,
-            data=DataMaker.personal_info(user_data),
+            data=user_data.personal_info_as_dict(),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
             success_message=f"Created {common_message_part}",

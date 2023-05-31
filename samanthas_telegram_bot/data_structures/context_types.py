@@ -1,9 +1,12 @@
 """Module with context types to be used with python-telegram-bot instead of plain dictionaries."""
+import json
 from dataclasses import dataclass
 from typing import Literal
 
+from telegram import Update
 from telegram.ext import CallbackContext, ExtBot
 
+from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
 from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, ConversationMode, Role
@@ -117,6 +120,9 @@ class ChatData:
 class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
 
+    STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
+    STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
+
     locale: Locale | None = None
     chat_id: int | None = None
     first_name: str | None = None
@@ -169,6 +175,97 @@ class UserData:
         """
         for attr in (attr for attr in dir(self) if attr.startswith("student_")):
             setattr(self, attr, None)
+
+    def personal_info_as_dict(self) -> DataDict:
+        return {
+            "communication_language_mode": self.communication_language_in_class,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "telegram_username": self.tg_username or "",
+            "email": self.email,
+            "phone": self.phone_number,
+            "utc_timedelta": f"{self.utc_offset_hour:02d}:{self.utc_offset_minute}:00",
+            "information_source": self.source,
+            "registration_telegram_bot_chat_id": self.chat_id,
+            "registration_telegram_bot_language": self.locale,
+        }
+
+    def student_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
+        data: DataDict = {
+            "personal_info": personal_info_id,
+            "comment": self.comment,
+            "status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "status_since": self._format_status_since(update),
+            "can_read_in_english": self.student_can_read_in_english,
+            "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
+            "age_range": self.student_age_range_id,
+            "availability_slots": self.day_and_time_slot_ids,
+            "non_teaching_help_required": self.non_teaching_help_types,
+            "teaching_languages_and_levels": self.language_and_level_ids,
+        }
+        if self.student_smalltalk_result:
+            data["smalltalk_test_result"] = json.dumps(
+                str(self.student_smalltalk_result.original_json)
+            )
+            # TODO url (when field in backend is created)
+        return data
+
+    def student_enrollment_test_as_dict(self, personal_info_id: int) -> DataDict:
+        if self.student_assessment_answers is None:
+            raise TypeError(
+                "Don't pass user_data with no student assessment answers to this method"
+            )
+        return {
+            "student": personal_info_id,
+            "answers": [item.answer_id for item in self.student_assessment_answers],
+        }
+
+    def teacher_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
+        peer_help = self.teacher_peer_help
+
+        return {
+            "personal_info": personal_info_id,
+            "comment": self.comment,
+            "status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "status_since": self._format_status_since(update),
+            "can_host_speaking_club": self.teacher_can_host_speaking_club,
+            "has_hosted_speaking_club": False,
+            "is_validated": False,
+            "has_prior_teaching_experience": self.teacher_has_prior_experience,
+            "non_teaching_help_provided_comment": self.teacher_additional_skills_comment,
+            "peer_support_can_check_syllabus": peer_help.can_check_syllabus,
+            "peer_support_can_host_mentoring_sessions": peer_help.can_host_mentoring_sessions,
+            "peer_support_can_give_feedback": peer_help.can_give_feedback,
+            "peer_support_can_help_with_childrens_groups": peer_help.can_help_with_children_group,
+            "peer_support_can_provide_materials": peer_help.can_provide_materials,
+            "peer_support_can_invite_to_class": peer_help.can_invite_to_class,
+            "peer_support_can_work_in_tandem": peer_help.can_work_in_tandem,
+            "simultaneous_groups": self.teacher_number_of_groups,
+            "weekly_frequency_per_group": self.teacher_class_frequency,
+            "availability_slots": self.day_and_time_slot_ids,
+            "non_teaching_help_provided": self.non_teaching_help_types,
+            "student_age_ranges": self.teacher_student_age_range_ids,
+            "teaching_languages_and_levels": self.language_and_level_ids,
+        }
+
+    def teacher_under_18_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
+        return {
+            "personal_info": personal_info_id,
+            "comment": self.comment,
+            "status_since": self._format_status_since(update),
+            "status": self.STATUS_AT_CREATION_TEACHER_UNDER_18,
+            "can_host_speaking_club": self.teacher_can_host_speaking_club,
+            "has_hosted_speaking_club": False,
+            "is_validated": False,
+            "non_teaching_help_provided_comment": self.teacher_additional_skills_comment,
+            "teaching_languages_and_levels": self.language_and_level_ids,
+        }
+
+    @staticmethod
+    def _format_status_since(update: Update) -> str:
+        """Converts a datetime object into suitable format for `status_since` field."""
+        # TODO can/should backend do this?
+        return update.effective_message.date.isoformat().replace("+00:00", "Z")
 
 
 # Include custom classes into ContextTypes to get attribute hinting (replacing standard dicts with
