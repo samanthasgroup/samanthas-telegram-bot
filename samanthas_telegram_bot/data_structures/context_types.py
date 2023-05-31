@@ -173,7 +173,12 @@ class UserData:
         """Sets all student-related attributes to ``None``. This may be needed because multiple
         students can be registered from one device.
         """
-        for attr in (attr for attr in dir(self) if attr.startswith("student_")):
+        # clear all student-related attributes, make sure not to touch methods
+        for attr in (
+            attr
+            for attr in dir(self)
+            if attr.startswith("student_") and not callable(getattr(self, attr))
+        ):
             setattr(self, attr, None)
 
     def personal_info_as_dict(self) -> DataDict:
