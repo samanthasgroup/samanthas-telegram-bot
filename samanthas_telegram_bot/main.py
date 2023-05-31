@@ -3,7 +3,7 @@ import os
 import traceback
 
 from dotenv import load_dotenv
-from telegram import BotCommandScopeAllPrivateChats
+from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
@@ -72,7 +72,7 @@ async def post_init(application: Application) -> None:
     )
 
 
-async def error_handler(update: object, context: CUSTOM_CONTEXT_TYPES) -> None:
+async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """Logs the error and send a telegram message to notify the developer."""
 
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
