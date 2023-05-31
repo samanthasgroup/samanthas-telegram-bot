@@ -204,9 +204,7 @@ class UserData:
             "teaching_languages_and_levels": self.language_and_level_ids,
         }
         if self.student_smalltalk_result:
-            data["smalltalk_test_result"] = json.dumps(
-                str(self.student_smalltalk_result.original_json)
-            )
+            data["smalltalk_test_result"] = json.dumps(self.student_smalltalk_result.json)
             # TODO url (when field in backend is created)
         return data
 

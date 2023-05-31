@@ -3,6 +3,7 @@ import asyncio
 import json
 import logging
 import os
+from typing import Any
 
 import httpx
 from dotenv import load_dotenv
@@ -143,7 +144,7 @@ async def get_smalltalk_result(
             return result
 
 
-async def get_json_with_results(test_id: str) -> bytes:
+async def get_json_with_results(test_id: str) -> Any:
     async with httpx.AsyncClient() as client:
         response = await client.get(
             url=SMALLTALK_URL_GET_RESULTS,
@@ -160,17 +161,11 @@ async def get_json_with_results(test_id: str) -> bytes:
         f"Request headers: {response.request.headers}. "
         f"Response: {response.status_code=}, {response.headers=}, {response.content=}"
     )
-    return response.content
+    return response.json()
 
 
-def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
-    try:
-        loaded_data = json.loads(json_data)
-    except json.decoder.JSONDecodeError:
-        logger.error(f"Could not load JSON from {json_data=}")
-        return None
-
-    status = loaded_data["status"]
+def process_smalltalk_json(data: Any) -> SmalltalkResult | None:
+    status = data["status"]
 
     if status not in SmalltalkTestStatus._value2member_map_:  # noqa
         raise ApiRequestError(f"SmallTalk returned {status=} but we have no logic for it.")
@@ -183,7 +178,7 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
     if status != SmalltalkTestStatus.RESULTS_READY:
         return SmalltalkResult(status=status)
 
-    level = loaded_data["score"]
+    level = data["score"]
     level_id = level[:2]  # strip off "p" in "B2p" and the like
 
     if level.lower().strip() == "undefined":
@@ -193,7 +188,7 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
         logger.error(f"Unrecognized language level returned by SmallTalk: {level}")
         level_id = None
 
-    results_url = loaded_data["report_url"]
+    results_url = data["report_url"]
 
     logger.info(f"SmallTalk results: {status=}, {level=}, {results_url=}")
 
@@ -201,5 +196,5 @@ def process_smalltalk_json(json_data: bytes) -> SmalltalkResult | None:
         status=status,
         level=level_id,
         url=results_url,
-        original_json=json_data,
+        json=data,
     )

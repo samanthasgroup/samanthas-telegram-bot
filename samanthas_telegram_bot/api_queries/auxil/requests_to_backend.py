@@ -63,9 +63,10 @@ async def send_to_backend(
     response = await make_request(method=method, url=url, data=data)
 
     message_prefix = f"Chat {context.user_data.chat_id}: "  # type: ignore[attr-defined]
-    message_suffix = f", status code {response.status_code}"
+    message_suffix = ""
     failure_message_suffix = (
-        f"{message_suffix} {response.content=} @{os.environ.get('BOT_OWNER_USERNAME')}"
+        f"{message_suffix} {response.status_code=} {response.content=} "
+        f"@{os.environ.get('BOT_OWNER_USERNAME')}"
     )
 
     if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
