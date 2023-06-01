@@ -1,10 +1,10 @@
 import re
 from typing import Literal
 
-# Most of these could come from the backend to avoid duplicate changes, but that would mean
-# the bot phrases will have to be stored in the backend too (since these types are used to identify
-# the phrases).
-# TODO (not necessarily in MVP) maybe this can be changed anyway.
+# TODO Most of these could come from the backend to avoid duplicate changes, but that would mean
+#  the bot phrases will have to be stored in the backend too (since e.g. non-teaching help types
+#  are used to identify the phrases).
+#  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
 EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
