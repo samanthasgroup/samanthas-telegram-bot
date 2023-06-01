@@ -84,8 +84,9 @@ async def send_to_backend(
             in (SendToAdminGroupMode.SUCCESS_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
             parse_mode_for_admin_group_message=parse_mode_for_admin_group_message,
         )
-        logger.debug(f"{json.loads(response.content)=}")
-        return json.loads(response.content)
+        content = json.loads(response.content)
+        logger.debug(f"Response content: {content}")
+        return content
 
     await log_and_notify(
         bot=context.bot,  # type: ignore[attr-defined]
