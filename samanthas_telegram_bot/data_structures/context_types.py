@@ -25,7 +25,7 @@ class BotData:
 
     def __init__(self) -> None:
         # can't be imported at top of the module: it will lead to circular import error
-        from samanthas_telegram_bot.api_queries.bot_init import (
+        from samanthas_telegram_bot.conversation.auxil.bot_init import (
             get_age_ranges,
             get_assessments,
             get_day_and_time_slots,

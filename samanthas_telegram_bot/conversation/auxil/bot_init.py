@@ -4,12 +4,12 @@
 # Their being synchronous enables us to include them into BotData.__init__() without workarounds.
 import logging
 
+from samanthas_telegram_bot.api_queries.api_client import ApiClient
 from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_INFIX_DAY_AND_TIME_SLOTS,
     API_URL_INFIX_ENROLLMENT_TESTS,
     API_URL_INFIX_LANGUAGES_AND_LEVELS,
 )
-from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import get_json
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 from samanthas_telegram_bot.data_structures.models import (
     AgeRange,
@@ -35,7 +35,7 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
     """
 
-    data = get_json(url_infix="age_ranges", logger=logger)
+    data = ApiClient.get_json(url_infix="age_ranges")
 
     age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
         type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -62,9 +62,8 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     Returns a dictionary matching an age range ID to assessment.
     """
 
-    data = get_json(
+    data = ApiClient.get_json(
         url_infix=API_URL_INFIX_ENROLLMENT_TESTS,
-        logger=logger,
         name_for_logger=f"assessments for {lang_code=}",
         params={"language": lang_code},
     )
@@ -105,7 +104,7 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
         """Takes a string like 05:00:00 and returns hours (5 in this example)."""
         return int(str_.split(":")[0])
 
-    data = get_json(url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS, logger=logger)
+    data = ApiClient.get_json(url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS)
 
     return tuple(
         DayAndTimeSlot(
@@ -121,9 +120,8 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
 def get_languages_and_levels() -> tuple[LanguageAndLevel, ...]:
     """Gets languages and levels from the backend."""
 
-    data = get_json(
+    data = ApiClient.get_json(
         url_infix=API_URL_INFIX_LANGUAGES_AND_LEVELS,
-        logger=logger,
         name_for_logger="combinations of languages and levels",
     )
 

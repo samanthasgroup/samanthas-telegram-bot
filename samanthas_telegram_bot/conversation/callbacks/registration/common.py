@@ -13,12 +13,8 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
+from samanthas_telegram_bot.api_queries.api_client import ApiClient
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_queries.check import (
-    chat_id_is_registered,
-    person_with_first_name_last_name_email_exists_in_database,
-)
-from samanthas_telegram_bot.api_queries.person_creator import PersonCreator
 from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
@@ -139,7 +135,7 @@ async def redirect_to_coordinator_if_registered_check_chat_id_ask_timezone(
         )
         return ConversationHandler.END
 
-    if await chat_id_is_registered(chat_id=update.effective_chat.id):
+    if await ApiClient.chat_id_is_registered(chat_id=update.effective_chat.id):
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
@@ -365,7 +361,7 @@ async def store_email_check_existence_ask_role(
     context.user_data.email = email
 
     # terminate conversation if the person with these personal data already exists
-    if await person_with_first_name_last_name_email_exists_in_database(
+    if await ApiClient.person_with_first_name_last_name_email_exists_in_database(
         first_name=context.user_data.first_name,
         last_name=context.user_data.last_name,
         email=context.user_data.email,
@@ -852,12 +848,12 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
             await _set_student_language_and_level_for_english_starters(update, context)
         elif user_data.student_agreed_to_smalltalk:
             await _process_student_language_and_level_from_smalltalk(update, context)
-        result = await PersonCreator.student(update, context)
+        result = await ApiClient.create_student(update, context)
     elif user_data.role == Role.TEACHER:
         if user_data.teacher_is_under_18:
-            result = await PersonCreator.teacher_under_18(update, context)
+            result = await ApiClient.create_teacher_under_18(update, context)
         else:
-            result = await PersonCreator.teacher(update, context)
+            result = await ApiClient.create_teacher(update, context)
     else:
         result = False
 
