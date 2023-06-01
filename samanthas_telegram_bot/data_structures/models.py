@@ -1,9 +1,9 @@
-"""Various dataclasses, NamedTuples and TypedDicts for attribute hinting and easy unpacking.
+"""Various dataclasses and TypedDicts for attribute hinting and easy unpacking.
 
 Most of the classes correspond to models in the backend.
 """
 from dataclasses import dataclass
-from typing import NamedTuple, Optional, TypedDict
+from typing import Optional, TypedDict
 
 from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, SmalltalkTestStatus
@@ -24,7 +24,8 @@ class AssessmentAnswer:
     answer_id: int
 
 
-class AssessmentQuestionOption(NamedTuple):
+@dataclass(frozen=True)
+class AssessmentQuestionOption:
     id: int
     text: str
 
@@ -32,13 +33,15 @@ class AssessmentQuestionOption(NamedTuple):
         return "i don't know" in self.text.lower()
 
 
-class AssessmentQuestion(NamedTuple):
+@dataclass(frozen=True)
+class AssessmentQuestion:
     id: int
     text: str
     options: tuple[AssessmentQuestionOption, ...]
 
 
-class Assessment(NamedTuple):
+@dataclass(frozen=True)
+class Assessment:
     id: int
     age_range_ids: tuple[int, ...]
     questions: tuple[AssessmentQuestion, ...]
@@ -52,7 +55,8 @@ class DayAndTimeSlot:
     to_utc_hour: int
 
 
-class LanguageAndLevel(NamedTuple):
+@dataclass(frozen=True)
+class LanguageAndLevel:
     id: int
     language_id: str
     level: str
@@ -65,7 +69,8 @@ class MultilingualBotPhrase(TypedDict):
     ua: str
 
 
-class SmalltalkResult(NamedTuple):
+@dataclass(frozen=True)
+class SmalltalkResult:
     status: SmalltalkTestStatus
     level: str | None = None
     url: str | None = None
