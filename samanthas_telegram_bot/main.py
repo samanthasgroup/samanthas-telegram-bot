@@ -1,6 +1,7 @@
 import logging
 import os
 import traceback
+import typing
 
 from dotenv import load_dotenv
 from telegram import BotCommandScopeAllPrivateChats, Update
@@ -30,8 +31,10 @@ from samanthas_telegram_bot.data_structures.enums import ConversationState as St
 
 load_dotenv()
 
+logging_level = typing.cast(str, os.environ.get("LOGGING_LEVEL"))
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=getattr(logging, logging_level),
 )
 logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
