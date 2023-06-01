@@ -360,7 +360,7 @@ class ApiClient:
         try:
             response_json = response.json()
         except AttributeError as e:
-            exc_info = f" {str(e)}"
+            exc_info = f" {e}"
             if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
                 failure_message_suffix += escape_for_markdown(exc_info)
             else:
