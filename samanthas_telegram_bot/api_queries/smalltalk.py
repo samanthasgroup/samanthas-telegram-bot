@@ -71,7 +71,23 @@ async def get_smalltalk_result(
 
     while True:
         logger.info(f"Chat {user_data.chat_id}: Trying to receive results from SmallTalk")
-        data = await get_json_with_results(user_data.student_smalltalk_test_id)
+        data = await get_json_with_results(
+            test_id=user_data.student_smalltalk_test_id, context=context
+        )
+        if data is None:
+            await log_and_notify(
+                bot=context.bot,
+                logger=logger,
+                level=LoggingLevel.ERROR,
+                # Error text in get_json_with_results() contains status code and response,
+                # and here it contains user info:
+                text=(
+                    f"Chat {user_data.chat_id}: Failed to receive data from SmallTalk "
+                    f"for {user_data.first_name} {user_data.last_name}"
+                ),
+            )
+            return None
+
         result = process_smalltalk_json(data)
         attempts = 0
 
@@ -81,7 +97,7 @@ async def get_smalltalk_result(
                 logger=logger,
                 level=LoggingLevel.ERROR,
                 text=(
-                    f"Chat {user_data.chat_id}: Failed to receive data from SmallTalk "
+                    f"Chat {user_data.chat_id}: Failed to process data from SmallTalk "
                     f"for {user_data.first_name} {user_data.last_name}"
                 ),
             )
@@ -144,7 +160,7 @@ async def get_smalltalk_result(
             return result
 
 
-async def get_json_with_results(test_id: str) -> Any:
+async def get_json_with_results(test_id: str, context: CUSTOM_CONTEXT_TYPES) -> Any:
     async with httpx.AsyncClient() as client:
         response = await client.get(
             url=SMALLTALK_URL_GET_RESULTS,
@@ -157,15 +173,29 @@ async def get_json_with_results(test_id: str) -> Any:
             },
         )
 
-    logger.info(
-        f"Request headers: {response.request.headers}. "
-        f"Response: {response.status_code=}, {response.headers=}, {response.content=}"
+    logger.debug(f"Request headers: {response.request.headers}.")
+    if response.status_code == httpx.codes.OK:
+        return response.json()
+
+    await log_and_notify(
+        bot=context.bot,
+        logger=logger,
+        level=LoggingLevel.ERROR,
+        text=(
+            f"Did not receive JSON from SmallTalk. {response.status_code=}, {response.headers=}, "
+            f"{response.content=}"
+        ),
     )
-    return response.json()
+
+    return None
 
 
 def process_smalltalk_json(data: Any) -> SmalltalkResult | None:
-    status = data["status"]
+    try:
+        status = data["status"]
+    except KeyError:
+        logger.error(f"No key 'status' found in JSON data. Keys: {', '.join(data.keys())}")
+        return None
 
     if status not in SmalltalkTestStatus._value2member_map_:  # noqa
         raise ApiRequestError(f"SmallTalk returned {status=} but we have no logic for it.")
