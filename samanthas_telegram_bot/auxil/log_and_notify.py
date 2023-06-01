@@ -1,5 +1,5 @@
-import logging
 import os
+from logging import Logger
 
 from dotenv import load_dotenv
 from telegram import Bot
@@ -8,11 +8,11 @@ from telegram.constants import ParseMode
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 
 load_dotenv()
-logger = logging.getLogger(__name__)
 
 
 async def log_and_notify(
     bot: Bot,
+    logger: Logger,
     level: LoggingLevel,
     text: str,
     needs_to_notify_admin_group: bool = True,

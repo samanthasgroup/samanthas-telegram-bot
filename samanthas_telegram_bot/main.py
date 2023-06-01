@@ -33,6 +33,7 @@ load_dotenv()
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
 )
+logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
@@ -79,6 +80,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
 
     await log_and_notify(
         bot=context.bot,
+        logger=logger,
         level=LoggingLevel.EXCEPTION,
         text=(
             f"@{os.environ.get('BOT_OWNER_USERNAME')} Registration bot encountered an exception:"
