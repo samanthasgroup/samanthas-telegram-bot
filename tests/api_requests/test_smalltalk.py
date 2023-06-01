@@ -21,12 +21,12 @@ SMALLTALK_TEST_DIR = API_TEST_DIR / "smalltalk_json"
 )
 def test_process_smalltalk_json_status_complete_with_valid_level(file_stem, expected_level):
     file = SMALLTALK_TEST_DIR / f"{file_stem}.json"
-    text = file.read_text()
-    result = smalltalk.process_smalltalk_json(text)
+    json_from_file = json.loads(file.read_text())
+    result = smalltalk.process_smalltalk_json(json_from_file)
     assert result.status == SmalltalkTestStatus.RESULTS_READY
     assert result.level == expected_level
     assert result.url.startswith("http")
-    assert result.json == json.loads(text)
+    assert result.json == json_from_file
 
 
 @pytest.mark.parametrize(
@@ -41,6 +41,6 @@ def test_process_smalltalk_json_status_complete_with_valid_level(file_stem, expe
 )
 def test_process_smalltalk_json_status_processing_or_sent(file_stem, expected_status):
     file = SMALLTALK_TEST_DIR / f"{file_stem}.json"
-    result = smalltalk.process_smalltalk_json(file.read_text())
+    result = smalltalk.process_smalltalk_json(json.loads(file.read_text()))
     assert result.status == expected_status
     assert not any(getattr(result, attr) for attr in ("level", "url", "json"))
