@@ -1,5 +1,6 @@
 """Functionality for sending data to backend to create people and get required data in return."""
 import logging
+import os
 import typing
 
 import httpx
@@ -9,11 +10,9 @@ from telegram.constants import ParseMode
 from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
     API_URL_PERSONAL_INFO_LIST_CREATE,
-    API_URL_STUDENT_RETRIEVE,
     API_URL_STUDENTS_LIST_CREATE,
     API_URL_TEACHER_RETRIEVE,
     API_URL_TEACHERS_LIST_CREATE,
-    API_URL_YOUNG_TEACHER_RETRIEVE,
     API_URL_YOUNG_TEACHERS_LIST_CREATE,
 )
 from samanthas_telegram_bot.api_queries.auxil.enums import (
@@ -24,6 +23,7 @@ from samanthas_telegram_bot.api_queries.auxil.enums import (
 from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiRequestError
 from samanthas_telegram_bot.api_queries.auxil.requests_to_backend import send_to_backend
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.enums import Role
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +52,8 @@ class PersonCreator:
             data=user_data.student_as_dict(update=update, personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
-            success_message=(
-                f"Created student [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_STUDENT_RETRIEVE}{personal_info_id}), ID {personal_info_id}"
+            success_message=cls._generate_success_message_for_person_creation(
+                context=context, personal_info_id=personal_info_id
             ),
             failure_message=f"Failed to create student with ID {personal_info_id}",
             failure_logging_level=LoggingLevel.CRITICAL,
@@ -94,9 +93,8 @@ class PersonCreator:
             data=user_data.teacher_as_dict(update=update, personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
-            success_message=(
-                f"Created adult teacher [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_TEACHER_RETRIEVE}{personal_info_id}), ID {personal_info_id}"
+            success_message=cls._generate_success_message_for_person_creation(
+                context=context, personal_info_id=personal_info_id
             ),
             failure_message=f"Failed to create adult teacher with ID {personal_info_id}",
             failure_logging_level=LoggingLevel.CRITICAL,
@@ -121,9 +119,8 @@ class PersonCreator:
             ),
             expected_status_code=httpx.codes.CREATED,
             logger=logger,
-            success_message=(
-                f"Created young teacher [{user_data.first_name} {user_data.last_name}]"
-                f"({API_URL_YOUNG_TEACHER_RETRIEVE}{personal_info_id}), ID {personal_info_id}"
+            success_message=cls._generate_success_message_for_person_creation(
+                context=context, personal_info_id=personal_info_id
             ),
             failure_message=f"Failed to create young teacher with ID {personal_info_id}",
             failure_logging_level=LoggingLevel.CRITICAL,
@@ -157,3 +154,26 @@ class PersonCreator:
             logger.info(f"{data['id']=}")
             return typing.cast(int, data["id"])
         raise ApiRequestError(failure_message)
+
+    @staticmethod
+    def _generate_success_message_for_person_creation(
+        context: CUSTOM_CONTEXT_TYPES, personal_info_id: int
+    ) -> str:
+        user_data = context.user_data
+
+        teacher_age_infix = (
+            "young " if user_data.role == Role.TEACHER and user_data.teacher_is_under_18 else ""
+        )
+
+        success_message = (
+            f"Created {teacher_age_infix}{user_data.role} "
+            f"[{user_data.first_name} {user_data.last_name}]"
+            f"({API_URL_TEACHER_RETRIEVE}{personal_info_id}), ID {personal_info_id}\\."
+        )
+        if user_data.role == Role.TEACHER and user_data.teacher_can_host_speaking_club:
+            success_message += (
+                f" @{os.environ.get('SPEAKING_CLUB_COORDINATOR_USERNAME')} "
+                "this teacher can host speaking clubs\\."
+            )
+
+        return success_message
