@@ -78,7 +78,6 @@ async def get_smalltalk_result(
         if result is None:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.ERROR,
                 text=(
                     f"Chat {user_data.chat_id}: Failed to receive data from SmallTalk "
@@ -94,7 +93,6 @@ async def get_smalltalk_result(
         if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.INFO,
                 text=(
                     f"Chat {user_data.chat_id}: {user_data.first_name} {user_data.last_name} "
@@ -113,7 +111,6 @@ async def get_smalltalk_result(
                 )
                 await log_and_notify(
                     bot=context.bot,
-                    logger=logger,
                     level=LoggingLevel.ERROR,
                     text=(
                         f"Chat {user_data.chat_id}: SmallTalk results for {user_data.first_name} "
@@ -133,7 +130,6 @@ async def get_smalltalk_result(
         else:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.INFO,
                 text=(
                     f"Chat {user_data.chat_id}: Received [SmallTalk results for "

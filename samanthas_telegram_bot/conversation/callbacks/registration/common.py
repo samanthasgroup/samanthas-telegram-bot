@@ -866,7 +866,6 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     else:
         await log_and_notify(
             bot=context.bot,
-            logger=logger,
             text=f"Cannot send to backend: {user_data=}",
             level=LoggingLevel.CRITICAL,
         )
