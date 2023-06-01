@@ -1,4 +1,3 @@
-import json
 import os
 from logging import Logger
 from typing import Any
@@ -33,7 +32,7 @@ def get_json(
     # synchronous requests are only run at application startup, so no exception handling needed
     response = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
 
-    data = json.loads(response.content)
+    data = response.json()
     logger.info(f"...received {len(data)} {name_for_logger}.")
 
     return data
@@ -65,7 +64,7 @@ async def send_to_backend(
     message_prefix = f"Chat {context.user_data.chat_id}: "  # type: ignore[attr-defined]
     message_suffix = ""
     failure_message_suffix = (
-        f"{message_suffix} {response.status_code=} {response.content=} "
+        f"{message_suffix} {response.status_code=} {response.json()=} {response.content=} "
         f"@{os.environ.get('BOT_OWNER_USERNAME')}"
     )
 
@@ -74,30 +73,40 @@ async def send_to_backend(
         message_suffix = escape_for_markdown(message_suffix)
         failure_message_suffix = escape_for_markdown(failure_message_suffix)
 
-    if response.status_code == expected_status_code:
+    if response.status_code != expected_status_code:
         await log_and_notify(
             bot=context.bot,  # type: ignore[attr-defined]
             logger=logger,
-            level=success_logging_level,
-            text=f"{message_prefix}{success_message}{message_suffix}",
+            level=failure_logging_level,
+            text=f"{message_prefix}{failure_message}{failure_message_suffix}",
             needs_to_notify_admin_group=notify_admins_mode
-            in (SendToAdminGroupMode.SUCCESS_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
+            in (SendToAdminGroupMode.FAILURE_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
             parse_mode_for_admin_group_message=parse_mode_for_admin_group_message,
         )
-        content = json.loads(response.content)
-        logger.debug(f"Response content: {content}")
-        return content
+        return None
 
     await log_and_notify(
         bot=context.bot,  # type: ignore[attr-defined]
         logger=logger,
-        level=failure_logging_level,
-        text=f"{message_prefix}{failure_message}{failure_message_suffix}",
+        level=success_logging_level,
+        text=f"{message_prefix}{success_message}{message_suffix}",
         needs_to_notify_admin_group=notify_admins_mode
-        in (SendToAdminGroupMode.FAILURE_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
+        in (SendToAdminGroupMode.SUCCESS_ONLY, SendToAdminGroupMode.SUCCESS_AND_FAILURE),
         parse_mode_for_admin_group_message=parse_mode_for_admin_group_message,
     )
-    return None
+
+    try:
+        response_json = response.json()
+    except AttributeError as e:
+        exc_info = f" {str(e)}"
+        if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
+            failure_message_suffix += escape_for_markdown(exc_info)
+        else:
+            failure_message_suffix += exc_info
+        return None
+    else:
+        logger.debug(f"Response JSON: {response_json}")
+        return response_json
 
 
 async def make_request(

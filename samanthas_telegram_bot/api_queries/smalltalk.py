@@ -1,13 +1,12 @@
 """Functions for interaction with SmallTalk oral test service."""
 import asyncio
-import json
 import logging
 import os
 from typing import Any
 
 import httpx
 from dotenv import load_dotenv
-from telegram import Bot, Update
+from telegram import Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_queries.auxil.constants import (
@@ -35,7 +34,7 @@ async def send_user_data_get_smalltalk_test(
     first_name: str,
     last_name: str,
     email: str,
-    bot: Bot,
+    context: CUSTOM_CONTEXT_TYPES,
 ) -> tuple[str | None, str | None]:
     """Gets SmallTalk interview ID and test URL."""
 
@@ -51,10 +50,25 @@ async def send_user_data_get_smalltalk_test(
             },  # TODO possibly webhook
         )
 
-    data = json.loads(response.content)
-    url = data.get("test_link")
+    data = response.json()
+    try:
+        url = data.get("test_link")
+    except AttributeError:
+        await log_and_notify(
+            bot=context.bot,
+            logger=logger,
+            level=LoggingLevel.ERROR,
+            text=f"SmallTalk returned invalid JSON when requested to send link to test: {data}",
+        )
+        return None, None
+
     if url is None:
-        logger.error("No oral test URL received")
+        await log_and_notify(
+            bot=context.bot,
+            logger=logger,
+            level=LoggingLevel.ERROR,
+            text=f"SmallTalk returned JSON but it seems to contain no URL to test: {data}",
+        )
         return None, None
 
     logger.info(f"Received URL to oral test: {url}")

@@ -144,7 +144,7 @@ async def send_smalltalk_url_or_ask_communication_language(
             first_name=context.user_data.first_name,
             last_name=context.user_data.last_name,
             email=context.user_data.email,
-            bot=context.bot,
+            context=context,
         )
         await query.edit_message_text(
             context.bot_data.phrases["give_smalltalk_url"][locale]
