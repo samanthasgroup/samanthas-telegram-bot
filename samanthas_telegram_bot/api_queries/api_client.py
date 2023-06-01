@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class ApiClient:
-    """Client for requests to the backend"""
+    """Client for requests to the backend."""
 
     # TODO make it universal (for SmallTalk too)?
     # TODO make sure we catch wrong status, empty JSON etc.
