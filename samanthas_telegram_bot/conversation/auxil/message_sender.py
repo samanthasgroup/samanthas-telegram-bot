@@ -145,7 +145,7 @@ class MessageSender:
         else:
             message += f"\n{phrases['review_timezone'][locale]}: UTC"
 
-        utc_time = update.effective_message.date
+        utc_time = datetime.datetime.now(tz=datetime.timezone.utc)
         now_with_offset = utc_time + datetime.timedelta(
             hours=data.utc_offset_hour, minutes=data.utc_offset_minute
         )
