@@ -1,7 +1,11 @@
 import logging
 import os
+import traceback
+import typing
 
-from telegram import BotCommandScopeAllPrivateChats
+from dotenv import load_dotenv
+from telegram import BotCommandScopeAllPrivateChats, Update
+from telegram.constants import ParseMode
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -12,56 +16,28 @@ from telegram.ext import (
     filters,
 )
 
-from samanthas_telegram_bot.conversation.callbacks.common import (
-    cancel,
-    check_if_review_needed_give_review_menu_or_ask_final_comment,
-    redirect_to_coordinator_if_registered_check_chat_id_ask_first_name,
-    review_requested_item,
-    say_bye_if_does_not_want_to_register_another_or_ask_first_name,
-    send_help,
-    start,
-    store_additional_help_comment_ask_final_comment,
-    store_age_ask_timezone,
-    store_comment_end_conversation,
-    store_data_ask_another_level_or_communication_language_or_start_assessment,
-    store_email_check_existence_ask_role,
-    store_first_name_ask_last_name,
-    store_last_name_ask_source,
-    store_locale_ask_if_already_registered,
-    store_non_teaching_help_ask_another_or_additional_help,
-    store_one_time_slot_ask_another,
-    store_phone_ask_email,
-    store_role_ask_age,
-    store_source_check_username,
-    store_teaching_language_ask_another_or_level_or_communication_language,
-    store_timezone_ask_slots_for_one_day_or_teaching_language,
-    store_username_if_available_ask_phone_or_email,
+import samanthas_telegram_bot.conversation.callbacks.registration.common as common
+import samanthas_telegram_bot.conversation.callbacks.registration.student as student
+import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.data_structures.context_types import (
+    CUSTOM_CONTEXT_TYPES,
+    BotData,
+    ChatData,
+    UserData,
 )
-from samanthas_telegram_bot.conversation.callbacks.student import (
-    ask_communication_language_after_smalltalk,
-    ask_communication_language_or_start_assessment_depending_on_learning_experience,
-    assessment_store_answer_ask_question,
-    send_smalltalk_url_or_ask_communication_language,
-    store_communication_language_ask_non_teaching_help_or_start_review,
-)
-from samanthas_telegram_bot.conversation.callbacks.teacher import (
-    store_communication_language_ask_teaching_experience,
-    store_experience_ask_about_groups_or_speaking_clubs,
-    store_frequency_ask_student_age_groups,
-    store_number_of_groups_ask_frequency,
-    store_peer_help_ask_another_or_additional_help,
-    store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye,
-    store_student_age_group_ask_another_or_non_teaching_help,
-    store_teachers_additional_skills_ask_if_review_needed,
-    store_teaching_preference_ask_groups_or_frequency_or_student_age,
-)
-from samanthas_telegram_bot.conversation.constants_enums import ConversationState as State
-from samanthas_telegram_bot.conversation.user_data import UserData
+from samanthas_telegram_bot.data_structures.enums import ConversationState as State
 
+load_dotenv()
+
+logging_level = typing.cast(str, os.environ.get("LOGGING_LEVEL"))
 logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=getattr(logging, logging_level),
 )
 logger = logging.getLogger(__name__)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 async def post_init(application: Application) -> None:
@@ -92,153 +68,207 @@ async def post_init(application: Application) -> None:
         language_code="ua",
     )
 
+    await application.bot.send_message(
+        chat_id=os.environ.get("ADMIN_CHAT_ID"),
+        text="Registration bot started",
+        parse_mode=None,
+    )
+
+
+async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    """Logs the error and send a telegram message to notify the developer."""
+
+    tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+    tb_string = "".join(tb_list)
+
+    await log_and_notify(
+        bot=context.bot,
+        logger=logger,
+        level=LoggingLevel.EXCEPTION,
+        text=(
+            f"@{os.environ.get('BOT_OWNER_USERNAME')} Registration bot encountered an exception:"
+            f"\n<code>\n{tb_string}</code>\n"
+        ),
+        parse_mode_for_admin_group_message=ParseMode.HTML,
+    )
+
 
 def main() -> None:
     """Run the bot."""
     # Create the Application and pass it the bot's token.
     application = (
         Application.builder()
-        .token(os.environ.get("TOKEN"))
-        .context_types(ContextTypes(user_data=UserData))
+        .token(os.environ.get("BOT_TOKEN"))
+        .context_types(ContextTypes(user_data=UserData, chat_data=ChatData, bot_data=BotData))
         .post_init(post_init)
         .build()
     )
 
     # Add conversation handler
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[
+            CommandHandler("start", common.start),
+        ],
+        allow_reentry=True,
         states={
-            State.IS_REGISTERED: [CallbackQueryHandler(store_locale_ask_if_already_registered)],
-            State.CHECK_CHAT_ID_ASK_FIRST_NAME: [
+            State.IS_REGISTERED: [
+                CallbackQueryHandler(common.store_locale_ask_if_already_registered)
+            ],
+            State.CHECK_CHAT_ID_ASK_TIMEZONE: [
                 CallbackQueryHandler(
-                    redirect_to_coordinator_if_registered_check_chat_id_ask_first_name
+                    common.redirect_to_coordinator_if_registered_check_chat_id_ask_timezone
                 )
             ],
-            State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_FIRST_NAME: [
+            State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE: [
                 CallbackQueryHandler(
-                    say_bye_if_does_not_want_to_register_another_or_ask_first_name
+                    common.say_bye_if_does_not_want_to_register_another_or_ask_timezone
                 )
             ],
+            State.ASK_FIRST_NAME: [CallbackQueryHandler(common.store_timezone_ask_first_name)],
             State.ASK_LAST_NAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, store_first_name_ask_last_name)
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND, common.store_first_name_ask_last_name
+                )
             ],
             State.ASK_SOURCE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, store_last_name_ask_source)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, common.store_last_name_ask_source)
             ],
             State.CHECK_USERNAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, store_source_check_username)
+                MessageHandler(filters.TEXT & ~filters.COMMAND, common.store_source_check_username)
             ],
             State.ASK_PHONE_NUMBER: [
-                CallbackQueryHandler(store_username_if_available_ask_phone_or_email)
+                CallbackQueryHandler(common.store_username_if_available_ask_phone_or_email)
             ],
             State.ASK_EMAIL: [
                 MessageHandler(
-                    (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND, store_phone_ask_email
+                    (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND,
+                    common.store_phone_ask_email,
                 )
             ],
             State.ASK_ROLE: [
                 MessageHandler(
-                    filters.TEXT & ~filters.COMMAND, store_email_check_existence_ask_role
+                    filters.TEXT & ~filters.COMMAND, common.store_email_check_existence_ask_role
                 )
             ],
-            State.ASK_AGE: [CallbackQueryHandler(store_role_ask_age)],
+            State.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
+            State.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
+                )
+            ],
+            State.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_communication_language_ask_speaking_club_language
+                )
+            ],
             State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
                 CallbackQueryHandler(
-                    store_readiness_to_host_speaking_clubs_ask_additional_help_or_bye
+                    teacher.young_teacher_store_teaching_language_ask_additional_help
                 )
             ],
-            State.ASK_TIMEZONE: [CallbackQueryHandler(store_age_ask_timezone)],
             State.TIME_SLOTS_START: [
-                CallbackQueryHandler(store_timezone_ask_slots_for_one_day_or_teaching_language)
+                CallbackQueryHandler(common.store_age_ask_slots_for_one_day_or_teaching_language)
             ],
             State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
                 CallbackQueryHandler(
-                    store_timezone_ask_slots_for_one_day_or_teaching_language, pattern="^next$"
+                    common.store_age_ask_slots_for_one_day_or_teaching_language,
+                    pattern="^next$",
                 ),
-                CallbackQueryHandler(store_one_time_slot_ask_another),
+                CallbackQueryHandler(common.store_one_time_slot_ask_another),
             ],
             State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
-                    store_teaching_language_ask_another_or_level_or_communication_language
+                    common.store_teaching_language_ask_another_or_level_or_communication_language
                 ),
             ],
             State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
-                    store_data_ask_another_level_or_communication_language_or_start_assessment
+                    common.store_data_ask_another_level_or_communication_language_or_start_assessment
                 )
             ],
             State.ASK_TEACHING_EXPERIENCE: [
-                CallbackQueryHandler(store_communication_language_ask_teaching_experience)
+                CallbackQueryHandler(teacher.store_communication_language_ask_teaching_experience)
             ],
             State.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
-                CallbackQueryHandler(store_experience_ask_about_groups_or_speaking_clubs)
+                CallbackQueryHandler(teacher.store_experience_ask_about_groups_or_speaking_clubs)
             ],
             State.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
-                    ask_communication_language_or_start_assessment_depending_on_learning_experience
+                    student.ask_communication_language_or_start_assessment_depending_on_learning_experience
                 )
             ],
             State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW: [
                 CallbackQueryHandler(
-                    store_communication_language_ask_non_teaching_help_or_start_review
+                    student.store_communication_language_ask_non_teaching_help_or_start_review
                 )
             ],
             State.ASK_ASSESSMENT_QUESTION: [
-                CallbackQueryHandler(assessment_store_answer_ask_question)
+                CallbackQueryHandler(student.assessment_store_answer_ask_question)
             ],
             State.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(send_smalltalk_url_or_ask_communication_language)
+                CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
             ],
             State.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
-                CallbackQueryHandler(ask_communication_language_after_smalltalk)
+                CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
             ],
             State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP: [
                 CallbackQueryHandler(
-                    store_teaching_preference_ask_groups_or_frequency_or_student_age
+                    teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
                 )
             ],
             State.ASK_TEACHING_FREQUENCY: [
-                CallbackQueryHandler(store_number_of_groups_ask_frequency)
+                CallbackQueryHandler(teacher.store_number_of_groups_ask_frequency)
             ],
             State.PREFERRED_STUDENT_AGE_GROUPS_START: [
-                CallbackQueryHandler(store_frequency_ask_student_age_groups)
+                CallbackQueryHandler(teacher.store_frequency_ask_student_age_groups)
             ],
             State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
-                CallbackQueryHandler(store_student_age_group_ask_another_or_non_teaching_help)
+                CallbackQueryHandler(
+                    teacher.store_student_age_group_ask_another_or_non_teaching_help
+                )
             ],
             State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT: [
-                CallbackQueryHandler(store_non_teaching_help_ask_another_or_additional_help)
+                CallbackQueryHandler(common.store_non_teaching_help_ask_another_or_additional_help)
             ],
             State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
-                CallbackQueryHandler(store_peer_help_ask_another_or_additional_help)
+                CallbackQueryHandler(teacher.store_peer_help_ask_another_or_additional_help)
             ],
             State.ASK_REVIEW: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
-                    store_teachers_additional_skills_ask_if_review_needed,
+                    teacher.store_teachers_additional_skills_ask_if_review_needed,
                 )
             ],
             State.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
-                CallbackQueryHandler(check_if_review_needed_give_review_menu_or_ask_final_comment)
+                CallbackQueryHandler(
+                    common.check_if_review_needed_give_review_menu_or_ask_final_comment
+                )
             ],
             State.ASK_FINAL_COMMENT: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
-                    store_additional_help_comment_ask_final_comment,
+                    common.store_additional_help_comment_ask_final_comment,
                 )
             ],
-            State.REVIEW_REQUESTED_ITEM: [CallbackQueryHandler(review_requested_item)],
+            State.REVIEW_REQUESTED_ITEM: [CallbackQueryHandler(common.review_requested_item)],
             State.BYE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, store_comment_end_conversation)
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND, common.store_comment_end_conversation
+                )
             ],
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[
+            CommandHandler("cancel", common.cancel),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, common.message_fallback),
+        ],
     )
 
     application.add_handler(conv_handler)
 
-    help_handler = CommandHandler("help", send_help)
+    help_handler = CommandHandler("help", common.send_help)
     application.add_handler(help_handler)
+
+    application.add_error_handler(error_handler)
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling()
