@@ -129,7 +129,7 @@ review_availability,Your availability slots,Ваши дни и часы дост
 review_languages_levels,Your language(s) and level(s),Вы выбрали язык(и) и уровень/уровни,
 review_communication_language,Your preferred language(s) of communication in class,Язык(и) общения в группе,
 review_reaction_yes,Everything is correct 👍,Всё верно 👍,
-review_reaction_no,I need to make corrections,Нужно кое-что поправить.,
+review_reaction_no,I need to make corrections,Нужно кое-что поправить,
 review_ask_category,What information do you wish to change?,Какую информацию нужно исправить?,
 review_option_first_name,First name,Имя,
 review_option_last_name,Last name,Фамилию,
