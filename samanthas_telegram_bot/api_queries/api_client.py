@@ -16,9 +16,11 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
     API_URL_PERSONAL_INFO_LIST_CREATE,
     API_URL_PREFIX,
+    API_URL_STUDENT_RETRIEVE,
     API_URL_STUDENTS_LIST_CREATE,
     API_URL_TEACHER_RETRIEVE,
     API_URL_TEACHERS_LIST_CREATE,
+    API_URL_YOUNG_TEACHER_RETRIEVE,
     API_URL_YOUNG_TEACHERS_LIST_CREATE,
     DataDict,
 )
@@ -273,10 +275,21 @@ class ApiClient:
             "young " if user_data.role == Role.TEACHER and user_data.teacher_is_under_18 else ""
         )
 
+        if user_data.role == Role.TEACHER:
+            url_prefix = (
+                API_URL_YOUNG_TEACHER_RETRIEVE
+                if user_data.teacher_is_under_18
+                else API_URL_TEACHER_RETRIEVE
+            )
+        elif user_data == Role.STUDENT:
+            url_prefix = API_URL_STUDENT_RETRIEVE
+        else:
+            raise NotImplementedError(f"{user_data.role=} not supported")
+
         success_message = (
             f"Created {teacher_age_infix}{user_data.role} "
             f"[{user_data.first_name} {user_data.last_name}]"
-            f"({API_URL_TEACHER_RETRIEVE}{personal_info_id}), ID {personal_info_id}\\."
+            f"({url_prefix}{personal_info_id}), ID {personal_info_id}\\."
         )
         if user_data.role == Role.TEACHER and user_data.teacher_can_host_speaking_club:
             success_message += (
