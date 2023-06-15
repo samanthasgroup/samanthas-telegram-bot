@@ -7,7 +7,10 @@ from typing import Literal
 #  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
-EMAIL_PATTERN = re.compile(r"^([a-zA-Z_\-.]+)@([a-zA-Z_\-.]+)\.([a-zA-Z]{2,5})$")
+EMAIL_PATTERN = re.compile(
+    r"([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\"([]!#-[^-~ \t]|(\\[\t -~]))+\")"
+    r"@([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\[[\t -Z^-~]*])"
+)
 
 LOW_LEVELS = ("A0", "A1")
 LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
