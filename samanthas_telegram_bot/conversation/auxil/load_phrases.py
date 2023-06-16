@@ -20,7 +20,7 @@ def load_phrases() -> dict[str, MultilingualBotPhrase]:
         reader = typing.cast(Iterator[dict[str, str]], csv.DictReader(f))
         return {
             row["internal_id"]: MultilingualBotPhrase(  # type: ignore[misc]
-                **{locale: row[locale] for locale in LOCALES}
+                **{locale: row[locale].replace("\\n", "\n") for locale in LOCALES}
             )
             for row in reader
         }
