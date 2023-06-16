@@ -10,7 +10,7 @@ packages = [{include = "samanthas_telegram_bot"}]
 [tool.poetry.dependencies]
 python = "^3.10"
 python-telegram-bot = "^20.3"
-phonenumberslite = "^8.13.13"
+phonenumberslite = "^8.13.14"
 python-dotenv = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
