@@ -7,7 +7,18 @@ from typing import Literal
 #  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
-EMAIL_PATTERN = re.compile(r"^([\w\-.]+)@([\w\-.]+)\.([a-zA-Z]{2,5})$")
+EMAIL_PATTERN = re.compile(
+    "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
+    "(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
+    '|"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]'
+    '|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*")'
+    "@"
+    "(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9]"
+    "(?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}"
+    "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?"
+    "|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]"
+    "|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
+)
 
 LOW_LEVELS = ("A0", "A1")
 LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
