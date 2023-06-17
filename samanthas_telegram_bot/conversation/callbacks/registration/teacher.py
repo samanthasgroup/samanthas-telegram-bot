@@ -6,15 +6,272 @@ from telegram.ext import ConversationHandler
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData, ConversationMode
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    CommonCallbackData,
+    ConversationMode,
+    ConversationStateCommon,
+    ConversationStateTeacher,
+)
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.auxil.multi_state_returns import handle_time_slots
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.states.common import ConversationState
-from samanthas_telegram_bot.data_structures.constants import TEACHER_PEER_HELP_TYPES, Locale
+from samanthas_telegram_bot.data_structures.constants import (
+    NON_TEACHING_HELP_TYPES,
+    TEACHER_PEER_HELP_TYPES,
+    Locale,
+)
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role, TeachingMode
 
 logger = logging.getLogger(__name__)
+
+
+async def store_age_ask_slots_for_one_day_or_teaching_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores the answer (whether the teacher is 18+), next action depends on the answer.
+
+    If user is a teacher under 18, informs that teachers under 18 are not allowed and asks
+    whether they are at least 16, in which case they can host speaking clubs.
+
+    If this is an adult teacher:
+
+    * If this function is called for the first time in a conversation, **stores age** and gives
+      time slots for Monday.
+    * If this function is called after choosing time slots for a day, asks for time slots for the
+      next day.
+    * If this is the last day, makes asks for the first language to learn/teach.
+    """
+
+    query, data = await answer_callback_query_and_get_data(update)
+
+    if data == CommonCallbackData.YES:  # yes, the teacher is 18 or older
+        context.user_data.teacher_is_under_18 = False
+    else:
+        context.user_data.teacher_is_under_18 = True
+        await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(context, query)
+        return ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
+
+    next_state = await handle_time_slots(update, context)
+    return next_state
+
+
+async def store_teaching_language_ask_another_or_level_or_communication_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores teaching language. Next step depends on whether teacher is done choosing.
+
+    If the teacher is done choosing levels, offers to choose another language.
+
+    If the teacher and has finished choosing languages, asks about language of
+    communication in class.
+    """
+
+    query, data = await answer_callback_query_and_get_data(update)
+
+    if data == CommonCallbackData.DONE:
+        if context.chat_data.mode == ConversationMode.REVIEW:
+            await MessageSender.ask_review(update, context)
+            return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
+        await CQReplySender.ask_class_communication_languages(context, query)
+        return ConversationStateTeacher.ASK_TEACHING_EXPERIENCE
+
+    context.user_data.levels_for_teaching_language[data] = []
+
+    await CQReplySender.ask_language_levels(context, query, show_done_button=False)
+    return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+
+
+async def store_communication_language_ask_teaching_experience(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Callback for teachers. Stores communication language, asks about teaching experience."""
+
+    (
+        query,
+        context.user_data.communication_language_in_class,
+    ) = await answer_callback_query_and_get_data(update)
+
+    if context.chat_data.mode == ConversationMode.REVIEW:
+        await query.delete_message()
+        await MessageSender.ask_review(update, context)
+        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
+    await CQReplySender.ask_yes_no(
+        context, query, question_phrase_internal_id="ask_teacher_experience"
+    )
+    return ConversationStateTeacher.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB
+
+
+async def store_experience_ask_about_groups_or_speaking_clubs(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores if teacher has experience, asks teaching preferences (groups vs speaking clubs)."""
+
+    query, data = await answer_callback_query_and_get_data(update)
+
+    context.user_data.teacher_has_prior_experience = data == CommonCallbackData.YES
+
+    await CQReplySender.ask_teacher_can_teach_regular_groups_speaking_clubs(context, query)
+    return ConversationStateTeacher.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP
+
+
+async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores information about teaching preferences, next action depends on several factors:
+
+    * If teacher only wants to host speaking clubs, asks about preferred student age groups
+    * If teacher can teach regular groups but has no experience, asks about frequency
+    * If teacher can teach regular groups and has experience, asks about number of groups
+    """
+
+    query, data = await answer_callback_query_and_get_data(update)
+
+    context.user_data.teacher_can_host_speaking_club = data in (
+        TeachingMode.SPEAKING_CLUB_ONLY,
+        TeachingMode.BOTH,
+    )
+
+    if data == TeachingMode.SPEAKING_CLUB_ONLY:
+        context.user_data.teacher_number_of_groups = 0
+        await CQReplySender.ask_teacher_age_groups_of_students(context, query)
+        return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
+
+    if context.user_data.teacher_has_prior_experience is True:
+        await CQReplySender.ask_teacher_number_of_groups(context, query)
+        return ConversationStateTeacher.ASK_TEACHING_FREQUENCY
+
+    # inexperienced teacher only get one group
+    context.user_data.teacher_number_of_groups = 1
+    await CQReplySender.ask_teaching_frequency(context, query)
+    return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_START
+
+
+async def store_number_of_groups_ask_frequency(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """For experienced teachers: stores information about number of groups, asks for frequency
+    (inexperienced teachers).
+    """
+    query, context.user_data.teacher_number_of_groups = await answer_callback_query_and_get_data(
+        update
+    )
+
+    await CQReplySender.ask_teaching_frequency(context, query)
+    return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_START
+
+
+async def store_frequency_ask_student_age_groups(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores frequency, asks for preferred age groups of students."""
+    query, context.user_data.teacher_class_frequency = await answer_callback_query_and_get_data(
+        update
+    )
+
+    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
+
+    return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
+
+
+async def store_student_age_group_ask_another_or_non_teaching_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores preferred age group of students, asks another.  If the teacher is done, ask about
+    additional help for students.
+    """
+    query, data = await answer_callback_query_and_get_data(update)
+
+    if data != CommonCallbackData.DONE:
+        context.user_data.teacher_student_age_range_ids.append(int(data))
+
+    # teacher pressed "Done" or chose all age groups
+    if data == CommonCallbackData.DONE or len(
+        context.user_data.teacher_student_age_range_ids
+    ) == len(context.bot_data.age_ranges_for_type[AgeRangeType.TEACHER]):
+        logger.info(
+            f"Chat {update.effective_chat.id}. IDs of student ages "
+            f"{context.user_data.teacher_student_age_range_ids}"
+        )
+        await CQReplySender.ask_non_teaching_help(context, query)
+        return ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_PEER_HELP  # TODO I renamed it!
+
+    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
+    return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
+
+
+async def store_peer_help_ask_another_or_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores one option of teacher peer help, asks for another.  If the teacher is done,
+    asks for any additional help (in free text)."""
+    query, data = await answer_callback_query_and_get_data(update)
+
+    if data == CommonCallbackData.DONE:
+        selected_types = ", ".join(
+            help_type
+            for help_type in TEACHER_PEER_HELP_TYPES
+            if getattr(context.user_data.teacher_peer_help, help_type) is True
+        )
+        logger.info(f"Chat {update.effective_chat.id}: teacher's peer help: {selected_types}")
+
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return ConversationStateCommon.ASK_REVIEW
+
+    setattr(context.user_data.teacher_peer_help, data, True)
+
+    # to remove this button from the keyboard
+    context.chat_data.peer_help_callback_data.add(data)
+    await CQReplySender.ask_teacher_peer_help(context, query)
+    return ConversationStateTeacher.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+
+
+async def store_non_teaching_help_ask_another_or_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    query, data = await answer_callback_query_and_get_data(update)
+
+    # protection against coding error
+    if data not in NON_TEACHING_HELP_TYPES + (CommonCallbackData.DONE,):
+        raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
+
+    # pressed "Done" or chose all types of help
+    if data == CommonCallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
+        NON_TEACHING_HELP_TYPES
+    ):
+        if context.user_data.teacher_has_prior_experience:
+            await CQReplySender.ask_teacher_peer_help(context, query)
+            return ConversationStateTeacher.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
+
+        # skip peer help for inexperienced teachers
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+        return ConversationStateCommon.ASK_REVIEW
+
+    context.user_data.non_teaching_help_types.append(data)
+    await CQReplySender.ask_non_teaching_help(context, query)
+    return ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_PEER_HELP
+
+
+async def store_teachers_additional_skills_ask_if_review_needed(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores teacher's additional skills and asks to review main user data."""
+    if update.message is None:
+        return ConversationStateCommon.ASK_REVIEW
+
+    if context.user_data.role == Role.TEACHER:
+        context.user_data.teacher_additional_skills_comment = update.message.text
+
+    await MessageSender.ask_review(update, context)
+    return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
 
 async def young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye(
@@ -30,7 +287,7 @@ async def young_teacher_store_readiness_to_host_speaking_clubs_ask_communication
     if data == CommonCallbackData.YES:  # yes, I can host speaking clubs
         context.user_data.teacher_can_host_speaking_club = True
         await CQReplySender.ask_class_communication_languages(context, query)
-        return ConversationState.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE
+        return ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE
 
     await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
     return ConversationHandler.END
@@ -47,7 +304,7 @@ async def young_teacher_store_communication_language_ask_speaking_club_language(
     context.user_data.communication_language_in_class = data
 
     await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
-    return ConversationState.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
+    return ConversationStateTeacher.ASK_YOUNG_TEACHER_ADDITIONAL_HELP
 
 
 async def young_teacher_store_teaching_language_ask_additional_help(
@@ -73,168 +330,4 @@ async def young_teacher_store_teaching_language_ask_additional_help(
     await update.effective_chat.send_message(
         context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale]
     )
-    return ConversationState.ASK_FINAL_COMMENT
-
-
-async def store_communication_language_ask_teaching_experience(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Callback for teachers. Stores communication language, asks about teaching experience."""
-
-    (
-        query,
-        context.user_data.communication_language_in_class,
-    ) = await answer_callback_query_and_get_data(update)
-
-    if context.chat_data.mode == ConversationMode.REVIEW:
-        await query.delete_message()
-        await MessageSender.ask_review(update, context)
-        return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
-
-    await CQReplySender.ask_yes_no(
-        context, query, question_phrase_internal_id="ask_teacher_experience"
-    )
-    return ConversationState.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB
-
-
-async def store_experience_ask_about_groups_or_speaking_clubs(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores if teacher has experience, asks teaching preferences (groups vs speaking clubs)."""
-
-    query, data = await answer_callback_query_and_get_data(update)
-
-    context.user_data.teacher_has_prior_experience = data == CommonCallbackData.YES
-
-    await CQReplySender.ask_teacher_can_teach_regular_groups_speaking_clubs(context, query)
-    return ConversationState.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP
-
-
-async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores information about teaching preferences, next action depends on several factors:
-
-    * If teacher only wants to host speaking clubs, asks about preferred student age groups
-    * If teacher can teach regular groups but has no experience, asks about frequency
-    * If teacher can teach regular groups and has experience, asks about number of groups
-    """
-
-    query, data = await answer_callback_query_and_get_data(update)
-
-    context.user_data.teacher_can_host_speaking_club = data in (
-        TeachingMode.SPEAKING_CLUB_ONLY,
-        TeachingMode.BOTH,
-    )
-
-    if data == TeachingMode.SPEAKING_CLUB_ONLY:
-        context.user_data.teacher_number_of_groups = 0
-        await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-        return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
-
-    if context.user_data.teacher_has_prior_experience is True:
-        await CQReplySender.ask_teacher_number_of_groups(context, query)
-        return ConversationState.ASK_TEACHING_FREQUENCY
-
-    # inexperienced teacher only get one group
-    context.user_data.teacher_number_of_groups = 1
-    await CQReplySender.ask_teaching_frequency(context, query)
-    return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_START
-
-
-async def store_number_of_groups_ask_frequency(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """For experienced teachers: stores information about number of groups, asks for frequency
-    (inexperienced teachers).
-    """
-    query, context.user_data.teacher_number_of_groups = await answer_callback_query_and_get_data(
-        update
-    )
-
-    await CQReplySender.ask_teaching_frequency(context, query)
-    return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_START
-
-
-async def store_frequency_ask_student_age_groups(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores frequency, asks for preferred age groups of students."""
-    query, context.user_data.teacher_class_frequency = await answer_callback_query_and_get_data(
-        update
-    )
-
-    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-
-    return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
-
-
-async def store_student_age_group_ask_another_or_non_teaching_help(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores preferred age group of students, asks another.  If the teacher is done, ask about
-    additional help for students.
-    """
-    query, data = await answer_callback_query_and_get_data(update)
-
-    if data != CommonCallbackData.DONE:
-        context.user_data.teacher_student_age_range_ids.append(int(data))
-
-    # teacher pressed "Done" or chose all age groups
-    if data == CommonCallbackData.DONE or len(
-        context.user_data.teacher_student_age_range_ids
-    ) == len(context.bot_data.age_ranges_for_type[AgeRangeType.TEACHER]):
-        logger.info(
-            f"Chat {update.effective_chat.id}. IDs of student ages "
-            f"{context.user_data.teacher_student_age_range_ids}"
-        )
-        await CQReplySender.ask_non_teaching_help(context, query)
-        return (
-            ConversationState.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT
-        )
-
-    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-    return ConversationState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
-
-
-async def store_peer_help_ask_another_or_additional_help(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores one option of teacher peer help, asks for another.  If the teacher is done,
-    asks for any additional help (in free text)."""
-    query, data = await answer_callback_query_and_get_data(update)
-
-    if data == CommonCallbackData.DONE:
-        selected_types = ", ".join(
-            help_type
-            for help_type in TEACHER_PEER_HELP_TYPES
-            if getattr(context.user_data.teacher_peer_help, help_type) is True
-        )
-        logger.info(f"Chat {update.effective_chat.id}: teacher's peer help: {selected_types}")
-
-        await query.edit_message_text(
-            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return ConversationState.ASK_REVIEW
-
-    setattr(context.user_data.teacher_peer_help, data, True)
-
-    # to remove this button from the keyboard
-    context.chat_data.peer_help_callback_data.add(data)
-    await CQReplySender.ask_teacher_peer_help(context, query)
-    return ConversationState.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
-
-
-async def store_teachers_additional_skills_ask_if_review_needed(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores teacher's additional skills and asks to review main user data."""
-    if update.message is None:
-        return ConversationState.ASK_REVIEW
-
-    if context.user_data.role == Role.TEACHER:
-        context.user_data.teacher_additional_skills_comment = update.message.text
-
-    await MessageSender.ask_review(update, context)
-    return ConversationState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+    return ConversationStateCommon.ASK_FINAL_COMMENT

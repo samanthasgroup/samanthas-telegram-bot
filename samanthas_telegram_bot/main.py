@@ -21,7 +21,12 @@ import samanthas_telegram_bot.conversation.callbacks.registration.student as stu
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
-from samanthas_telegram_bot.conversation.states.common import ConversationState as State
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    CommonCallbackData,
+    ConversationStateCommon,
+    ConversationStateStudent,
+    ConversationStateTeacher,
+)
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
@@ -45,7 +50,7 @@ async def post_init(application: Application) -> None:
     await application.bot.set_my_commands(
         [
             ("start", "Start registration"),
-            ("cancel", "Cancel registration process"),
+            ("cancel", "Cancel registration"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
         language_code="en",
@@ -53,16 +58,15 @@ async def post_init(application: Application) -> None:
     await application.bot.set_my_commands(
         [
             ("start", "Начать регистрацию"),
-            ("cancel", "Прервать процесс регистрации"),
+            ("cancel", "Отменить регистрацию"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
         language_code="ru",
     )
-    # TODO Ukrainian
     await application.bot.set_my_commands(
         [
-            ("start", "Начать регистрацию"),
-            ("cancel", "Прервать процесс регистрации"),
+            ("start", "Почати реєстрацію"),
+            ("cancel", "Перервати реєстрацію"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
         language_code="ua",
@@ -111,149 +115,176 @@ def main() -> None:
         ],
         allow_reentry=True,
         states={
-            State.IS_REGISTERED: [
+            # COMMON CALLBACKS
+            # Start of conversation
+            ConversationStateCommon.IS_REGISTERED: [
                 CallbackQueryHandler(common.store_locale_ask_if_already_registered)
             ],
-            State.CHECK_CHAT_ID_ASK_TIMEZONE: [
+            ConversationStateCommon.CHECK_CHAT_ID_ASK_TIMEZONE: [
                 CallbackQueryHandler(
                     common.redirect_to_coordinator_if_registered_check_chat_id_ask_timezone
                 )
             ],
-            State.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE: [
+            ConversationStateCommon.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE: [
                 CallbackQueryHandler(
                     common.say_bye_if_does_not_want_to_register_another_or_ask_timezone
                 )
             ],
-            State.ASK_FIRST_NAME: [CallbackQueryHandler(common.store_timezone_ask_first_name)],
-            State.ASK_LAST_NAME: [
+            ConversationStateCommon.ASK_FIRST_NAME: [
+                CallbackQueryHandler(common.store_timezone_ask_first_name)
+            ],
+            ConversationStateCommon.ASK_LAST_NAME: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND, common.store_first_name_ask_last_name
                 )
             ],
-            State.ASK_SOURCE: [
+            ConversationStateCommon.ASK_SOURCE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, common.store_last_name_ask_source)
             ],
-            State.CHECK_USERNAME: [
+            ConversationStateCommon.CHECK_USERNAME: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, common.store_source_check_username)
             ],
-            State.ASK_PHONE_NUMBER: [
+            ConversationStateCommon.ASK_PHONE_NUMBER: [
                 CallbackQueryHandler(common.store_username_if_available_ask_phone_or_email)
             ],
-            State.ASK_EMAIL: [
+            ConversationStateCommon.ASK_EMAIL: [
                 MessageHandler(
                     (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND,
                     common.store_phone_ask_email,
                 )
             ],
-            State.ASK_ROLE: [
+            ConversationStateCommon.ASK_ROLE: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND, common.store_email_check_existence_ask_role
                 )
             ],
-            State.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
-            State.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(
-                    teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
-                )
-            ],
-            State.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
-                CallbackQueryHandler(
-                    teacher.young_teacher_store_communication_language_ask_speaking_club_language
-                )
-            ],
-            State.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
-                CallbackQueryHandler(
-                    teacher.young_teacher_store_teaching_language_ask_additional_help
-                )
-            ],
-            State.TIME_SLOTS_START: [
-                CallbackQueryHandler(common.store_age_ask_slots_for_one_day_or_teaching_language)
-            ],
-            State.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
-                CallbackQueryHandler(
-                    common.store_age_ask_slots_for_one_day_or_teaching_language,
-                    pattern="^next$",
-                ),
-                CallbackQueryHandler(common.store_one_time_slot_ask_another),
-            ],
-            State.ASK_LEVEL_OR_ANOTHER_TEACHING_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(
-                    common.store_teaching_language_ask_another_or_level_or_communication_language
-                ),
-            ],
-            State.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(
-                    common.store_data_ask_another_level_or_communication_language_or_start_assessment
-                )
-            ],
-            State.ASK_TEACHING_EXPERIENCE: [
-                CallbackQueryHandler(teacher.store_communication_language_ask_teaching_experience)
-            ],
-            State.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
-                CallbackQueryHandler(teacher.store_experience_ask_about_groups_or_speaking_clubs)
-            ],
-            State.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
-                CallbackQueryHandler(
-                    student.ask_communication_language_or_start_assessment_depending_on_learning_experience
-                )
-            ],
-            State.ASK_STUDENT_NON_TEACHING_HELP_OR_START_REVIEW: [
-                CallbackQueryHandler(
-                    student.store_communication_language_ask_non_teaching_help_or_start_review
-                )
-            ],
-            State.ASK_ASSESSMENT_QUESTION: [
-                CallbackQueryHandler(student.assessment_store_answer_ask_question)
-            ],
-            State.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
-            ],
-            State.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
-                CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
-            ],
-            State.ASK_NUMBER_OF_GROUPS_OR_TEACHING_FREQUENCY_OR_NON_TEACHING_HELP: [
-                CallbackQueryHandler(
-                    teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
-                )
-            ],
-            State.ASK_TEACHING_FREQUENCY: [
-                CallbackQueryHandler(teacher.store_number_of_groups_ask_frequency)
-            ],
-            State.PREFERRED_STUDENT_AGE_GROUPS_START: [
-                CallbackQueryHandler(teacher.store_frequency_ask_student_age_groups)
-            ],
-            State.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
-                CallbackQueryHandler(
-                    teacher.store_student_age_group_ask_another_or_non_teaching_help
-                )
-            ],
-            State.NON_TEACHING_HELP_MENU_OR_PEER_HELP_FOR_TEACHER_OR_REVIEW_FOR_STUDENT: [
-                CallbackQueryHandler(common.store_non_teaching_help_ask_another_or_additional_help)
-            ],
-            State.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
-                CallbackQueryHandler(teacher.store_peer_help_ask_another_or_additional_help)
-            ],
-            State.ASK_REVIEW: [
+            ConversationStateCommon.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
+            # Final part of conversation:
+            ConversationStateCommon.ASK_REVIEW: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
                     teacher.store_teachers_additional_skills_ask_if_review_needed,
                 )
             ],
-            State.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
+            ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
                 CallbackQueryHandler(
                     common.check_if_review_needed_give_review_menu_or_ask_final_comment
                 )
             ],
-            State.ASK_FINAL_COMMENT: [
+            ConversationStateCommon.ASK_FINAL_COMMENT: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
                     common.store_additional_help_comment_ask_final_comment,
                 )
             ],
-            State.REVIEW_REQUESTED_ITEM: [CallbackQueryHandler(common.review_requested_item)],
-            State.BYE: [
+            ConversationStateCommon.REVIEW_REQUESTED_ITEM: [
+                CallbackQueryHandler(common.review_requested_item)
+            ],
+            ConversationStateCommon.BYE: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND, common.store_comment_end_conversation
+                )
+            ],
+            # GROUPS OF CALLBACKS THAT HAVE SIMILAR FUNCTIONALITY BUT DIFFER FOR DIFFERENT ROLES
+            # Time slots
+            ConversationStateStudent.TIME_SLOTS_START: [
+                CallbackQueryHandler(student.store_age_ask_slots_for_one_day_or_teaching_language)
+            ],
+            ConversationStateTeacher.TIME_SLOTS_START: [
+                CallbackQueryHandler(teacher.store_age_ask_slots_for_one_day_or_teaching_language)
+            ],
+            # Moving on to teaching language(s) and level(s)
+            ConversationStateStudent.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
+                CallbackQueryHandler(
+                    student.store_age_ask_slots_for_one_day_or_teaching_language,
+                    pattern=f"^{CommonCallbackData.NEXT}$",
+                ),
+                CallbackQueryHandler(common.store_one_time_slot_ask_another),
+            ],
+            ConversationStateTeacher.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.store_age_ask_slots_for_one_day_or_teaching_language,
+                    pattern=f"^{CommonCallbackData.NEXT}$",
+                ),
+                CallbackQueryHandler(common.store_one_time_slot_ask_another),
+            ],
+            # Storing language(s) and level(s)
+            ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
+                CallbackQueryHandler(
+                    student.store_data_ask_level_or_communication_language_or_start_assessment
+                )
+            ],
+            ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.store_teaching_language_ask_another_or_level_or_communication_language
+                ),
+            ],
+            ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_communication_language_ask_speaking_club_language
+                )
+            ],
+            # asking for non-teaching help needed/provided
+            ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW: [
+                CallbackQueryHandler(student.store_non_teaching_help_ask_another_or_review)
+            ],
+            ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_PEER_HELP: [
+                CallbackQueryHandler(
+                    teacher.store_non_teaching_help_ask_another_or_additional_help
+                )
+            ],
+            # STUDENT-SPECIFIC CALLBACKS
+            ConversationStateStudent.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
+                CallbackQueryHandler(student.ask_communication_language_or_start_assessment)
+            ],
+            ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW: [
+                CallbackQueryHandler(
+                    student.store_communication_language_ask_non_teaching_help_or_start_review
+                )
+            ],
+            ConversationStateStudent.ASK_ASSESSMENT_QUESTION: [
+                CallbackQueryHandler(student.assessment_store_answer_ask_question)
+            ],
+            ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
+            ],
+            ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
+                CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
+            ],
+            # TEACHER-SPECIFIC
+            ConversationStateTeacher.ASK_TEACHING_EXPERIENCE: [
+                CallbackQueryHandler(teacher.store_communication_language_ask_teaching_experience)
+            ],
+            ConversationStateTeacher.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
+                CallbackQueryHandler(teacher.store_experience_ask_about_groups_or_speaking_clubs)
+            ],
+            ConversationStateTeacher.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP: [
+                CallbackQueryHandler(
+                    teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
+                )
+            ],
+            ConversationStateTeacher.ASK_TEACHING_FREQUENCY: [
+                CallbackQueryHandler(teacher.store_number_of_groups_ask_frequency)
+            ],
+            ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_START: [
+                CallbackQueryHandler(teacher.store_frequency_ask_student_age_groups)
+            ],
+            ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
+                CallbackQueryHandler(
+                    teacher.store_student_age_group_ask_another_or_non_teaching_help
+                )
+            ],
+            ConversationStateTeacher.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
+                CallbackQueryHandler(teacher.store_peer_help_ask_another_or_additional_help)
+            ],
+            ConversationStateTeacher.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_teaching_language_ask_additional_help
+                )
+            ],
+            ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(
+                    teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
                 )
             ],
         },

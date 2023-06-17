@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import Enum, IntEnum, auto
 
 
 class CommonCallbackData(str, Enum):
@@ -19,6 +19,62 @@ class ConversationMode(str, Enum):
 
     NORMAL = "normal"
     REVIEW = "review"
+
+
+class ConversationStateCommon(IntEnum):
+    """Provides integer keys for the dictionary of common states for ConversationHandler."""
+
+    IS_REGISTERED = auto()
+    CHECK_CHAT_ID_ASK_TIMEZONE = auto()
+    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE = auto()
+    ASK_FIRST_NAME = auto()
+    ASK_LAST_NAME = auto()
+    ASK_SOURCE = auto()
+    CHECK_USERNAME = auto()
+    ASK_PHONE_NUMBER = auto()
+    ASK_EMAIL = auto()
+    ASK_ROLE = auto()
+    ASK_AGE = auto()
+    ASK_REVIEW = auto()
+    REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
+    REVIEW_REQUESTED_ITEM = auto()
+    ASK_FINAL_COMMENT = auto()  # standalone, not after review
+    BYE = auto()
+
+
+class ConversationStateStudent(IntEnum):
+    """Provides integer keys for the dictionary of student's states for ConversationHandler."""
+
+    ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT = auto()
+    ASK_ASSESSMENT_QUESTION = auto()
+    ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK = auto()
+    ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT = auto()
+    ASK_NON_TEACHING_HELP_OR_START_REVIEW = auto()
+    ASK_SLOTS_OR_TEACHING_LANGUAGE = auto()
+    NON_TEACHING_HELP_MENU_OR_REVIEW = auto()
+    SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE = auto()
+    TIME_SLOTS_START = auto()
+    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
+
+
+class ConversationStateTeacher(IntEnum):
+    """Provides integer keys for the dictionary of teacher's states for ConversationHandler."""
+
+    ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
+    ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP = auto()
+    ASK_SLOTS_OR_TEACHING_LANGUAGE = auto()
+    ASK_TEACHING_EXPERIENCE = auto()
+    ASK_TEACHING_FREQUENCY = auto()
+    ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = auto()
+    ASK_YOUNG_TEACHER_ADDITIONAL_HELP = auto()
+    ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE = auto()
+    ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE = auto()
+    NON_TEACHING_HELP_MENU_OR_PEER_HELP = auto()
+    PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
+    PREFERRED_STUDENT_AGE_GROUPS_START = auto()
+    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
+    TIME_SLOTS_START = auto()
+    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
 
 
 class UserDataReviewCategory(str, Enum):
