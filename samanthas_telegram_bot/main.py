@@ -21,13 +21,13 @@ import samanthas_telegram_bot.conversation.callbacks.registration.student as stu
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.conversation.states.common import ConversationState as State
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
     ChatData,
     UserData,
 )
-from samanthas_telegram_bot.data_structures.enums import ConversationState as State
 
 load_dotenv()
 

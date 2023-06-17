@@ -20,9 +20,15 @@ from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    CommonCallbackData,
+    ConversationMode,
+    UserDataReviewCategory,
+)
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.states.common import ConversationState
 from samanthas_telegram_bot.data_structures.constants import (
     EMAIL_PATTERN,
     LOCALES,
@@ -30,13 +36,7 @@ from samanthas_telegram_bot.data_structures.constants import (
     Locale,
 )
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import (
-    CommonCallbackData,
-    ConversationMode,
-    ConversationState,
-    Role,
-    UserDataReviewCategory,
-)
+from samanthas_telegram_bot.data_structures.enums import Role
 
 logger = logging.getLogger(__name__)
 

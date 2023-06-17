@@ -14,9 +14,10 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData, ConversationMode
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import CommonCallbackData, ConversationMode, Role
+from samanthas_telegram_bot.data_structures.enums import Role
 
 
 class MessageSender:

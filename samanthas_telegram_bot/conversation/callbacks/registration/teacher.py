@@ -6,18 +6,13 @@ from telegram.ext import ConversationHandler
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
+from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData, ConversationMode
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.states.common import ConversationState
 from samanthas_telegram_bot.data_structures.constants import TEACHER_PEER_HELP_TYPES, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import (
-    AgeRangeType,
-    CommonCallbackData,
-    ConversationMode,
-    ConversationState,
-    Role,
-    TeachingMode,
-)
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role, TeachingMode
 
 logger = logging.getLogger(__name__)
 
