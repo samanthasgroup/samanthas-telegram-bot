@@ -13,8 +13,8 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacher,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.auxil.multi_state_returns import handle_time_slots
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.auxil.time_slot_helpers import handle_time_slots
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     TEACHER_PEER_HELP_TYPES,

@@ -15,9 +15,9 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.auxil.multi_state_returns import handle_time_slots
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.auxil.time_slot_helpers import handle_time_slots
 from samanthas_telegram_bot.data_structures.constants import (
     LEVELS_ELIGIBLE_FOR_ORAL_TEST,
     NON_TEACHING_HELP_TYPES,

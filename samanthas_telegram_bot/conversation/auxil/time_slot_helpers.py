@@ -1,6 +1,3 @@
-"""Module with auxiliary functions that handle callback data and return appropriate
-conversation states in 'bifurcation points', e.g. points in conversation where callback data
-and reply depend on some characteristics of the user."""
 import logging
 
 from telegram import Update
@@ -27,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 async def handle_time_slots(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Handles query for time slots and returns appropriate conversation state"""
+    """Handles query for time slots and returns appropriate conversation state."""
     # not using a shortcut here because we may need to answer the query with an alert
     query = update.callback_query
     data = query.data
