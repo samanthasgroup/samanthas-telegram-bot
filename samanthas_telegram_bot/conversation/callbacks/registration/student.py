@@ -17,7 +17,9 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.auxil.time_slot_helpers import handle_time_slots
+from samanthas_telegram_bot.conversation.auxil.time_slot_handlers import (
+    reply_and_return_next_state,
+)
 from samanthas_telegram_bot.data_structures.constants import (
     LEVELS_ELIGIBLE_FOR_ORAL_TEST,
     NON_TEACHING_HELP_TYPES,
@@ -65,7 +67,7 @@ async def store_age_ask_slots_for_one_day_or_teaching_language(
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-    next_state = await handle_time_slots(update, context)
+    next_state = await reply_and_return_next_state(update, context)
     return next_state
 
 

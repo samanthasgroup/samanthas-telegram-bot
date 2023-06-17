@@ -31,9 +31,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import UserDataReviewCategory
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.auxil.time_slot_helpers import (
-    get_state_for_time_slots_menu,
-)
+from samanthas_telegram_bot.conversation.auxil.time_slot_handlers import get_next_state
 from samanthas_telegram_bot.data_structures.constants import EMAIL_PATTERN, LOCALES, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
@@ -418,7 +416,7 @@ async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEX
 
     await CQReplySender.ask_time_slot(context, query)
 
-    return get_state_for_time_slots_menu(context.user_data.role)
+    return get_next_state(context.user_data.role)
 
 
 # ==== END-OF-CONVERSATION CALLBACKS BEGIN ====
@@ -501,7 +499,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     elif data == UserDataReviewCategory.AVAILABILITY:
         context.user_data.day_and_time_slot_ids = []
         await CQReplySender.ask_time_slot(context, query)
-        return get_state_for_time_slots_menu(context.user_data.role)
+        return get_next_state(context.user_data.role)
     elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:
         context.user_data.levels_for_teaching_language = {}
         context.user_data.language_and_level_ids = []

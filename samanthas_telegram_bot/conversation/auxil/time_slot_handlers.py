@@ -23,7 +23,7 @@ from samanthas_telegram_bot.data_structures.enums import Role
 logger = logging.getLogger(__name__)
 
 
-async def handle_time_slots(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def reply_and_return_next_state(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Handles query for time slots and returns appropriate conversation state."""
     # not using a shortcut here because we may need to answer the query with an alert
     query = update.callback_query
@@ -33,14 +33,14 @@ async def handle_time_slots(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
     if data != CommonCallbackData.NEXT:
         await query.answer()
         await CQReplySender.ask_time_slot(context, query)
-        return get_state_for_time_slots_menu(context.user_data.role)
+        return get_next_state(context.user_data.role)
 
     # If this is a user choosing time slots that pressed "next" button after choosing slots...
     if context.chat_data.day_index < 6:  # ...but we haven't yet reached Sunday
         context.chat_data.day_index += 1
         await query.answer()
         await CQReplySender.ask_time_slot(context, query)
-        return get_state_for_time_slots_menu(context.user_data.role)
+        return get_next_state(context.user_data.role)
 
     # ...or if we have reached Sunday
     slots_for_logging = (
@@ -67,7 +67,7 @@ async def handle_time_slots(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
         )
         context.chat_data.day_index = 0
         await CQReplySender.ask_time_slot(context, query)
-        return get_state_for_time_slots_menu(context.user_data.role)
+        return get_next_state(context.user_data.role)
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await query.answer()
@@ -82,7 +82,7 @@ async def handle_time_slots(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
     return TeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 
-def get_state_for_time_slots_menu(role: Role) -> int:
+def get_next_state(role: Role) -> int:
     """Returns correct next state for menu of time slots, depending on user's role."""
     match role:
         case Role.STUDENT:

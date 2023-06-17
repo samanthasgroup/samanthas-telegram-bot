@@ -14,7 +14,9 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.auxil.time_slot_helpers import handle_time_slots
+from samanthas_telegram_bot.conversation.auxil.time_slot_handlers import (
+    reply_and_return_next_state,
+)
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     TEACHER_PEER_HELP_TYPES,
@@ -52,7 +54,7 @@ async def store_age_ask_slots_for_one_day_or_teaching_language(
         await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(context, query)
         return ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
 
-    next_state = await handle_time_slots(update, context)
+    next_state = await reply_and_return_next_state(update, context)
     return next_state
 
 
