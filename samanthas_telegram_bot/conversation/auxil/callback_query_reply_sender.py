@@ -122,7 +122,7 @@ class CallbackQueryReplySender:
         if show_done_button:
             done_button = InlineKeyboardButton(
                 text=context.bot_data.phrases["ask_teaching_language_level_done"][locale],
-                callback_data=CommonCallbackData.DONE,
+                callback_data=CommonCallbackData.NEXT,
             )
 
         last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]

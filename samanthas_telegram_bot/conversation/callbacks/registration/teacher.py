@@ -13,7 +13,10 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacher,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.auxil.shortcuts import (
+    answer_callback_query_and_get_data,
+    get_last_language_added,
+)
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     TEACHER_PEER_HELP_TYPES,
@@ -50,22 +53,39 @@ async def ask_young_teacher_readiness_to_host_speaking_club(
     return ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
 
 
-async def store_teaching_language_ask_level_or_next_language(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores teaching language. Next step depends on whether teacher is done choosing.
+async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores teaching language, asks level."""
 
-    If the teacher is done choosing levels, offers to choose another language.
+    query, language_code = await answer_callback_query_and_get_data(update)
 
-    If the teacher and has finished choosing languages, asks about language of
-    communication in class.
-    """
-
-    query, data = await answer_callback_query_and_get_data(update)
-
-    context.user_data.levels_for_teaching_language[data] = []
+    context.user_data.levels_for_teaching_language[language_code] = []
 
     await CQReplySender.ask_language_levels(context, query, show_done_button=False)
+    return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+
+
+async def store_level_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores level of teaching language, asks to choose another level."""
+    query, language_level = await answer_callback_query_and_get_data(update)
+    user_data = context.user_data
+
+    last_language_added = get_last_language_added(user_data)
+
+    user_data.levels_for_teaching_language[last_language_added].append(language_level)
+    user_data.language_and_level_ids.append(
+        context.bot_data.language_and_level_id_for_language_id_and_level[
+            (last_language_added, language_level)
+        ]
+    )
+    await CQReplySender.ask_language_levels(context, query, show_done_button=True)
+    # TODO review
+    return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+
+
+async def ask_next_teaching_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    query, data = await answer_callback_query_and_get_data(update)
+    context.user_data.levels_for_teaching_language[data] = []
+    await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 

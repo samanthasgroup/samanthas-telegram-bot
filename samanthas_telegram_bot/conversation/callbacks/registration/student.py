@@ -18,14 +18,16 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
-from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.auxil.shortcuts import (
+    answer_callback_query_and_get_data,
+    get_last_language_added,
+)
 from samanthas_telegram_bot.data_structures.constants import (
     LEVELS_ELIGIBLE_FOR_ORAL_TEST,
     NON_TEACHING_HELP_TYPES,
     Locale,
 )
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import Role
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
 logger = logging.getLogger(__name__)
@@ -91,7 +93,7 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
     # If this is a student that has chosen English, we don't ask them for their level
     # (it will be assessed) - only for their ability to read in English.
     # The question about the ability to read is not asked for languages other than English.
-    if context.user_data.role == Role.STUDENT and data == "en":
+    if data == "en":
         await CQReplySender.ask_yes_no(
             context,
             query,
@@ -126,7 +128,7 @@ async def store_data_ask_level_or_communication_language_or_start_assessment(
     query, data = await answer_callback_query_and_get_data(update)
 
     user_data = context.user_data
-    last_language_added = tuple(user_data.levels_for_teaching_language.keys())[-1]
+    last_language_added = get_last_language_added(user_data)
 
     # If the student had chosen English, query.data is their ability to read in English.
     if last_language_added == "en":
@@ -168,8 +170,8 @@ async def store_data_ask_level_or_communication_language_or_start_assessment(
         await CQReplySender.ask_class_communication_languages(context, query)
         return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW
 
-    # If this is a teacher or a student that had chosen another language than English,
-    # query.data is language level.
+    # If the student had chosen another language than English, query.data is language level.
+    # TODO this repeats with teacher.py:
     user_data.levels_for_teaching_language[last_language_added].append(data)
     user_data.language_and_level_ids.append(
         context.bot_data.language_and_level_id_for_language_id_and_level[

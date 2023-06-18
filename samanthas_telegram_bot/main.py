@@ -27,6 +27,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent,
     ConversationStateTeacher,
 )
+from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS_PATTERN
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
@@ -189,7 +190,14 @@ def main() -> None:
                     teacher.ask_class_communication_language,
                     pattern=f"^{CommonCallbackData.DONE}$",
                 ),
-                CallbackQueryHandler(teacher.store_teaching_language_ask_level_or_next_language),
+                CallbackQueryHandler(
+                    teacher.ask_next_teaching_language,
+                    pattern=f"^{CommonCallbackData.NEXT}$",
+                ),
+                CallbackQueryHandler(
+                    teacher.store_level_ask_another,
+                    pattern=ALL_LEVELS_PATTERN,
+                ),
             ],
             ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
                 CallbackQueryHandler(
