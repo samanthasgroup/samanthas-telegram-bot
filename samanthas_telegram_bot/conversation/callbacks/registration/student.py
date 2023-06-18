@@ -4,7 +4,9 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_queries.api_client import ApiClient
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
+from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -17,9 +19,6 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.auxil.time_slot_handlers import (
-    reply_and_return_next_state,
-)
 from samanthas_telegram_bot.data_structures.constants import (
     LEVELS_ELIGIBLE_FOR_ORAL_TEST,
     NON_TEACHING_HELP_TYPES,
@@ -32,43 +31,44 @@ from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 logger = logging.getLogger(__name__)
 
 
-async def store_age_ask_slots_for_one_day_or_teaching_language(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
+async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores age group for student, asks timezone.
 
     * If this function is called for the first time in a conversation, **stores age** and gives
       time slots for Monday.
     * If this function is called after choosing time slots for a day, asks for time slots for the
       next day.
-    * If this is the last day, makes asks for the first language to learn/teach.
+    * If this is the last day, asks for the first language to learn.
     """
 
     query = update.callback_query
     data = query.data
 
-    if not data.isdigit():
-        raise NotImplementedError("Only digit-like callback data is accepted here")
+    user_data = context.user_data
 
     age_range_id = int(data)
-    context.user_data.student_age_range_id = age_range_id
-    context.user_data.student_age_from = context.bot_data.student_ages_for_age_range_id[
+    user_data.student_age_range_id = age_range_id
+    user_data.student_age_from = context.bot_data.student_ages_for_age_range_id[
         age_range_id
     ].age_from
-    context.user_data.student_age_to = context.bot_data.student_ages_for_age_range_id[
-        age_range_id
-    ].age_to
-    logger.info(
-        f"Chat {update.effective_chat.id}. "
-        f"Age group of the student: ID {context.user_data.student_age_range_id} "
-        f"({context.user_data.student_age_from}-{context.user_data.student_age_to} years old)"
+    user_data.student_age_to = context.bot_data.student_ages_for_age_range_id[age_range_id].age_to
+    await log_and_notify(
+        bot=context.bot,
+        logger=logger,
+        level=LoggingLevel.INFO,
+        text=(
+            f"Age group of the student: ID {user_data.student_age_range_id} "
+            f"({user_data.student_age_from}-{user_data.student_age_to} years old)"
+        ),
+        needs_to_notify_admin_group=False,
     )
+
     if context.chat_data.mode == ConversationMode.REVIEW:
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
 
-    next_state = await reply_and_return_next_state(update, context)
-    return next_state
+    await CQReplySender.ask_time_slot(context, query)
+    return ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
 async def store_teaching_language_ask_another_or_level_or_communication_language(

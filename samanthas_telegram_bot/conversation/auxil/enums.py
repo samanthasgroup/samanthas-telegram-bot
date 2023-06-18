@@ -35,6 +35,7 @@ class ConversationStateCommon(IntEnum):
     ASK_EMAIL = auto()
     ASK_ROLE = auto()
     ASK_AGE = auto()
+    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
     ASK_REVIEW = auto()
     REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
     REVIEW_REQUESTED_ITEM = auto()
@@ -54,7 +55,6 @@ class ConversationStateStudent(IntEnum):
     NON_TEACHING_HELP_MENU_OR_REVIEW = auto()
     SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE = auto()
     TIME_SLOTS_START = auto()
-    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
 
 
 class ConversationStateTeacher(IntEnum):
@@ -73,8 +73,7 @@ class ConversationStateTeacher(IntEnum):
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
-    TIME_SLOTS_START = auto()
-    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
+    TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB = auto()
 
 
 class UserDataReviewCategory(str, Enum):

@@ -411,7 +411,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+    async def ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,

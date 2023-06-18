@@ -159,56 +159,26 @@ def main() -> None:
                 )
             ],
             ConversationStateCommon.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
-            # Final part of conversation:
-            ConversationStateCommon.ASK_REVIEW: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    teacher.store_teachers_additional_skills_ask_if_review_needed,
-                )
-            ],
-            ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
-                CallbackQueryHandler(
-                    common.check_if_review_needed_give_review_menu_or_ask_final_comment
-                )
-            ],
-            ConversationStateCommon.ASK_FINAL_COMMENT: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    common.store_additional_help_comment_ask_final_comment,
-                )
-            ],
-            ConversationStateCommon.REVIEW_REQUESTED_ITEM: [
-                CallbackQueryHandler(common.review_requested_item)
-            ],
-            ConversationStateCommon.BYE: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND, common.store_comment_end_conversation
-                )
-            ],
-            # GROUPS OF CALLBACKS THAT HAVE SIMILAR FUNCTIONALITY BUT DIFFER FOR DIFFERENT ROLES
-            # Time slots
+            # Time slot callbacks differ slightly, depending on role
             ConversationStateStudent.TIME_SLOTS_START: [
-                CallbackQueryHandler(student.store_age_ask_slots_for_one_day_or_teaching_language)
+                CallbackQueryHandler(student.store_age_ask_slots_for_monday)
             ],
-            ConversationStateTeacher.TIME_SLOTS_START: [
-                CallbackQueryHandler(teacher.store_age_ask_slots_for_one_day_or_teaching_language)
-            ],
-            # Moving on to teaching language(s) and level(s)
-            ConversationStateStudent.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
+            ConversationStateTeacher.TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB: [
                 CallbackQueryHandler(
-                    student.store_age_ask_slots_for_one_day_or_teaching_language,
+                    teacher.ask_adult_teacher_slots_for_monday,
+                    pattern=f"^{CommonCallbackData.YES}$",  # "Yes, I am 18 or older"
+                ),
+                CallbackQueryHandler(teacher.ask_young_teacher_readiness_to_host_speaking_club),
+            ],
+            # Menu of time slots works the same for students and teachers
+            ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
+                CallbackQueryHandler(
+                    common.store_last_time_slot_ask_slots_for_next_day_or_teaching_language,
                     pattern=f"^{CommonCallbackData.NEXT}$",
                 ),
                 CallbackQueryHandler(common.store_one_time_slot_ask_another),
             ],
-            ConversationStateTeacher.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
-                CallbackQueryHandler(
-                    teacher.store_age_ask_slots_for_one_day_or_teaching_language,
-                    pattern=f"^{CommonCallbackData.NEXT}$",
-                ),
-                CallbackQueryHandler(common.store_one_time_slot_ask_another),
-            ],
-            # Storing language(s) and level(s)
+            # Storing language(s) and level(s): a bit different for students / adult/young teachers
             ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
                 CallbackQueryHandler(
                     student.store_data_ask_level_or_communication_language_or_start_assessment
@@ -216,15 +186,17 @@ def main() -> None:
             ],
             ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
-                    teacher.store_teaching_language_ask_another_or_level_or_communication_language
+                    teacher.ask_class_communication_language,
+                    pattern=f"^{CommonCallbackData.DONE}$",
                 ),
+                CallbackQueryHandler(teacher.store_teaching_language_ask_level_or_next_language),
             ],
             ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
                 CallbackQueryHandler(
                     teacher.young_teacher_store_communication_language_ask_speaking_club_language
                 )
             ],
-            # asking for non-teaching help needed/provided
+            # asking for non-teaching help needed/provided: a bit different for students/teachers
             ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW: [
                 CallbackQueryHandler(student.store_non_teaching_help_ask_another_or_review)
             ],
@@ -251,7 +223,7 @@ def main() -> None:
             ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
                 CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
             ],
-            # TEACHER-SPECIFIC
+            # TEACHER-SPECIFIC CALLBACKS
             ConversationStateTeacher.ASK_TEACHING_EXPERIENCE: [
                 CallbackQueryHandler(teacher.store_communication_language_ask_teaching_experience)
             ],
@@ -285,6 +257,32 @@ def main() -> None:
             ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
                     teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
+                )
+            ],
+            # COMMON FINAL PART OF CONVERSATION:
+            ConversationStateCommon.ASK_REVIEW: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    teacher.store_teachers_additional_skills_ask_if_review_needed,
+                )
+            ],
+            ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
+                CallbackQueryHandler(
+                    common.check_if_review_needed_give_review_menu_or_ask_final_comment
+                )
+            ],
+            ConversationStateCommon.ASK_FINAL_COMMENT: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    common.store_additional_help_comment_ask_final_comment,
+                )
+            ],
+            ConversationStateCommon.REVIEW_REQUESTED_ITEM: [
+                CallbackQueryHandler(common.review_requested_item)
+            ],
+            ConversationStateCommon.BYE: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND, common.store_comment_end_conversation
                 )
             ],
         },

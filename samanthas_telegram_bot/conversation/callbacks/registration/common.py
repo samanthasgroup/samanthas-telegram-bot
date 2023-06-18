@@ -31,7 +31,6 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import UserDataReviewCategory
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.auxil.time_slot_handlers import get_next_state
 from samanthas_telegram_bot.data_structures.constants import EMAIL_PATTERN, LOCALES, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
@@ -403,7 +402,7 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
                 query,
                 question_phrase_internal_id="ask_if_18",
             )
-            return TeacherState.TIME_SLOTS_START
+            return TeacherState.TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB
         case _:
             raise NotImplementedError(f"{context.user_data.role=} not supported")
 
@@ -411,12 +410,67 @@ async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
 async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores one time slot and offers to choose another."""
     query, data = await answer_callback_query_and_get_data(update)
-
     context.user_data.day_and_time_slot_ids.append(int(data))
 
     await CQReplySender.ask_time_slot(context, query)
+    return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
-    return get_next_state(context.user_data.role)
+
+async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores last time slot, asks teaching language."""
+    # not using shortcut here because the query may need to be answered with an alert
+    query = update.callback_query
+
+    chat_data = context.chat_data
+    user_data = context.user_data
+
+    # If we haven't yet reached Sunday, move on to next day and ask slots for it
+    if chat_data.day_index < 6:
+        chat_data.day_index += 1
+        await query.answer()
+        await CQReplySender.ask_time_slot(context, query)
+        return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+
+    # We have reached Sunday
+    slots_for_logging = (
+        context.bot_data.day_and_time_slot_for_slot_id[slot_id]
+        for slot_id in sorted(user_data.day_and_time_slot_ids)
+    )
+    logger.info(
+        f"Chat {update.effective_chat.id}. "
+        f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}",
+        stacklevel=2,  # TODO see if it works
+    )
+
+    # reset day of week to Monday for possible review or re-run
+    chat_data.day_index = 0
+
+    if not any(user_data.day_and_time_slot_ids):
+        await query.answer(
+            context.bot_data.phrases["no_slots_selected"][user_data.locale],
+            show_alert=True,
+        )
+        logger.info(
+            f"Chat {update.effective_chat.id}. User has selected no slots at all",
+            stacklevel=2,  # TODO see if it works
+        )
+        await CQReplySender.ask_time_slot(context, query)
+        return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+
+    if chat_data.mode == ConversationMode.REVIEW:
+        await query.answer()
+        await MessageSender.ask_review(update, context)
+        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
+    # If we've reached this part of function, it means that we have reached Sunday,
+    # user has selected some slots, and we're not in review mode.
+    # Time to ask about teaching language.
+
+    await query.answer()
+    await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
+    return TeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 
 # ==== END-OF-CONVERSATION CALLBACKS BEGIN ====
@@ -499,7 +553,7 @@ async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     elif data == UserDataReviewCategory.AVAILABILITY:
         context.user_data.day_and_time_slot_ids = []
         await CQReplySender.ask_time_slot(context, query)
-        return get_next_state(context.user_data.role)
+        return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
     elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:
         context.user_data.levels_for_teaching_language = {}
         context.user_data.language_and_level_ids = []

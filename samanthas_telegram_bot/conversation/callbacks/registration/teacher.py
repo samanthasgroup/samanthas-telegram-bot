@@ -14,9 +14,6 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
-from samanthas_telegram_bot.conversation.auxil.time_slot_handlers import (
-    reply_and_return_next_state,
-)
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     TEACHER_PEER_HELP_TYPES,
@@ -28,37 +25,32 @@ from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role, Tea
 logger = logging.getLogger(__name__)
 
 
-async def store_age_ask_slots_for_one_day_or_teaching_language(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores the answer (whether the teacher is 18+), next action depends on the answer.
+async def ask_adult_teacher_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks time slots for the first day.
 
-    If user is a teacher under 18, informs that teachers under 18 are not allowed and asks
-    whether they are at least 16, in which case they can host speaking clubs.
-
-    If this is an adult teacher:
-
-    * If this function is called for the first time in a conversation, **stores age** and gives
-      time slots for Monday.
-    * If this function is called after choosing time slots for a day, asks for time slots for the
-      next day.
-    * If this is the last day, makes asks for the first language to learn/teach.
+    This callback is only called if the teacher answered "Yes" to the question about being 18+.
     """
 
-    query, data = await answer_callback_query_and_get_data(update)
+    query, _ = await answer_callback_query_and_get_data(update)
+    context.user_data.teacher_is_under_18 = False
 
-    if data == CommonCallbackData.YES:  # yes, the teacher is 18 or older
-        context.user_data.teacher_is_under_18 = False
-    else:
-        context.user_data.teacher_is_under_18 = True
-        await CQReplySender.ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(context, query)
-        return ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
-
-    next_state = await reply_and_return_next_state(update, context)
-    return next_state
+    await CQReplySender.ask_time_slot(context, query)
+    return ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
-async def store_teaching_language_ask_another_or_level_or_communication_language(
+async def ask_young_teacher_readiness_to_host_speaking_club(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    query, _ = await answer_callback_query_and_get_data(update)
+    context.user_data.teacher_is_under_18 = True
+
+    await CQReplySender.ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+        context, query
+    )
+    return ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE
+
+
+async def store_teaching_language_ask_level_or_next_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores teaching language. Next step depends on whether teacher is done choosing.
@@ -71,18 +63,26 @@ async def store_teaching_language_ask_another_or_level_or_communication_language
 
     query, data = await answer_callback_query_and_get_data(update)
 
-    if data == CommonCallbackData.DONE:
-        if context.chat_data.mode == ConversationMode.REVIEW:
-            await MessageSender.ask_review(update, context)
-            return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
-
-        await CQReplySender.ask_class_communication_languages(context, query)
-        return ConversationStateTeacher.ASK_TEACHING_EXPERIENCE
-
     context.user_data.levels_for_teaching_language[data] = []
 
     await CQReplySender.ask_language_levels(context, query, show_done_button=False)
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+
+
+async def ask_class_communication_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks for communication language in class.
+
+    Stores nothing because the only way to get to this callback is to press "Done" button.
+    """
+    query, data = await answer_callback_query_and_get_data(update)
+
+    if context.chat_data.mode == ConversationMode.REVIEW:
+        await query.delete_message()
+        await MessageSender.ask_review(update, context)  # TODO do the same thing in CQReplySender?
+        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+
+    await CQReplySender.ask_class_communication_languages(context, query)
+    return ConversationStateTeacher.ASK_TEACHING_EXPERIENCE
 
 
 async def store_communication_language_ask_teaching_experience(
