@@ -60,7 +60,7 @@ async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONT
 
     context.user_data.levels_for_teaching_language[language_code] = []
 
-    await CQReplySender.ask_language_levels(context, query, show_done_button=False)
+    await CQReplySender.ask_language_level(context, query, show_done_button=False)
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 
@@ -77,7 +77,7 @@ async def store_level_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES)
             (last_language_added, language_level)
         ]
     )
-    await CQReplySender.ask_language_levels(context, query, show_done_button=True)
+    await CQReplySender.ask_language_level(context, query, show_done_button=True)
     # TODO review
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 

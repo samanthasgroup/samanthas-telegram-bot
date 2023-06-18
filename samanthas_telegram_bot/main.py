@@ -27,7 +27,11 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent,
     ConversationStateTeacher,
 )
-from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS_PATTERN
+from samanthas_telegram_bot.data_structures.constants import (
+    ALL_LEVELS_PATTERN,
+    ENGLISH,
+    LEARNED_FOR_YEAR_OR_MORE,
+)
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
@@ -116,8 +120,7 @@ def main() -> None:
         ],
         allow_reentry=True,
         states={
-            # COMMON CALLBACKS
-            # Start of conversation
+            # COMMON START OF CONVERSATION
             ConversationStateCommon.IS_REGISTERED: [
                 CallbackQueryHandler(common.store_locale_ask_if_already_registered)
             ],
@@ -160,7 +163,7 @@ def main() -> None:
                 )
             ],
             ConversationStateCommon.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
-            # Time slot callbacks differ slightly, depending on role
+            # Callbacks for asking day and time slots differ slightly, depending on role
             ConversationStateStudent.TIME_SLOTS_START: [
                 CallbackQueryHandler(student.store_age_ask_slots_for_monday)
             ],
@@ -179,12 +182,58 @@ def main() -> None:
                 ),
                 CallbackQueryHandler(common.store_one_time_slot_ask_another),
             ],
-            # Storing language(s) and level(s): a bit different for students / adult/young teachers
-            ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
+            # MIDDLE OF CONVERSATION: STUDENT-SPECIFIC CALLBACKS
+            ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST: [
                 CallbackQueryHandler(
-                    student.store_data_ask_level_or_communication_language_or_start_assessment
+                    student.ask_if_can_read_in_english,
+                    pattern=f"^{ENGLISH}$",
+                ),
+                CallbackQueryHandler(
+                    student.store_teaching_language_ask_level,
+                    pattern=f"^[a-z]{2}$",  # two-letter code of language (if 'en' didn't match)
+                ),
+                CallbackQueryHandler(
+                    student.store_non_english_level_ask_communication_language,
+                    pattern=ALL_LEVELS_PATTERN,
+                ),
+            ],
+            ConversationStateStudent.ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ: [  # noqa:E501
+                CallbackQueryHandler(
+                    student.ask_english_reader_depending_on_age,
+                    pattern=f"^{CommonCallbackData.YES}",  # "yes, I can read in English"
+                ),
+                CallbackQueryHandler(
+                    student.ask_communication_language_for_students_that_cannot_read_in_english,
+                    pattern=f"^{CommonCallbackData.NO}$",
+                ),
+            ],
+            ConversationStateStudent.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST: [
+                CallbackQueryHandler(
+                    student.start_assessment_for_student_that_has_learned_for_year_or_more,
+                    pattern=f"^{LEARNED_FOR_YEAR_OR_MORE}$",
+                ),
+                CallbackQueryHandler(
+                    student.ask_communication_language_for_students_that_learned_less_than_year
+                ),
+            ],
+            ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW: [
+                CallbackQueryHandler(
+                    student.store_communication_language_ask_non_teaching_help_or_start_review
                 )
             ],
+            ConversationStateStudent.ASK_QUESTION_IN_TEST: [
+                CallbackQueryHandler(student.assessment_store_answer_ask_question)
+            ],
+            ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
+                CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
+            ],
+            ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
+                CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
+            ],
+            ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW: [
+                CallbackQueryHandler(student.store_non_teaching_help_ask_another_or_review)
+            ],
+            # MIDDLE OF CONVERSATION: TEACHER-SPECIFIC CALLBACKS
             ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
                     teacher.ask_class_communication_language,
@@ -204,34 +253,6 @@ def main() -> None:
                     teacher.young_teacher_store_communication_language_ask_speaking_club_language
                 )
             ],
-            # asking for non-teaching help needed/provided: a bit different for students/teachers
-            ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW: [
-                CallbackQueryHandler(student.store_non_teaching_help_ask_another_or_review)
-            ],
-            ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_PEER_HELP: [
-                CallbackQueryHandler(
-                    teacher.store_non_teaching_help_ask_another_or_additional_help
-                )
-            ],
-            # STUDENT-SPECIFIC CALLBACKS
-            ConversationStateStudent.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_ASSESSMENT: [
-                CallbackQueryHandler(student.ask_communication_language_or_start_assessment)
-            ],
-            ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW: [
-                CallbackQueryHandler(
-                    student.store_communication_language_ask_non_teaching_help_or_start_review
-                )
-            ],
-            ConversationStateStudent.ASK_ASSESSMENT_QUESTION: [
-                CallbackQueryHandler(student.assessment_store_answer_ask_question)
-            ],
-            ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
-            ],
-            ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
-                CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
-            ],
-            # TEACHER-SPECIFIC CALLBACKS
             ConversationStateTeacher.ASK_TEACHING_EXPERIENCE: [
                 CallbackQueryHandler(teacher.store_communication_language_ask_teaching_experience)
             ],
@@ -252,6 +273,11 @@ def main() -> None:
             ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
                 CallbackQueryHandler(
                     teacher.store_student_age_group_ask_another_or_non_teaching_help
+                )
+            ],
+            ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_PEER_HELP: [
+                CallbackQueryHandler(
+                    teacher.store_non_teaching_help_ask_another_or_additional_help
                 )
             ],
             ConversationStateTeacher.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [

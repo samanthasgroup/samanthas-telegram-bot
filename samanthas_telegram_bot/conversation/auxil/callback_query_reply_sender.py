@@ -106,7 +106,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_language_levels(
+    async def ask_language_level(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,

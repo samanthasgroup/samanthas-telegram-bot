@@ -25,8 +25,10 @@ LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
 ALL_LEVELS = LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST
 ALL_LEVELS_PATTERN = re.compile(r"^(A[012])|([BC][12])$")
 
+ENGLISH = "en"
 Locale = Literal["ua", "en", "ru"]
 LOCALES: tuple[Locale, ...] = ("ua", "en", "ru")
+LEARNED_FOR_YEAR_OR_MORE = "year_or_more"
 
 NON_TEACHING_HELP_TYPES = (
     "cv_write_edit",
