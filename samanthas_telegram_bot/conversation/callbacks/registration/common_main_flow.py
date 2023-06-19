@@ -502,13 +502,6 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
     """Shows review menu to the user."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    # TODO move somewhere else
-    logger.info(
-        f"Chat {update.effective_chat.id}. Language(s) and level(s): "
-        f"{context.user_data.language_and_level_ids} "
-        f"(if they were chosen manually: {context.user_data.levels_for_teaching_language})"
-    )
-
     # Switch into review mode to let other callbacks know that they should return user
     # back to the review callback instead of moving him normally along the conversation line
     context.chat_data.mode = ConversationMode.REVIEW

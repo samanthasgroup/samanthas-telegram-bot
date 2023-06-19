@@ -256,6 +256,7 @@ def main() -> None:
                     teacher.store_level_ask_another,
                     pattern=ALL_LEVELS_PATTERN,
                 ),
+                CallbackQueryHandler(teacher.store_teaching_language_ask_level),
             ],
             ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
                 CallbackQueryHandler(

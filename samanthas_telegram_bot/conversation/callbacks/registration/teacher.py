@@ -57,7 +57,6 @@ async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONT
     """Stores teaching language, asks level."""
 
     query, language_code = await answer_callback_query_and_get_data(update)
-
     context.user_data.levels_for_teaching_language[language_code] = []
 
     await CQReplySender.ask_language_level(context, query, show_done_button=False)
@@ -75,9 +74,9 @@ async def store_level_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES)
 
 
 async def ask_next_teaching_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    query, data = await answer_callback_query_and_get_data(update)
-    context.user_data.levels_for_teaching_language[data] = []
-    await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    await CQReplySender.ask_teaching_languages(context, query, show_done_button=True)
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 
@@ -86,7 +85,13 @@ async def ask_class_communication_language(update: Update, context: CUSTOM_CONTE
 
     Stores nothing because the only way to get to this callback is to press "Done" button.
     """
-    query, data = await answer_callback_query_and_get_data(update)
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    logger.info(
+        f"Chat {update.effective_chat.id}. Selected teaching language(s) and level(s): "
+        f"{context.user_data.levels_for_teaching_language} "
+        f"(IDs: {context.user_data.language_and_level_ids})"
+    )
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
