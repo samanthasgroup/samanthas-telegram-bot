@@ -284,8 +284,9 @@ def main() -> None:
             ],
             ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
                 CallbackQueryHandler(
-                    adult_teacher.store_student_age_group_ask_another_or_non_teaching_help
-                )
+                    adult_teacher.ask_non_teaching_help, pattern=CommonCallbackData.DONE
+                ),
+                CallbackQueryHandler(adult_teacher.store_student_age_group_ask_another),
             ],
             ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
                 CallbackQueryHandler(

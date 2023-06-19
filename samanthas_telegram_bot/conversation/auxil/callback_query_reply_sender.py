@@ -191,8 +191,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=2,
                 bottom_row_button=abort_button
                 if context.chat_data.assessment_dont_knows_in_a_row >= 5
-                else None
-                # TODO remove context.bot_data.phrases["assessment_option_dont_know"]
+                else None,
             )
         )
 
@@ -283,6 +282,7 @@ class CallbackQueryReplySender:
         # language/level for now.  This option will be reserved for teachers.
         if context.user_data.role == Role.TEACHER:
             options.append(f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}")
+            # TODO review preferred students' ages?
 
         buttons = [
             InlineKeyboardButton(

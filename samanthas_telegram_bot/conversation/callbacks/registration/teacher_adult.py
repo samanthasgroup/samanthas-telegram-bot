@@ -18,7 +18,7 @@ from samanthas_telegram_bot.conversation.auxil.shortcuts import (
 )
 from samanthas_telegram_bot.data_structures.constants import TEACHER_PEER_HELP_TYPES
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import AgeRangeType, TeachingMode
+from samanthas_telegram_bot.data_structures.enums import TeachingMode
 
 logger = logging.getLogger(__name__)
 
@@ -185,36 +185,30 @@ async def store_frequency_ask_student_age_groups(
     )
 
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-
     return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
 
-async def store_student_age_group_ask_another_or_non_teaching_help(
+async def store_student_age_group_ask_another(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores preferred age group of students, asks another.  If the teacher is done, ask about
-    additional help for students.
-    """
+    """Stores preferred age group of students, asks another."""
     query, data = await answer_callback_query_and_get_data(update)
-
-    if data != CommonCallbackData.DONE:
-        context.user_data.teacher_student_age_range_ids.append(int(data))
-
-    # teacher pressed "Done" or chose all age groups
-    if data == CommonCallbackData.DONE or len(
-        context.user_data.teacher_student_age_range_ids
-    ) == len(context.bot_data.age_ranges_for_type[AgeRangeType.TEACHER]):
-        logger.info(
-            f"Chat {update.effective_chat.id}. IDs of student ages "
-            f"{context.user_data.teacher_student_age_range_ids}"
-        )
-        await CQReplySender.ask_non_teaching_help(context, query)
-        return (
-            ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP
-        )  # TODO I renamed it!
+    context.user_data.teacher_student_age_range_ids.append(int(data))
 
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
     return ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
+
+
+async def ask_non_teaching_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks the teacher for non-teaching help they can provide."""
+    logger.info(
+        f"Chat {update.effective_chat.id}. IDs of student ages "
+        f"{context.user_data.teacher_student_age_range_ids}"
+    )
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    await CQReplySender.ask_non_teaching_help(context, query)
+    return ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP
 
 
 async def store_non_teaching_help_ask_another(
