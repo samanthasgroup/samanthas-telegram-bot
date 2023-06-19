@@ -470,7 +470,16 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
 
     await query.answer()
     await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
-    return TeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+
+    # This is the bifurcation point in the conversation: next state depends on role.
+    if user_data.role == Role.TEACHER:
+        return TeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+    elif user_data.role == Role.STUDENT:
+        return StudentState.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST
+    else:
+        raise NotImplementedError(
+            f"Move from time slots to next state not supported for {user_data.role=}"
+        )
 
 
 # ==== END-OF-CONVERSATION CALLBACKS BEGIN ====
@@ -490,7 +499,7 @@ async def check_if_review_needed_give_review_menu_or_ask_final_comment(
 
     if data == CommonCallbackData.YES:
         context.chat_data.mode = ConversationMode.NORMAL  # set explicitly to normal just in case
-        # I don't want to do edit_message_text. Let user info remain in the chat for user to see,
+        # We don't call edit_message_text(): let user info remain in the chat for user to see,
         # but remove the buttons.
         await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
         await update.effective_chat.send_message(

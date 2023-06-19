@@ -15,7 +15,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import (
     answer_callback_query_and_get_data,
-    get_last_language_added,
+    store_selected_language_level,
 )
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
@@ -67,16 +67,8 @@ async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONT
 async def store_level_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores level of teaching language, asks to choose another level."""
     query, language_level = await answer_callback_query_and_get_data(update)
-    user_data = context.user_data
+    store_selected_language_level(context=context, level=language_level)
 
-    last_language_added = get_last_language_added(user_data)
-
-    user_data.levels_for_teaching_language[last_language_added].append(language_level)
-    user_data.language_and_level_ids.append(
-        context.bot_data.language_and_level_id_for_language_id_and_level[
-            (last_language_added, language_level)
-        ]
-    )
     await CQReplySender.ask_language_level(context, query, show_done_button=True)
     # TODO review
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE

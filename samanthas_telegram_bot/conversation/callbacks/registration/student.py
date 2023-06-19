@@ -20,7 +20,7 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.auxil.prepare_assessment import prepare_assessment
 from samanthas_telegram_bot.conversation.auxil.shortcuts import (
     answer_callback_query_and_get_data,
-    get_last_language_added,
+    store_selected_language_level,
 )
 from samanthas_telegram_bot.data_structures.constants import (
     LEVELS_ELIGIBLE_FOR_ORAL_TEST,
@@ -156,21 +156,14 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
 async def store_non_english_level_ask_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores level (only selected for langs other than 'en'), asks communication language."""
+    """Stores level (only for languages other than 'en'), asks communication language.
 
-    query, data = await answer_callback_query_and_get_data(update)
+    Level can only be selected by user for languages other than English.
+    The callback is not called for English, this is controlled by pattern in ``main.py``.
+    """
 
-    user_data = context.user_data
-    last_language_added = get_last_language_added(user_data)
-
-    # If the student had chosen another language than English, query.data is language level.
-    # TODO this repeats with teacher.py:
-    user_data.levels_for_teaching_language[last_language_added].append(data)
-    user_data.language_and_level_ids.append(
-        context.bot_data.language_and_level_id_for_language_id_and_level[
-            (last_language_added, data)
-        ]
-    )
+    query, language_level = await answer_callback_query_and_get_data(update)
+    store_selected_language_level(context=context, level=language_level)
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await MessageSender.ask_review(update, context)

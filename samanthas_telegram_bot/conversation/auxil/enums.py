@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum, auto
+from enum import Enum, IntEnum
 
 
 class CommonCallbackData(str, Enum):
@@ -21,60 +21,76 @@ class ConversationMode(str, Enum):
     REVIEW = "review"
 
 
+state_index = 0
+
+
+def state_auto() -> int:
+    """A replacement for enum.auto() that allows to create integer indexes for multiple classes.
+
+    Running enum.auto() in every `...State` IntEnum will start at 1.
+    This simple implementation with a global variable lets us continue where previous enum ended.
+    """
+    global state_index
+    state_index += 1
+    return state_index
+
+
 class ConversationStateCommon(IntEnum):
     """Provides integer keys for the dictionary of common states for ConversationHandler."""
 
-    IS_REGISTERED = auto()
-    CHECK_CHAT_ID_ASK_TIMEZONE = auto()
-    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE = auto()
-    ASK_FIRST_NAME = auto()
-    ASK_LAST_NAME = auto()
-    ASK_SOURCE = auto()
-    CHECK_USERNAME = auto()
-    ASK_PHONE_NUMBER = auto()
-    ASK_EMAIL = auto()
-    ASK_ROLE = auto()
-    ASK_AGE = auto()
-    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = auto()
-    ASK_REVIEW = auto()
-    REVIEW_MENU_OR_ASK_FINAL_COMMENT = auto()
-    REVIEW_REQUESTED_ITEM = auto()
-    ASK_FINAL_COMMENT = auto()  # standalone, not after review
-    BYE = auto()
+    IS_REGISTERED = state_auto()
+    CHECK_CHAT_ID_ASK_TIMEZONE = state_auto()
+    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE = state_auto()
+    ASK_FIRST_NAME = state_auto()
+    ASK_LAST_NAME = state_auto()
+    ASK_SOURCE = state_auto()
+    CHECK_USERNAME = state_auto()
+    ASK_PHONE_NUMBER = state_auto()
+    ASK_EMAIL = state_auto()
+    ASK_ROLE = state_auto()
+    ASK_AGE = state_auto()
+    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = state_auto()
+    ASK_REVIEW = state_auto()
+    REVIEW_MENU_OR_ASK_FINAL_COMMENT = state_auto()
+    REVIEW_REQUESTED_ITEM = state_auto()
+    ASK_FINAL_COMMENT = state_auto()  # standalone, not after review
+    BYE = state_auto()
 
 
 class ConversationStateStudent(IntEnum):
     """Provides integer keys for the dictionary of student's states for ConversationHandler."""
 
-    ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST = auto()
-    ASK_QUESTION_IN_TEST = auto()
-    ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK = auto()
-    ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST = auto()
-    ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ = auto()
-    ASK_NON_TEACHING_HELP_OR_START_REVIEW = auto()
-    ASK_SLOTS_OR_TEACHING_LANGUAGE = auto()
-    NON_TEACHING_HELP_MENU_OR_REVIEW = auto()
-    SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE = auto()
-    TIME_SLOTS_START = auto()
+    ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
+    ASK_QUESTION_IN_TEST = state_auto()
+    ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK = state_auto()
+    ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
+    ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ = (
+        state_auto()
+    )
+    ASK_NON_TEACHING_HELP_OR_START_REVIEW = state_auto()
+    ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
+    NON_TEACHING_HELP_MENU_OR_REVIEW = state_auto()
+    SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE = state_auto()
+    TIME_SLOTS_START = state_auto()
 
 
 class ConversationStateTeacher(IntEnum):
     """Provides integer keys for the dictionary of teacher's states for ConversationHandler."""
 
-    ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE = auto()
-    ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP = auto()
-    ASK_SLOTS_OR_TEACHING_LANGUAGE = auto()
-    ASK_TEACHING_EXPERIENCE = auto()
-    ASK_TEACHING_FREQUENCY = auto()
-    ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = auto()
-    ASK_YOUNG_TEACHER_ADDITIONAL_HELP = auto()
-    ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE = auto()
-    ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE = auto()
-    NON_TEACHING_HELP_MENU_OR_PEER_HELP = auto()
-    PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = auto()
-    PREFERRED_STUDENT_AGE_GROUPS_START = auto()
-    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = auto()
-    TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB = auto()
+    ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE = state_auto()
+    ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP = state_auto()
+    ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
+    ASK_TEACHING_EXPERIENCE = state_auto()
+    ASK_TEACHING_FREQUENCY = state_auto()
+    ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = state_auto()
+    ASK_YOUNG_TEACHER_ADDITIONAL_HELP = state_auto()
+    ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE = state_auto()
+    ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE = state_auto()
+    NON_TEACHING_HELP_MENU_OR_PEER_HELP = state_auto()
+    PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = state_auto()
+    PREFERRED_STUDENT_AGE_GROUPS_START = state_auto()
+    PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = state_auto()
+    TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB = state_auto()
 
 
 class UserDataReviewCategory(str, Enum):

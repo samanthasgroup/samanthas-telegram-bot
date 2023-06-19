@@ -190,7 +190,7 @@ def main() -> None:
                 ),
                 CallbackQueryHandler(
                     student.store_teaching_language_ask_level,
-                    pattern=f"^[a-z]{2}$",  # two-letter code of language (if 'en' didn't match)
+                    pattern=r"^[a-z]{2}$",  # two-letter code of language (if 'en' didn't match)
                 ),
                 CallbackQueryHandler(
                     student.store_non_english_level_ask_communication_language,
