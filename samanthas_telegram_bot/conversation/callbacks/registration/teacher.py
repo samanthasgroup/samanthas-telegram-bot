@@ -91,7 +91,7 @@ async def ask_class_communication_language(update: Update, context: CUSTOM_CONTE
     if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)  # TODO do the same thing in CQReplySender?
-        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_class_communication_languages(context, query)
     return ConversationStateTeacher.ASK_TEACHING_EXPERIENCE
@@ -110,7 +110,7 @@ async def store_communication_language_ask_teaching_experience(
     if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
-        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_yes_no(
         context, query, question_phrase_internal_id="ask_teacher_experience"
@@ -285,7 +285,7 @@ async def store_teachers_additional_skills_ask_if_review_needed(
         context.user_data.teacher_additional_skills_comment = update.message.text
 
     await MessageSender.ask_review(update, context)
-    return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+    return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
 
 async def young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye(

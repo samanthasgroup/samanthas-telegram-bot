@@ -16,7 +16,8 @@ from telegram.ext import (
     filters,
 )
 
-import samanthas_telegram_bot.conversation.callbacks.registration.common as common
+import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
+import samanthas_telegram_bot.conversation.callbacks.registration.common_review as review
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
@@ -26,6 +27,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateCommon,
     ConversationStateStudent,
     ConversationStateTeacher,
+    UserDataReviewCategory,
 )
 from samanthas_telegram_bot.data_structures.constants import (
     ALL_LEVELS_PATTERN,
@@ -116,53 +118,60 @@ def main() -> None:
     # Add conversation handler
     conv_handler = ConversationHandler(
         entry_points=[
-            CommandHandler("start", common.start),
+            CommandHandler("start", common_main.start),
         ],
         allow_reentry=True,
         states={
             # COMMON START OF CONVERSATION
             ConversationStateCommon.IS_REGISTERED: [
-                CallbackQueryHandler(common.store_locale_ask_if_already_registered)
+                CallbackQueryHandler(common_main.store_locale_ask_if_already_registered)
             ],
             ConversationStateCommon.CHECK_CHAT_ID_ASK_TIMEZONE: [
                 CallbackQueryHandler(
-                    common.redirect_to_coordinator_if_registered_check_chat_id_ask_timezone
+                    common_main.redirect_to_coordinator_if_registered_check_chat_id_ask_timezone
                 )
             ],
             ConversationStateCommon.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE: [
                 CallbackQueryHandler(
-                    common.say_bye_if_does_not_want_to_register_another_or_ask_timezone
+                    common_main.say_bye_if_does_not_want_to_register_another_or_ask_timezone
                 )
             ],
             ConversationStateCommon.ASK_FIRST_NAME: [
-                CallbackQueryHandler(common.store_timezone_ask_first_name)
+                CallbackQueryHandler(common_main.store_timezone_ask_first_name)
             ],
             ConversationStateCommon.ASK_LAST_NAME: [
                 MessageHandler(
-                    filters.TEXT & ~filters.COMMAND, common.store_first_name_ask_last_name
+                    filters.TEXT & ~filters.COMMAND, common_main.store_first_name_ask_last_name
                 )
             ],
             ConversationStateCommon.ASK_SOURCE: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, common.store_last_name_ask_source)
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND, common_main.store_last_name_ask_source
+                )
             ],
             ConversationStateCommon.CHECK_USERNAME: [
-                MessageHandler(filters.TEXT & ~filters.COMMAND, common.store_source_check_username)
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND, common_main.store_source_check_username
+                )
             ],
             ConversationStateCommon.ASK_PHONE_NUMBER: [
-                CallbackQueryHandler(common.store_username_if_available_ask_phone_or_email)
+                CallbackQueryHandler(common_main.store_username_if_available_ask_phone_or_email)
             ],
             ConversationStateCommon.ASK_EMAIL: [
                 MessageHandler(
                     (filters.CONTACT ^ filters.TEXT) & ~filters.COMMAND,
-                    common.store_phone_ask_email,
+                    common_main.store_phone_ask_email,
                 )
             ],
             ConversationStateCommon.ASK_ROLE: [
                 MessageHandler(
-                    filters.TEXT & ~filters.COMMAND, common.store_email_check_existence_ask_role
+                    filters.TEXT & ~filters.COMMAND,
+                    common_main.store_email_check_existence_ask_role,
                 )
             ],
-            ConversationStateCommon.ASK_AGE: [CallbackQueryHandler(common.store_role_ask_age)],
+            ConversationStateCommon.ASK_AGE: [
+                CallbackQueryHandler(common_main.store_role_ask_age)
+            ],
             # Callbacks for asking day and time slots differ slightly, depending on role
             ConversationStateStudent.TIME_SLOTS_START: [
                 CallbackQueryHandler(student.store_age_ask_slots_for_monday)
@@ -177,10 +186,10 @@ def main() -> None:
             # Menu of time slots works the same for students and teachers
             ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
                 CallbackQueryHandler(
-                    common.store_last_time_slot_ask_slots_for_next_day_or_teaching_language,
+                    common_main.store_last_time_slot_ask_slots_for_next_day_or_teaching_language,
                     pattern=CommonCallbackData.NEXT,
                 ),
-                CallbackQueryHandler(common.store_one_time_slot_ask_another),
+                CallbackQueryHandler(common_main.store_one_time_slot_ask_another),
             ],
             # MIDDLE OF CONVERSATION: STUDENT-SPECIFIC CALLBACKS
             ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST: [
@@ -300,35 +309,55 @@ def main() -> None:
                     teacher.store_teachers_additional_skills_ask_if_review_needed,
                 )
             ],
-            ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT: [
+            ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU: [
                 CallbackQueryHandler(
-                    common.check_if_review_needed_give_review_menu_or_ask_final_comment
-                )
+                    common_main.ask_final_comment,
+                    pattern=CommonCallbackData.YES,  # "Yes, info is correct (no review needed)"
+                ),
+                CallbackQueryHandler(common_main.show_review_menu),
             ],
             ConversationStateCommon.ASK_FINAL_COMMENT: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
-                    common.store_additional_help_comment_ask_final_comment,
+                    common_main.store_additional_help_comment_ask_final_comment,
                 )
             ],
             ConversationStateCommon.REVIEW_REQUESTED_ITEM: [
-                CallbackQueryHandler(common.review_requested_item)
+                CallbackQueryHandler(review.first_name, pattern=UserDataReviewCategory.FIRST_NAME),
+                CallbackQueryHandler(review.last_name, pattern=UserDataReviewCategory.LAST_NAME),
+                CallbackQueryHandler(review.phone, pattern=UserDataReviewCategory.PHONE_NUMBER),
+                CallbackQueryHandler(review.email, pattern=UserDataReviewCategory.EMAIL),
+                CallbackQueryHandler(review.timezone, pattern=UserDataReviewCategory.TIMEZONE),
+                CallbackQueryHandler(
+                    review.day_and_time_slots, pattern=UserDataReviewCategory.DAY_AND_TIME_SLOTS
+                ),
+                CallbackQueryHandler(
+                    review.languages_and_levels,
+                    pattern=UserDataReviewCategory.LANGUAGES_AND_LEVELS,
+                ),
+                CallbackQueryHandler(
+                    review.class_communication_language,
+                    pattern=UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE,
+                ),
+                CallbackQueryHandler(
+                    review.student_age_groups, pattern=UserDataReviewCategory.STUDENT_AGE_GROUPS
+                ),
             ],
             ConversationStateCommon.BYE: [
                 MessageHandler(
-                    filters.TEXT & ~filters.COMMAND, common.store_comment_end_conversation
+                    filters.TEXT & ~filters.COMMAND, common_main.store_comment_end_conversation
                 )
             ],
         },
         fallbacks=[
-            CommandHandler("cancel", common.cancel),
-            MessageHandler(filters.TEXT & ~filters.COMMAND, common.message_fallback),
+            CommandHandler("cancel", common_main.cancel),
+            MessageHandler(filters.TEXT & ~filters.COMMAND, common_main.message_fallback),
         ],
     )
 
     application.add_handler(conv_handler)
 
-    help_handler = CommandHandler("help", common.send_help)
+    help_handler = CommandHandler("help", common_main.send_help)
     application.add_handler(help_handler)
 
     application.add_error_handler(error_handler)

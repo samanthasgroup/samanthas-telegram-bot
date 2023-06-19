@@ -28,7 +28,6 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacher as TeacherState,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import UserDataReviewCategory
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.constants import EMAIL_PATTERN, LOCALES, Locale
@@ -169,7 +168,7 @@ async def store_timezone_ask_first_name(update: Update, context: CUSTOM_CONTEXT_
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await MessageSender.ask_review(update, context)
-        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await query.edit_message_text(
         context.bot_data.phrases["ask_first_name"][context.user_data.locale],
@@ -199,7 +198,7 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
     if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await update.message.reply_text(
         context.bot_data.phrases["ask_last_name"][context.user_data.locale]
@@ -218,7 +217,7 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
     if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await update.effective_chat.send_message(
         context.bot_data.phrases["ask_source"][context.user_data.locale]
@@ -322,7 +321,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await update.message.reply_text(
         context.bot_data.phrases["ask_email"][locale],
@@ -368,7 +367,7 @@ async def store_email_check_existence_ask_role(
     if context.chat_data.mode == ConversationMode.REVIEW:
         await update.message.delete()
         await MessageSender.ask_review(update, context)
-        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await update.message.reply_text(
         context.bot_data.phrases["ask_role"][locale],
@@ -462,7 +461,7 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
     if chat_data.mode == ConversationMode.REVIEW:
         await query.answer()
         await MessageSender.ask_review(update, context)
-        return CommonState.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     # If we've reached this part of function, it means that we have reached Sunday,
     # user has selected some slots, and we're not in review mode.
@@ -485,103 +484,36 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
 # ==== END-OF-CONVERSATION CALLBACKS BEGIN ====
 
 
-async def check_if_review_needed_give_review_menu_or_ask_final_comment(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """If the user requested a review, gives a review menu. Otherwise, asks for final comment."""
-    query, data = await answer_callback_query_and_get_data(update)
+async def ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks final comment."""
+    query, _ = await answer_callback_query_and_get_data(update)
 
+    # We don't call edit_message_text(): let user info remain in the chat for user to see,
+    # but remove the buttons.
+    await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
+    await update.effective_chat.send_message(
+        context.bot_data.phrases["ask_final_comment"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
+    )
+    return CommonState.BYE
+
+
+async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Shows review menu to the user."""
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    # TODO move somewhere else
     logger.info(
         f"Chat {update.effective_chat.id}. Language(s) and level(s): "
         f"{context.user_data.language_and_level_ids} "
         f"(if they were chosen manually: {context.user_data.levels_for_teaching_language})"
     )
 
-    if data == CommonCallbackData.YES:
-        context.chat_data.mode = ConversationMode.NORMAL  # set explicitly to normal just in case
-        # We don't call edit_message_text(): let user info remain in the chat for user to see,
-        # but remove the buttons.
-        await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
-        await update.effective_chat.send_message(
-            context.bot_data.phrases["ask_final_comment"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return CommonState.BYE
-    else:
-        # Switch into review mode to let other callbacks know that they should return user
-        # back to the review callback instead of moving him normally along the conversation line
-        context.chat_data.mode = ConversationMode.REVIEW
-        await CQReplySender.ask_review_category(context, query)
-        return CommonState.REVIEW_REQUESTED_ITEM
-
-
-async def review_requested_item(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Reads callback data, asks corresponding question about the item they want to review,
-    redirects to the corresponding state of the conversation (the state right after the moment when
-    this question was asked in normal conversation flow).
-
-    Note: since chat is in review mode now, the user will return straight back to review menu after
-    they give amended information "upstream" in the conversation.
-    """
-    query, data = await answer_callback_query_and_get_data(update)
-
-    locale: Locale = context.user_data.locale
-
-    if data == UserDataReviewCategory.FIRST_NAME:
-        await query.edit_message_text(
-            context.bot_data.phrases["ask_first_name"][locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        # Return state that is right after asking for the first name.
-        # This state corresponds to the callback where the first name is stored.
-        # This callback contains a check for a chat mode and will return the user
-        # back to the review if chat is in review mode.
-        # Same for other cases below.
-        return CommonState.ASK_LAST_NAME
-    elif data == UserDataReviewCategory.LAST_NAME:
-        await query.edit_message_text(
-            context.bot_data.phrases["ask_last_name"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return CommonState.ASK_SOURCE
-    elif data == UserDataReviewCategory.PHONE_NUMBER:
-        # no need to check user_data here since the user couldn't have selected this option
-        # if it wasn't there.
-        # edit_message_text not possible here because of a button for sharing phone number
-        await MessageSender.ask_phone_number(update, context)
-        return CommonState.ASK_EMAIL
-    elif data == UserDataReviewCategory.EMAIL:
-        await query.edit_message_text(
-            context.bot_data.phrases["ask_email"][locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return CommonState.ASK_ROLE
-    elif data == UserDataReviewCategory.TIMEZONE:
-        await CQReplySender.ask_timezone(context, query)
-        return CommonState.ASK_FIRST_NAME
-    elif data == UserDataReviewCategory.AVAILABILITY:
-        context.user_data.day_and_time_slot_ids = []
-        await CQReplySender.ask_time_slot(context, query)
-        return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
-    elif data == UserDataReviewCategory.LANGUAGE_AND_LEVEL:
-        context.user_data.levels_for_teaching_language = {}
-        context.user_data.language_and_level_ids = []
-        show_done_button = True if context.user_data.levels_for_teaching_language else False
-        await CQReplySender.ask_teaching_languages(
-            context, query, show_done_button=show_done_button
-        )
-        return TeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
-    elif data == UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE:
-        await CQReplySender.ask_class_communication_languages(context, query)
-        return TeacherState.ASK_TEACHING_EXPERIENCE
-    elif data == UserDataReviewCategory.STUDENT_AGE_GROUP:
-        if context.user_data.role == Role.STUDENT:  # TODO maybe add students' ages for teachers
-            await CQReplySender.ask_student_age(context, query)
-            return StudentState.TIME_SLOTS_START
-        await CQReplySender.ask_teacher_age_groups_of_students(context, query)
-        return TeacherState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
-    else:
-        raise NotImplementedError(f"Cannot handle review of {data}")
+    # Switch into review mode to let other callbacks know that they should return user
+    # back to the review callback instead of moving him normally along the conversation line
+    context.chat_data.mode = ConversationMode.REVIEW
+    await CQReplySender.ask_review_category(context, query)
+    return CommonState.REVIEW_REQUESTED_ITEM
 
 
 async def store_additional_help_comment_ask_final_comment(

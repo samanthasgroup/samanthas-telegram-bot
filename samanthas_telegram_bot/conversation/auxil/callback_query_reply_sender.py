@@ -256,7 +256,7 @@ class CallbackQueryReplySender:
             f"{UserDataReviewCategory.LAST_NAME}",
             f"{UserDataReviewCategory.EMAIL}",
             f"{UserDataReviewCategory.TIMEZONE}",
-            f"{UserDataReviewCategory.AVAILABILITY}",
+            f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
             f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
         ]
 
@@ -264,12 +264,12 @@ class CallbackQueryReplySender:
             options.append(f"{UserDataReviewCategory.PHONE_NUMBER}")
 
         if context.user_data.role == Role.STUDENT:
-            options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUP}")
+            options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUPS}")
 
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
         if context.user_data.role == Role.TEACHER:
-            options.append(f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}")
+            options.append(f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}")
 
         buttons = [
             InlineKeyboardButton(

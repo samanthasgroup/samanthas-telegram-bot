@@ -67,7 +67,7 @@ async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await MessageSender.ask_review(update, context)
-        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_time_slot(context, query)
     return ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
@@ -167,7 +167,7 @@ async def store_non_english_level_ask_communication_language(
 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await MessageSender.ask_review(update, context)
-        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     # Students can only choose one language and one level
     await CQReplySender.ask_class_communication_languages(
@@ -339,7 +339,7 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
         return ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW
 
     await MessageSender.ask_review(update, context)
-    return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+    return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
 
 async def store_non_teaching_help_ask_another_or_review(
@@ -356,7 +356,7 @@ async def store_non_teaching_help_ask_another_or_review(
         NON_TEACHING_HELP_TYPES
     ):
         await MessageSender.ask_review(update, context)
-        return ConversationStateCommon.REVIEW_MENU_OR_ASK_FINAL_COMMENT
+        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     context.user_data.non_teaching_help_types.append(data)
     await CQReplySender.ask_non_teaching_help(context, query)

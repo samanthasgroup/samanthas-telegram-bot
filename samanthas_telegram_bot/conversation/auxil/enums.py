@@ -51,7 +51,7 @@ class ConversationStateCommon(IntEnum):
     ASK_AGE = state_auto()
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = state_auto()
     ASK_REVIEW = state_auto()
-    REVIEW_MENU_OR_ASK_FINAL_COMMENT = state_auto()
+    ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU = state_auto()
     REVIEW_REQUESTED_ITEM = state_auto()
     ASK_FINAL_COMMENT = state_auto()  # standalone, not after review
     BYE = state_auto()
@@ -103,8 +103,8 @@ class UserDataReviewCategory(str, Enum):
     LAST_NAME = "last_name"
     EMAIL = "email"
     PHONE_NUMBER = "phone_number"
-    STUDENT_AGE_GROUP = "student_age_group"
+    STUDENT_AGE_GROUPS = "student_age_group"
     TIMEZONE = "timezone"
-    AVAILABILITY = "availability"
-    LANGUAGE_AND_LEVEL = "language_and_level"
+    DAY_AND_TIME_SLOTS = "availability"
+    LANGUAGES_AND_LEVELS = "language_and_level"
     CLASS_COMMUNICATION_LANGUAGE = "class_communication_language"
