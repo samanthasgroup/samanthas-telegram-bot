@@ -170,7 +170,7 @@ def main() -> None:
             ConversationStateTeacher.TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB: [
                 CallbackQueryHandler(
                     teacher.ask_adult_teacher_slots_for_monday,
-                    pattern=f"^{CommonCallbackData.YES}$",  # "Yes, I am 18 or older"
+                    pattern=CommonCallbackData.YES,  # "Yes, I am 18 or older"
                 ),
                 CallbackQueryHandler(teacher.ask_young_teacher_readiness_to_host_speaking_club),
             ],
@@ -178,7 +178,7 @@ def main() -> None:
             ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
                 CallbackQueryHandler(
                     common.store_last_time_slot_ask_slots_for_next_day_or_teaching_language,
-                    pattern=f"^{CommonCallbackData.NEXT}$",
+                    pattern=CommonCallbackData.NEXT,
                 ),
                 CallbackQueryHandler(common.store_one_time_slot_ask_another),
             ],
@@ -186,7 +186,7 @@ def main() -> None:
             ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST: [
                 CallbackQueryHandler(
                     student.ask_if_can_read_in_english,
-                    pattern=f"^{ENGLISH}$",
+                    pattern=ENGLISH,
                 ),
                 CallbackQueryHandler(
                     student.store_teaching_language_ask_level,
@@ -200,17 +200,17 @@ def main() -> None:
             ConversationStateStudent.ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ: [  # noqa:E501
                 CallbackQueryHandler(
                     student.ask_english_reader_depending_on_age,
-                    pattern=f"^{CommonCallbackData.YES}",  # "yes, I can read in English"
+                    pattern=CommonCallbackData.YES,  # "yes, I can read in English"
                 ),
                 CallbackQueryHandler(
                     student.ask_communication_language_for_students_that_cannot_read_in_english,
-                    pattern=f"^{CommonCallbackData.NO}$",
+                    pattern=CommonCallbackData.NO,
                 ),
             ],
             ConversationStateStudent.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST: [
                 CallbackQueryHandler(
                     student.start_assessment_for_student_that_has_learned_for_year_or_more,
-                    pattern=f"^{LEARNED_FOR_YEAR_OR_MORE}$",
+                    pattern=LEARNED_FOR_YEAR_OR_MORE,
                 ),
                 CallbackQueryHandler(
                     student.ask_communication_language_for_students_that_learned_less_than_year
@@ -237,11 +237,11 @@ def main() -> None:
             ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
                     teacher.ask_class_communication_language,
-                    pattern=f"^{CommonCallbackData.DONE}$",
+                    pattern=CommonCallbackData.DONE,
                 ),
                 CallbackQueryHandler(
                     teacher.ask_next_teaching_language,
-                    pattern=f"^{CommonCallbackData.NEXT}$",
+                    pattern=CommonCallbackData.NEXT,
                 ),
                 CallbackQueryHandler(
                     teacher.store_level_ask_another,
