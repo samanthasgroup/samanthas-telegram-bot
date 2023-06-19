@@ -68,7 +68,7 @@ class ConversationStateStudent(IntEnum):
     )
     ASK_NON_TEACHING_HELP_OR_START_REVIEW = state_auto()
     ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
-    NON_TEACHING_HELP_MENU_OR_REVIEW = state_auto()
+    NON_TEACHING_HELP_MENU_OR_ASK_REVIEW = state_auto()
     SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE = state_auto()
     TIME_SLOTS_START = state_auto()
 

@@ -242,8 +242,9 @@ def main() -> None:
             ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
                 CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
             ],
-            ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW: [
-                CallbackQueryHandler(student.store_non_teaching_help_ask_another_or_review)
+            ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_ASK_REVIEW: [
+                CallbackQueryHandler(student.ask_review, pattern=CommonCallbackData.DONE),
+                CallbackQueryHandler(student.store_non_teaching_help_ask_another),
             ],
             # MIDDLE OF CONVERSATION: ADULT TEACHER CALLBACKS
             ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [

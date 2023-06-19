@@ -22,11 +22,7 @@ from samanthas_telegram_bot.conversation.auxil.shortcuts import (
     answer_callback_query_and_get_data,
     store_selected_language_level,
 )
-from samanthas_telegram_bot.data_structures.constants import (
-    LEVELS_ELIGIBLE_FOR_ORAL_TEST,
-    NON_TEACHING_HELP_TYPES,
-    Locale,
-)
+from samanthas_telegram_bot.data_structures.constants import LEVELS_ELIGIBLE_FOR_ORAL_TEST, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
@@ -336,28 +332,24 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
 
     if context.user_data.student_age_from >= 15:
         await CQReplySender.ask_non_teaching_help(context, query)
-        return ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW
+        return ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_ASK_REVIEW
 
     await MessageSender.ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
 
-async def store_non_teaching_help_ask_another_or_review(
+async def store_non_teaching_help_ask_another(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
+    """Stores one type of non-teaching help student requires, asks another"""
     query, data = await answer_callback_query_and_get_data(update)
-
-    # protection against coding error
-    if data not in NON_TEACHING_HELP_TYPES + (CommonCallbackData.DONE,):
-        raise ValueError(f"{data} cannot be in callback data for non-teaching help types.")
-
-    # pressed "Done" or chose all types of help
-    if data == CommonCallbackData.DONE or len(context.user_data.non_teaching_help_types) == len(
-        NON_TEACHING_HELP_TYPES
-    ):
-        await MessageSender.ask_review(update, context)
-        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
-
     context.user_data.non_teaching_help_types.append(data)
+
     await CQReplySender.ask_non_teaching_help(context, query)
-    return ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW
+    return ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_ASK_REVIEW
+
+
+async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    await update.callback_query.answer()
+    await MessageSender.ask_review(update, context)
+    return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
