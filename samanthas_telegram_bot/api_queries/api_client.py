@@ -234,7 +234,7 @@ class ApiClient:
 
         # this is correct: `exists` is False if status is 200 OK
         exists = response.status_code != httpx.codes.OK
-        logger.info(f"... {data_to_check} {exists=} ({response.status_code=})")
+        logger.info(f"... {data_to_check} {exists=} ({response.status_code=}, {response.json()=})")
         return exists
 
     @classmethod
