@@ -69,7 +69,6 @@ async def store_level_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES)
     store_selected_language_level(context=context, level=language_level)
 
     await CQReplySender.ask_language_level(context, query, show_done_button=True)
-    # TODO review
     return ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
 
 
