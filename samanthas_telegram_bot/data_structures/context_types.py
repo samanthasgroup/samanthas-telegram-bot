@@ -115,6 +115,9 @@ class ChatData:
     # misc
     mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
+    """Names of callback data for peer help types selected by the user. It is not passed
+    to the backend, only used to control the buttons and check number of options selected. 
+    """
 
 
 @dataclass

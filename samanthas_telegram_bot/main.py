@@ -19,7 +19,8 @@ from telegram.ext import (
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 import samanthas_telegram_bot.conversation.callbacks.registration.common_review as review
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
-import samanthas_telegram_bot.conversation.callbacks.registration.teacher as teacher
+import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
+import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.conversation.auxil.enums import (
@@ -178,10 +179,12 @@ def main() -> None:
             ],
             ConversationStateTeacher.TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB: [
                 CallbackQueryHandler(
-                    teacher.ask_adult_teacher_slots_for_monday,
+                    adult_teacher.ask_adult_teacher_slots_for_monday,
                     pattern=CommonCallbackData.YES,  # "Yes, I am 18 or older"
                 ),
-                CallbackQueryHandler(teacher.ask_young_teacher_readiness_to_host_speaking_club),
+                CallbackQueryHandler(
+                    adult_teacher.ask_young_teacher_readiness_to_host_speaking_club
+                ),
             ],
             # Menu of time slots works the same for students and teachers
             ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
@@ -191,7 +194,7 @@ def main() -> None:
                 ),
                 CallbackQueryHandler(common_main.store_one_time_slot_ask_another),
             ],
-            # MIDDLE OF CONVERSATION: STUDENT-SPECIFIC CALLBACKS
+            # MIDDLE OF CONVERSATION: STUDENT CALLBACKS
             ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST: [
                 CallbackQueryHandler(
                     student.ask_if_can_read_in_english,
@@ -242,74 +245,85 @@ def main() -> None:
             ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_REVIEW: [
                 CallbackQueryHandler(student.store_non_teaching_help_ask_another_or_review)
             ],
-            # MIDDLE OF CONVERSATION: TEACHER-SPECIFIC CALLBACKS
+            # MIDDLE OF CONVERSATION: ADULT TEACHER CALLBACKS
             ConversationStateTeacher.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(
-                    teacher.ask_class_communication_language,
+                    adult_teacher.ask_class_communication_language,
                     pattern=CommonCallbackData.DONE,
                 ),
                 CallbackQueryHandler(
-                    teacher.ask_next_teaching_language,
+                    adult_teacher.ask_next_teaching_language,
                     pattern=CommonCallbackData.NEXT,
                 ),
                 CallbackQueryHandler(
-                    teacher.store_level_ask_another,
+                    adult_teacher.store_level_ask_another,
                     pattern=ALL_LEVELS_PATTERN,
                 ),
-                CallbackQueryHandler(teacher.store_teaching_language_ask_level),
-            ],
-            ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
-                CallbackQueryHandler(
-                    teacher.young_teacher_store_communication_language_ask_speaking_club_language
-                )
+                CallbackQueryHandler(adult_teacher.store_teaching_language_ask_level),
             ],
             ConversationStateTeacher.ASK_TEACHING_EXPERIENCE: [
-                CallbackQueryHandler(teacher.store_communication_language_ask_teaching_experience)
+                CallbackQueryHandler(
+                    adult_teacher.store_communication_language_ask_teaching_experience
+                )
             ],
             ConversationStateTeacher.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
-                CallbackQueryHandler(teacher.store_experience_ask_about_groups_or_speaking_clubs)
+                CallbackQueryHandler(
+                    adult_teacher.store_experience_ask_about_teaching_groups_vs_hosting_speaking_clubs
+                )
             ],
             ConversationStateTeacher.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP: [
                 CallbackQueryHandler(
-                    teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
+                    adult_teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
                 )
             ],
             ConversationStateTeacher.ASK_TEACHING_FREQUENCY: [
-                CallbackQueryHandler(teacher.store_number_of_groups_ask_frequency)
+                CallbackQueryHandler(adult_teacher.store_number_of_groups_ask_frequency)
             ],
             ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_START: [
-                CallbackQueryHandler(teacher.store_frequency_ask_student_age_groups)
+                CallbackQueryHandler(adult_teacher.store_frequency_ask_student_age_groups)
             ],
             ConversationStateTeacher.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
                 CallbackQueryHandler(
-                    teacher.store_student_age_group_ask_another_or_non_teaching_help
+                    adult_teacher.store_student_age_group_ask_another_or_non_teaching_help
                 )
             ],
-            ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_PEER_HELP: [
+            ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
                 CallbackQueryHandler(
-                    teacher.store_non_teaching_help_ask_another_or_additional_help
-                )
+                    adult_teacher.ask_peer_help_or_additional_help, pattern=CommonCallbackData.DONE
+                ),
+                CallbackQueryHandler(adult_teacher.store_non_teaching_help_ask_another),
             ],
             ConversationStateTeacher.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP: [
-                CallbackQueryHandler(teacher.store_peer_help_ask_another_or_additional_help)
+                CallbackQueryHandler(
+                    adult_teacher.ask_additional_help, pattern=CommonCallbackData.DONE
+                ),
+                CallbackQueryHandler(adult_teacher.store_peer_help_ask_another),
+            ],
+            # MIDDLE OF CONVERSATION: YOUNG TEACHER CALLBACKS
+            ConversationStateTeacher.YOUNG_TEACHER_ASK_COMMUNICATION_LANGUAGE_OR_BYE: [
+                CallbackQueryHandler(
+                    young_teacher.ask_communication_language,
+                    pattern=CommonCallbackData.YES,  # "Yes, I'm ready to host speaking clubs"
+                ),
+                CallbackQueryHandler(young_teacher.bye, pattern=CommonCallbackData.NO),
+            ],
+            ConversationStateTeacher.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
+                CallbackQueryHandler(
+                    young_teacher.store_communication_language_ask_speaking_club_language
+                )
             ],
             ConversationStateTeacher.ASK_YOUNG_TEACHER_ADDITIONAL_HELP: [
                 CallbackQueryHandler(
-                    teacher.young_teacher_store_teaching_language_ask_additional_help
+                    young_teacher.store_speaking_club_language_ask_additional_help
                 )
             ],
-            ConversationStateTeacher.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(
-                    teacher.young_teacher_store_readiness_to_host_speaking_clubs_ask_communication_language_or_bye  # noqa
+            ConversationStateTeacher.ASK_REVIEW: [
+                MessageHandler(
+                    filters.TEXT & ~filters.COMMAND,
+                    adult_teacher.store_additional_help_ask_review,
                 )
             ],
             # COMMON FINAL PART OF CONVERSATION:
-            ConversationStateCommon.ASK_REVIEW: [
-                MessageHandler(
-                    filters.TEXT & ~filters.COMMAND,
-                    teacher.store_teachers_additional_skills_ask_if_review_needed,
-                )
-            ],
             ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU: [
                 CallbackQueryHandler(
                     common_main.ask_final_comment,

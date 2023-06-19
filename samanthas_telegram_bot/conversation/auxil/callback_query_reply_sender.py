@@ -240,6 +240,19 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_teacher_additional_help(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks about additional help the teacher can provide (in free text)."""
+
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+
+    @classmethod
     async def ask_review_category(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
