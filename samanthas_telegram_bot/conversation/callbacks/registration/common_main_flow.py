@@ -314,7 +314,6 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         )
         await update.message.reply_text(
             f"{phone_number_to_parse} {context.bot_data.phrases['invalid_phone_number'][locale]}",
-            reply_markup=ReplyKeyboardRemove(),
         )
         return CommonState.ASK_EMAIL
 
@@ -323,10 +322,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-    await update.message.reply_text(
-        context.bot_data.phrases["ask_email"][locale],
-        reply_markup=ReplyKeyboardRemove(),
-    )
+    await update.message.reply_text(context.bot_data.phrases["ask_email"][locale])
     logger.info(f"Chat {update.effective_chat.id}. Phone: {context.user_data.phone_number}")
     return CommonState.ASK_ROLE
 
@@ -347,10 +343,7 @@ async def store_email_check_existence_ask_role(
 
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
-        await update.message.reply_text(
-            context.bot_data.phrases["invalid_email"][locale],
-            reply_markup=ReplyKeyboardRemove(),
-        )
+        await update.message.reply_text(context.bot_data.phrases["invalid_email"][locale])
         return CommonState.ASK_ROLE
 
     context.user_data.email = email
