@@ -117,7 +117,7 @@ async def store_communication_language_ask_teaching_experience(
     return ConversationStateTeacher.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB
 
 
-async def store_experience_ask_about_teaching_groups_vs_hosting_speaking_clubs(
+async def store_experience_ask_teaching_groups_vs_hosting_speaking_clubs(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores if teacher has experience, asks teaching preferences (groups vs speaking clubs)."""
@@ -201,11 +201,16 @@ async def store_student_age_group_ask_another(
 
 async def ask_non_teaching_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Asks the teacher for non-teaching help they can provide."""
+    query, _ = await answer_callback_query_and_get_data(update)
+
     logger.info(
         f"Chat {update.effective_chat.id}. IDs of student ages "
         f"{context.user_data.teacher_student_age_range_ids}"
     )
-    query, _ = await answer_callback_query_and_get_data(update)
+    if context.chat_data.mode == ConversationMode.REVIEW:
+        await query.delete_message()
+        await MessageSender.ask_review(update, context)
+        return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_non_teaching_help(context, query)
     return ConversationStateTeacher.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP
@@ -224,7 +229,7 @@ async def store_non_teaching_help_ask_another(
 
 async def ask_peer_help_or_additional_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Depending on whether the teacher has experience, ask for peer help or additional help."""
-    query, data = await answer_callback_query_and_get_data(update)
+    query, _ = await answer_callback_query_and_get_data(update)
 
     if context.user_data.teacher_has_prior_experience:
         await CQReplySender.ask_teacher_peer_help(context, query)

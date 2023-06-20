@@ -101,6 +101,7 @@ async def student_age_groups(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
     if context.user_data.role == Role.STUDENT:
         await CQReplySender.ask_student_age(context, query)
         return StudentState.TIME_SLOTS_START
-    # TODO is it in the menu?:
+
+    # TODO is it in the menu?
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
     return TeacherState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP

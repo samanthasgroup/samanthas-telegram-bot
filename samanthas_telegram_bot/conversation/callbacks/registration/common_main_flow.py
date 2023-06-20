@@ -433,7 +433,6 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
     logger.info(
         f"Chat {update.effective_chat.id}. "
         f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}",
-        stacklevel=2,  # TODO see if it works
     )
 
     # reset day of week to Monday for possible review or re-run
@@ -444,10 +443,7 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
             context.bot_data.phrases["no_slots_selected"][user_data.locale],
             show_alert=True,
         )
-        logger.info(
-            f"Chat {update.effective_chat.id}. User has selected no slots at all",
-            stacklevel=2,  # TODO see if it works
-        )
+        logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
         await CQReplySender.ask_time_slot(context, query)
         return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
@@ -581,7 +577,7 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         locale = typing.cast(Locale, update.effective_user.language_code)
 
     await update.message.reply_text(
-        context.bot_data.phrases["bye_cancel"][locale], reply_markup=InlineKeyboardMarkup([])
+        context.bot_data.phrases["bye_cancel"][locale], reply_markup=ReplyKeyboardRemove()
     )
 
     return ConversationHandler.END

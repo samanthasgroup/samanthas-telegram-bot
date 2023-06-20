@@ -125,6 +125,7 @@ class MessageSender:
                 f"{phrases['review_student_age_group'][locale]}: "
                 f"{data.student_age_from}-{data.student_age_to}\n"
             )
+        # TODO add students' age ranges for teacher? This will require changes to UserData
 
         if data.tg_username:
             message += f"{phrases['review_username'][locale]} (@{data.tg_username})\n"

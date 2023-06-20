@@ -269,7 +269,7 @@ def main() -> None:
             ],
             ConversationStateTeacher.ASK_TEACHING_GROUP_OR_SPEAKING_CLUB: [
                 CallbackQueryHandler(
-                    adult_teacher.store_experience_ask_about_teaching_groups_vs_hosting_speaking_clubs
+                    adult_teacher.store_experience_ask_teaching_groups_vs_hosting_speaking_clubs
                 )
             ],
             ConversationStateTeacher.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP: [
