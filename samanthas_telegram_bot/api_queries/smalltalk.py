@@ -56,7 +56,6 @@ async def send_user_data_get_smalltalk_test(
     except AttributeError:
         await log_and_notify(
             bot=context.bot,
-            logger=logger,
             level=LoggingLevel.ERROR,
             text=f"SmallTalk returned invalid JSON when requested to send link to test: {data}",
         )
@@ -65,7 +64,6 @@ async def send_user_data_get_smalltalk_test(
     if url is None:
         await log_and_notify(
             bot=context.bot,
-            logger=logger,
             level=LoggingLevel.ERROR,
             text=f"SmallTalk returned JSON but it seems to contain no URL to test: {data}",
         )
@@ -91,7 +89,6 @@ async def get_smalltalk_result(
         if data is None:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.ERROR,
                 # Error text in get_json_with_results() contains status code and response,
                 # and here it contains user info:
@@ -108,7 +105,6 @@ async def get_smalltalk_result(
         if result is None:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.ERROR,
                 text=(
                     f"Chat {user_data.chat_id}: Failed to process data from SmallTalk "
@@ -124,7 +120,6 @@ async def get_smalltalk_result(
         if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.INFO,
                 text=(
                     f"Chat {user_data.chat_id}: {user_data.first_name} {user_data.last_name} "
@@ -143,7 +138,6 @@ async def get_smalltalk_result(
                 )
                 await log_and_notify(
                     bot=context.bot,
-                    logger=logger,
                     level=LoggingLevel.ERROR,
                     text=(
                         f"Chat {user_data.chat_id}: SmallTalk results for {user_data.first_name} "
@@ -163,7 +157,6 @@ async def get_smalltalk_result(
         else:
             await log_and_notify(
                 bot=context.bot,
-                logger=logger,
                 level=LoggingLevel.INFO,
                 text=(
                     f"Chat {user_data.chat_id}: Received [SmallTalk results for "
@@ -193,7 +186,6 @@ async def get_json_with_results(test_id: str, context: CUSTOM_CONTEXT_TYPES) -> 
 
     await log_and_notify(
         bot=context.bot,
-        logger=logger,
         level=LoggingLevel.ERROR,
         text=(
             f"Did not receive JSON from SmallTalk. {response.status_code=}, {response.headers=}, "

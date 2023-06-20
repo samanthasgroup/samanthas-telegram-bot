@@ -44,7 +44,6 @@ async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT
     user_data.student_age_to = context.bot_data.student_ages_for_age_range_id[age_range_id].age_to
     await log_and_notify(
         bot=context.bot,
-        logger=logger,
         level=LoggingLevel.INFO,
         text=(
             f"Age group of the student: ID {user_data.student_age_range_id} "
