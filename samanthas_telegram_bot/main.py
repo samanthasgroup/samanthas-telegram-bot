@@ -211,7 +211,7 @@ def main() -> None:
             ],
             ConversationStateStudent.ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ: [  # noqa:E501
                 CallbackQueryHandler(
-                    student.ask_english_reader_depending_on_age,
+                    student.ask_or_start_assessment_for_english_reader_depending_on_age,
                     pattern=CommonCallbackData.YES,  # "yes, I can read in English"
                 ),
                 CallbackQueryHandler(
@@ -221,11 +221,11 @@ def main() -> None:
             ],
             ConversationStateStudent.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST: [
                 CallbackQueryHandler(
-                    student.start_assessment_for_student_that_has_learned_for_year_or_more,
+                    student.start_assessment_for_teen_student_that_learned_for_year_or_more,
                     pattern=LEARNED_FOR_YEAR_OR_MORE,
                 ),
                 CallbackQueryHandler(
-                    student.ask_communication_language_for_students_that_learned_less_than_year
+                    student.ask_communication_language_for_teen_student_that_learned_less_than_year
                 ),
             ],
             ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW: [

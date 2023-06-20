@@ -30,14 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores age group for student, asks timezone.
-
-    * If this function is called for the first time in a conversation, **stores age** and gives
-      time slots for Monday.
-    * If this function is called after choosing time slots for a day, asks for time slots for the
-      next day.
-    * If this is the last day, asks for the first language to learn.
-    """
+    """Stores age group for student, asks time slots for Monday."""
 
     query = update.callback_query
     data = query.data
@@ -70,7 +63,7 @@ async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT
 
 
 async def ask_if_can_read_in_english(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """If student selected English, asks about ability to read in English instead of level."""
+    """If student selected English, asks about ability to read in English."""
     query, language_code = await answer_callback_query_and_get_data(update)
     # this might not be needed for English, but keeping the structure uniform
     context.user_data.levels_for_teaching_language[language_code] = []
@@ -86,7 +79,7 @@ async def ask_if_can_read_in_english(update: Update, context: CUSTOM_CONTEXT_TYP
 
 
 async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores teaching language. Asks for level."""
+    """Stores teaching language (not English). Asks for level."""
 
     query, language_code = await answer_callback_query_and_get_data(update)
 
@@ -96,22 +89,27 @@ async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONT
     return ConversationStateStudent.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST
 
 
-async def ask_english_reader_depending_on_age(
+async def ask_or_start_assessment_for_english_reader_depending_on_age(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Asks communication language or how long they've been learning English or starts test."""
+    """Callback for English learners that can read in English.
+
+    Very young learners are marked as needing an oral interview.
+    Adolescents are asked a question on how long they've been learning.
+    Adults start taking the assessment.
+    """
     query, _ = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
 
     # this callback is called if pattern matches "yes"
     user_data.student_can_read_in_english = True
 
-    can_read = user_data.student_can_read_in_english
-    logger.info(f"Chat {update.effective_chat.id}. User can read in English: {can_read}")
+    logger.info(f"Chat {update.effective_chat.id}. User can read in English.")
 
     if user_data.student_age_to <= 12:
         # young students: mark as requiring interview, ask about communication language
         user_data.student_needs_oral_interview = True
+        logger.info(f"Chat {update.effective_chat.id}. User needs oral interview in English.")
         await CQReplySender.ask_class_communication_languages(context, query)
         return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW
     elif user_data.student_age_to < 18:
@@ -127,11 +125,17 @@ async def ask_english_reader_depending_on_age(
 async def ask_communication_language_for_students_that_cannot_read_in_english(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
+    """For English learners that cannot read in English: ask communication language.
+
+    Adult students automatically get "A0", young students are marked as needing an interview.
+    """
     query, _ = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
 
     # this callback is only called if pattern matches "No"
     user_data.student_can_read_in_english = False
+
+    logger.info(f"Chat {update.effective_chat.id}. User cannot read in English")
 
     # Adult students get A0...
     if user_data.student_age_from >= 18:
@@ -141,8 +145,6 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
     else:
         # ...while young students get no level and are marked to require oral interview.
         user_data.student_needs_oral_interview = True
-
-    if user_data.student_needs_oral_interview:
         logger.info(f"Chat {update.effective_chat.id}. User needs oral interview in English.")
 
     await CQReplySender.ask_class_communication_languages(context, query)
@@ -152,11 +154,7 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
 async def store_non_english_level_ask_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores level (only for languages other than 'en'), asks communication language.
-
-    Level can only be selected by user for languages other than English.
-    The callback is not called for English, this is controlled by pattern in ``main.py``.
-    """
+    """Stores level (only for languages other than 'en'), asks communication language."""
 
     query, language_level = await answer_callback_query_and_get_data(update)
     store_selected_language_level(context=context, level=language_level)
@@ -173,24 +171,24 @@ async def store_non_english_level_ask_communication_language(
     return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW
 
 
-async def start_assessment_for_student_that_has_learned_for_year_or_more(
+async def start_assessment_for_teen_student_that_learned_for_year_or_more(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Starts assessment for students that have been learning English for a year or more."""
+    """Starts assessment for young students that have been learning English for a year or more."""
     query, _ = await answer_callback_query_and_get_data(update)
 
     logger.info(
         f"Chat {update.effective_chat.id}. "
-        f"Student has learned English for year or more. Starting assessment"
+        f"Adolescent student has learned English for year or more. Starting assessment"
     )
     await prepare_assessment(context, query)
     return ConversationStateStudent.ASK_QUESTION_IN_TEST
 
 
-async def ask_communication_language_for_students_that_learned_less_than_year(
+async def ask_communication_language_for_teen_student_that_learned_less_than_year(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores that student needs oral interview (no assessment). Asks communication language."""
+    """Stores adolescent student needs oral interview (no test). Asks communication language."""
     query, _ = await answer_callback_query_and_get_data(update)
 
     logger.info(
