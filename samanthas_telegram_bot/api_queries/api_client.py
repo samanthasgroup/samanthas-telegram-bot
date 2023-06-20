@@ -351,7 +351,6 @@ class ApiClient:
         if response.status_code != expected_status_code:
             await log_and_notify(
                 bot=context.bot,  # type: ignore[attr-defined]
-                logger=logger,
                 level=failure_logging_level,
                 text=f"{message_prefix}{failure_message}{failure_message_suffix}",
                 needs_to_notify_admin_group=notify_admins_mode
@@ -362,7 +361,6 @@ class ApiClient:
 
         await log_and_notify(
             bot=context.bot,  # type: ignore[attr-defined]
-            logger=logger,
             level=success_logging_level,
             text=f"{message_prefix}{success_message}{message_suffix}",
             needs_to_notify_admin_group=notify_admins_mode

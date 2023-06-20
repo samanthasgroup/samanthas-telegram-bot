@@ -7,6 +7,10 @@ from typing import Literal
 #  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
+CALLER_LOGGING_STACK_LEVEL = 2
+"""Stack level that will make the logger inside an auxiliary function display the name 
+of function/method that called this helper function."""
+
 EMAIL_PATTERN = re.compile(
     "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
     "(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
