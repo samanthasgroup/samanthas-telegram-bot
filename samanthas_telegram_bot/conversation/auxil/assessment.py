@@ -2,9 +2,15 @@ import logging
 
 from telegram import CallbackQuery
 
+from samanthas_telegram_bot.api_queries.api_client import ApiClient
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender,
 )
+from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
+    CallbackQueryReplySender as CQReplySender,
+)
+from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateStudent
+from samanthas_telegram_bot.data_structures.constants import LEVELS_ELIGIBLE_FOR_ORAL_TEST
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 logger = logging.getLogger(__name__)
@@ -34,3 +40,27 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
     }
     context.chat_data.assessment_dont_knows_in_a_row = 0
     await CallbackQueryReplySender.ask_start_assessment(context, query)
+
+
+async def process_results(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery) -> int:
+    """Processes results of a written assessment, returns appropriate next conversation state."""
+    context.user_data.student_assessment_resulting_level = (
+        await ApiClient.get_level_of_written_test(context=context)
+    )
+    if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
+        await CQReplySender.ask_yes_no(
+            context,
+            query,
+            question_phrase_internal_id="ask_student_start_oral_test",
+            parse_mode=None,
+        )
+        return ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
+    else:
+        # TODO add some compliment on completing the test even without oral test?
+        context.user_data.language_and_level_ids = [
+            context.bot_data.language_and_level_id_for_language_id_and_level[
+                ("en", context.user_data.student_assessment_resulting_level)
+            ]
+        ]
+        await CQReplySender.ask_class_communication_languages(context, query)
+        return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW

@@ -6,6 +6,10 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    CommonCallbackData,
+    UserDataReviewCategory,
+)
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
@@ -13,12 +17,7 @@ from samanthas_telegram_bot.data_structures.constants import (
     Locale,
 )
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import (
-    AgeRangeType,
-    CommonCallbackData,
-    Role,
-    UserDataReviewCategory,
-)
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.models import AssessmentQuestion
 
 logger = logging.getLogger(__name__)
@@ -107,7 +106,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_language_levels(
+    async def ask_language_level(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
@@ -123,7 +122,7 @@ class CallbackQueryReplySender:
         if show_done_button:
             done_button = InlineKeyboardButton(
                 text=context.bot_data.phrases["ask_teaching_language_level_done"][locale],
-                callback_data=CommonCallbackData.DONE,
+                callback_data=CommonCallbackData.NEXT,
             )
 
         last_language_added = tuple(context.user_data.levels_for_teaching_language.keys())[-1]
@@ -192,8 +191,7 @@ class CallbackQueryReplySender:
                 buttons_per_row=2,
                 bottom_row_button=abort_button
                 if context.chat_data.assessment_dont_knows_in_a_row >= 5
-                else None
-                # TODO remove context.bot_data.phrases["assessment_option_dont_know"]
+                else None,
             )
         )
 
@@ -241,6 +239,19 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_teacher_additional_help(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks about additional help the teacher can provide (in free text)."""
+
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+
+    @classmethod
     async def ask_review_category(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
@@ -257,7 +268,7 @@ class CallbackQueryReplySender:
             f"{UserDataReviewCategory.LAST_NAME}",
             f"{UserDataReviewCategory.EMAIL}",
             f"{UserDataReviewCategory.TIMEZONE}",
-            f"{UserDataReviewCategory.AVAILABILITY}",
+            f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
             f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
         ]
 
@@ -265,12 +276,13 @@ class CallbackQueryReplySender:
             options.append(f"{UserDataReviewCategory.PHONE_NUMBER}")
 
         if context.user_data.role == Role.STUDENT:
-            options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUP}")
+            options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUPS}")
 
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
         if context.user_data.role == Role.TEACHER:
-            options.append(f"{UserDataReviewCategory.LANGUAGE_AND_LEVEL}")
+            options.append(f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}")
+            # TODO review preferred students' ages?
 
         buttons = [
             InlineKeyboardButton(
@@ -412,7 +424,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+    async def ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
@@ -735,6 +747,33 @@ class CallbackQueryReplySender:
                 buttons_per_row=2,
                 parse_mode=parse_mode,
             )
+        )
+
+    @classmethod
+    async def send_smalltalk_url(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Sends message with SmallTalk URL to the user."""
+        bot_data = context.bot_data
+        locale = context.user_data.locale
+        url = context.user_data.student_smalltalk_interview_url
+
+        await query.edit_message_text(
+            bot_data.phrases["give_smalltalk_url"][locale]
+            + f"\n\n[*{bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            bot_data.phrases["answer_smalltalk_done"][locale],
+                            callback_data=CommonCallbackData.DONE,
+                        )
+                    ]
+                ]
+            ),
         )
 
     @staticmethod

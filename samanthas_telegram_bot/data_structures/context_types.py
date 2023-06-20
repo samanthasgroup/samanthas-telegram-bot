@@ -7,9 +7,10 @@ from telegram import Update
 from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
+from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
 from samanthas_telegram_bot.data_structures.constants import Locale
-from samanthas_telegram_bot.data_structures.enums import AgeRangeType, ConversationMode, Role
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.models import (
     Assessment,
     AssessmentAnswer,
@@ -114,6 +115,9 @@ class ChatData:
     # misc
     mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
+    """Names of callback data for peer help types selected by the user. It is not passed
+    to the backend, only used to control the buttons and check number of options selected. 
+    """
 
 
 @dataclass
@@ -155,6 +159,7 @@ class UserData:
     student_can_read_in_english: bool | None = None
     student_agreed_to_smalltalk: bool | None = None
     student_smalltalk_test_id: str | None = None
+    student_smalltalk_interview_url: str | None = None
     student_smalltalk_result: SmalltalkResult | None = None
     # False instead of None is intended, because the value is set based on other answers.
     # By default, the student doesn't need an oral interview before they are included

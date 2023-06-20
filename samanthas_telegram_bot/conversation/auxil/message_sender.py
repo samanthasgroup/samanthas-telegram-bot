@@ -14,9 +14,10 @@ from telegram import (
 )
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData, ConversationMode
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import CommonCallbackData, ConversationMode, Role
+from samanthas_telegram_bot.data_structures.enums import Role
 
 
 class MessageSender:
@@ -34,21 +35,16 @@ class MessageSender:
         """Sends a message to ask for phone number."""
         locale: Locale = context.user_data.locale
 
-        # The button "share my contact details" only makes sense in normal mode, not in review:
-        # if the user is reviewing their phone number, they most likely want to enter it manually.
-        reply_markup = (
-            None
-            if context.chat_data.mode == ConversationMode.REVIEW
-            else ReplyKeyboardMarkup(
+        reply_markup = ReplyKeyboardMarkup(
+            [
                 [
-                    [
-                        KeyboardButton(
-                            text=context.bot_data.phrases["share_phone"][locale],
-                            request_contact=True,
-                        )
-                    ]
+                    KeyboardButton(
+                        text=context.bot_data.phrases["share_phone"][locale],
+                        request_contact=True,
+                    )
                 ]
-            )
+            ],
+            one_time_keyboard=True,
         )
 
         await update.effective_chat.send_message(
@@ -129,6 +125,7 @@ class MessageSender:
                 f"{phrases['review_student_age_group'][locale]}: "
                 f"{data.student_age_from}-{data.student_age_to}\n"
             )
+        # TODO add students' age ranges for teacher? This will require changes to UserData
 
         if data.tg_username:
             message += f"{phrases['review_username'][locale]} (@{data.tg_username})\n"
