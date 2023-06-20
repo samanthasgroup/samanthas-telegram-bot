@@ -60,7 +60,7 @@ class ConversationStateStudent(IntEnum):
     """Provides integer keys for the dictionary of student's states for ConversationHandler."""
 
     ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
-    ASK_QUESTION_IN_TEST = state_auto()
+    ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL = state_auto()
     ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK = state_auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
     ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ = (

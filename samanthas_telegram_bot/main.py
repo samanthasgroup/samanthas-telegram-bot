@@ -233,8 +233,18 @@ def main() -> None:
                     student.store_communication_language_ask_non_teaching_help_or_start_review
                 )
             ],
-            ConversationStateStudent.ASK_QUESTION_IN_TEST: [
-                CallbackQueryHandler(student.assessment_store_answer_ask_question)
+            ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL: [
+                CallbackQueryHandler(
+                    student.assessment_ask_first_question,
+                    pattern=CommonCallbackData.OK,  # "OK, let's start the test"
+                ),
+                CallbackQueryHandler(
+                    student.get_result_of_aborted_test,
+                    pattern=CommonCallbackData.ABORT,
+                ),
+                CallbackQueryHandler(
+                    student.assessment_store_answer_ask_question_or_get_result_if_finished
+                ),
             ],
             ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
                 CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
