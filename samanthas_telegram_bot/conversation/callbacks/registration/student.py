@@ -92,9 +92,9 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
 ) -> int:
     """Callback for English learners that can read in English.
 
-    Very young learners are marked as needing an oral interview.
-    Adolescents are asked a question on how long they've been learning.
-    Adults start taking the assessment.
+    * Very young learners are marked as needing an oral interview.
+    * Adolescents are asked a question on how long they've been learning.
+    * Adults start taking the assessment.
     """
     query, _ = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
@@ -125,7 +125,8 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
 ) -> int:
     """For English learners that cannot read in English: ask communication language.
 
-    Adult students automatically get "A0", young students are marked as needing an interview.
+    * Adult students automatically get "A0"
+    * Young students are marked as needing an interview.
     """
     query, _ = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
@@ -207,14 +208,14 @@ async def assessment_ask_first_question(update: Update, context: CUSTOM_CONTEXT_
     return ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL
 
 
-async def get_result_of_aborted_test(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Gets result of a test if the student has aborted it."""
+async def get_result_of_aborted_assessment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Gets result of an assessment if the student has aborted it."""
     query, _ = await answer_callback_query_and_get_data(update)
     next_state = await process_results(context, query)
     return next_state
 
 
-async def assessment_store_answer_ask_question_or_get_result_if_finished(
+async def store_assessment_answer_ask_next_question_or_get_result_if_finished(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores answer to the question, asks next one. If test is finished, gets result."""
@@ -293,7 +294,7 @@ async def skip_smalltalk_ask_communication_language(
 async def ask_communication_language_after_smalltalk(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Asks about communication language in class. Stores no data."""
+    """Asks about communication language in class after SmallTalk. No data is stored here."""
     query, _ = await answer_callback_query_and_get_data(update)
     # We will request results from SmallTalk later to increase chance that it's ready.
     await CQReplySender.ask_class_communication_languages(context, query)
@@ -323,7 +324,7 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
 async def store_non_teaching_help_ask_another(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores one type of non-teaching help student requires, asks another"""
+    """Stores one type of non-teaching help student requires, asks another."""
     query, data = await answer_callback_query_and_get_data(update)
     context.user_data.non_teaching_help_types.append(data)
 
@@ -332,6 +333,7 @@ async def store_non_teaching_help_ask_another(
 
 
 async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks if review is needed."""
     await update.callback_query.answer()
     await MessageSender.ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU

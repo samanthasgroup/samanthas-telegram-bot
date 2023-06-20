@@ -26,7 +26,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent as StudentState,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import (
-    ConversationStateTeacher as TeacherState,
+    ConversationStateTeacherAdult as TeacherState,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
@@ -496,26 +496,6 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
     context.chat_data.mode = ConversationMode.REVIEW
     await CQReplySender.ask_review_category(context, query)
     return CommonState.REVIEW_REQUESTED_ITEM
-
-
-async def store_additional_help_comment_ask_final_comment(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """For young teachers: stores comment on additional help, asks for final comment."""
-    if update.message is None:
-        return CommonState.ASK_FINAL_COMMENT
-    locale: Locale = context.user_data.locale
-
-    context.user_data.teacher_additional_skills_comment = update.message.text
-
-    # We want to give the young teacher the opportunity to double-check their email
-    # without starting a full-fledged review
-    await update.message.reply_text(
-        f"{context.bot_data.phrases['young_teacher_we_will_email_you'][locale]} "
-        f"{context.user_data.email}\n\n"
-        f"{context.bot_data.phrases['ask_final_comment'][locale]}"
-    )
-    return CommonState.BYE
 
 
 async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:

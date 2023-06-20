@@ -18,7 +18,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent as StudentState,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import (
-    ConversationStateTeacher as TeacherState,
+    ConversationStateTeacherAdult as TeacherState,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data

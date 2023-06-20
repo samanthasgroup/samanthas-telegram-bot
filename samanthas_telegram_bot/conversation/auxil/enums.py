@@ -38,22 +38,21 @@ def state_auto() -> int:
 class ConversationStateCommon(IntEnum):
     """Provides integer keys for the dictionary of common states for ConversationHandler."""
 
-    IS_REGISTERED = state_auto()
-    CHECK_CHAT_ID_ASK_TIMEZONE = state_auto()
-    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE = state_auto()
     ASK_FIRST_NAME = state_auto()
     ASK_LAST_NAME = state_auto()
     ASK_SOURCE = state_auto()
-    CHECK_USERNAME = state_auto()
     ASK_PHONE_NUMBER = state_auto()
     ASK_EMAIL = state_auto()
+    ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU = state_auto()
     ASK_ROLE = state_auto()
     ASK_AGE = state_auto()
-    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = state_auto()
-    ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU = state_auto()
-    REVIEW_REQUESTED_ITEM = state_auto()
-    ASK_FINAL_COMMENT = state_auto()  # standalone, not after review
     BYE = state_auto()
+    CHECK_CHAT_ID_ASK_TIMEZONE = state_auto()
+    CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE = state_auto()
+    CHECK_USERNAME = state_auto()
+    IS_REGISTERED = state_auto()
+    REVIEW_REQUESTED_ITEM = state_auto()
+    TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = state_auto()
 
 
 class ConversationStateStudent(IntEnum):
@@ -63,34 +62,40 @@ class ConversationStateStudent(IntEnum):
     ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL = state_auto()
     ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK = state_auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
+    ASK_NON_TEACHING_HELP_OR_START_REVIEW = state_auto()
+    ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
     ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ = (
         state_auto()
     )
-    ASK_NON_TEACHING_HELP_OR_START_REVIEW = state_auto()
-    ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
     NON_TEACHING_HELP_MENU_OR_ASK_REVIEW = state_auto()
     SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE = state_auto()
     TIME_SLOTS_START = state_auto()
 
 
-class ConversationStateTeacher(IntEnum):
-    """Provides integer keys for the dictionary of teacher's states for ConversationHandler."""
+class ConversationStateTeacherAdult(IntEnum):
+    """Provides int keys for dictionary of adult teacher's states for ConversationHandler."""
 
     ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE = state_auto()
     ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP = state_auto()
+    ASK_REVIEW = state_auto()
     ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
     ASK_TEACHING_EXPERIENCE = state_auto()
     ASK_TEACHING_FREQUENCY = state_auto()
     ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = state_auto()
-    ASK_YOUNG_TEACHER_ADDITIONAL_HELP = state_auto()
-    YOUNG_TEACHER_ASK_COMMUNICATION_LANGUAGE_OR_BYE = state_auto()
-    ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE = state_auto()
     NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP = state_auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = state_auto()
-    ASK_REVIEW = state_auto()
     PREFERRED_STUDENT_AGE_GROUPS_START = state_auto()
     PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP = state_auto()
     TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB = state_auto()
+
+
+class ConversationStateTeacherUnder18(IntEnum):
+    """Provides int keys for dictionary of young teacher's states for ConversationHandler."""
+
+    ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE = state_auto()
+    ASK_YOUNG_TEACHER_ADDITIONAL_SKILLS_COMMENT = state_auto()
+    ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE_OR_BYE = state_auto()
+    ASK_YOUNG_TEACHER_FINAL_COMMENT = state_auto()
 
 
 class UserDataReviewCategory(str, Enum):
