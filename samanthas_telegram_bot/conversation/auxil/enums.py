@@ -27,7 +27,7 @@ state_index = 0
 def state_auto() -> int:
     """A replacement for enum.auto() that allows to create integer indexes for multiple classes.
 
-    Running enum.auto() in every `...State` IntEnum will start at 1.
+    Running ``enum.auto()`` in every `ConversationState...`, value will start at 1 in each enum.
     This simple implementation with a global variable lets us continue where previous enum ended.
     """
     global state_index
