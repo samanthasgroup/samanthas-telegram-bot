@@ -247,7 +247,8 @@ def main() -> None:
                 ),
             ],
             ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE: [
-                CallbackQueryHandler(student.send_smalltalk_url_or_ask_communication_language)
+                CallbackQueryHandler(student.send_smalltalk_url, pattern=CommonCallbackData.YES),
+                CallbackQueryHandler(student.skip_smalltalk_ask_communication_language),
             ],
             ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
                 CallbackQueryHandler(student.ask_communication_language_after_smalltalk)

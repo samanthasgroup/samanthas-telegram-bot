@@ -253,43 +253,53 @@ async def assessment_store_answer_ask_question_or_get_result_if_finished(
     return ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL
 
 
-async def send_smalltalk_url_or_ask_communication_language(
+async def send_smalltalk_url(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """If student wants SmallTalk test, gives URL. Asks student to press 'Done' when finished."""
+    query, data = await answer_callback_query_and_get_data(update)
+    bot_data = context.bot_data
+    user_data = context.user_data
+    locale: Locale = user_data.locale
+
+    user_data.student_agreed_to_smalltalk = True
+    user_data.student_smalltalk_test_id, url = await send_user_data_get_smalltalk_test(
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        email=user_data.email,
+        context=context,
+    )
+    await query.edit_message_text(
+        bot_data.phrases["give_smalltalk_url"][locale]
+        + f"\n\n[*{bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
+        parse_mode=ParseMode.MARKDOWN_V2,
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        bot_data.phrases["answer_smalltalk_done"][locale],
+                        callback_data=CommonCallbackData.DONE,
+                    )
+                ]
+            ]
+        ),
+    )
+    return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
+
+
+async def skip_smalltalk_ask_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If student wants to take SmallTalk test, gives URL. Else, asks communication language."""
-    query, data = await answer_callback_query_and_get_data(update)
-    locale: Locale = context.user_data.locale
+    """Asks the student that wants no oral test about communication language.
 
-    if data == CommonCallbackData.YES:
-        context.user_data.student_agreed_to_smalltalk = True
-        context.user_data.student_smalltalk_test_id, url = await send_user_data_get_smalltalk_test(
-            first_name=context.user_data.first_name,
-            last_name=context.user_data.last_name,
-            email=context.user_data.email,
-            context=context,
-        )
-        await query.edit_message_text(
-            context.bot_data.phrases["give_smalltalk_url"][locale]
-            + f"\n\n[*{context.bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
-            parse_mode=ParseMode.MARKDOWN_V2,
-            reply_markup=InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton(
-                            context.bot_data.phrases["answer_smalltalk_done"][locale],
-                            callback_data=CommonCallbackData.DONE,
-                        )
-                    ]
-                ]
-            ),
-        )
-        return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
+    Sets their level of English to whatever they got after the in-bot assessment.
+    """
+    query, _ = await answer_callback_query_and_get_data(update)
+    user_data = context.user_data
 
     # Without SmallTalk, just take whatever level we got after the "written" assessment
-    context.user_data.student_agreed_to_smalltalk = False
-    context.user_data.language_and_level_ids = [
+    user_data.student_agreed_to_smalltalk = False
+    user_data.language_and_level_ids = [
         context.bot_data.language_and_level_id_for_language_id_and_level[
-            ("en", context.user_data.student_assessment_resulting_level)
+            ("en", user_data.student_assessment_resulting_level)
         ]
     ]
 
