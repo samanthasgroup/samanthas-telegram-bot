@@ -749,6 +749,33 @@ class CallbackQueryReplySender:
             )
         )
 
+    @classmethod
+    async def send_smalltalk_url(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Sends message with SmallTalk URL to the user."""
+        bot_data = context.bot_data
+        locale = context.user_data.locale
+        url = context.user_data.student_smalltalk_interview_url
+
+        await query.edit_message_text(
+            bot_data.phrases["give_smalltalk_url"][locale]
+            + f"\n\n[*{bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=InlineKeyboardMarkup(
+                [
+                    [
+                        InlineKeyboardButton(
+                            bot_data.phrases["answer_smalltalk_done"][locale],
+                            callback_data=CommonCallbackData.DONE,
+                        )
+                    ]
+                ]
+            ),
+        )
+
     @staticmethod
     def _make_dict_for_message_with_inline_keyboard(
         message_text: str,

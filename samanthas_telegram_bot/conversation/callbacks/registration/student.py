@@ -1,7 +1,6 @@
 import logging
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.constants import ParseMode
+from telegram import Update
 
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
@@ -14,7 +13,6 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
     CallbackQueryReplySender as CQReplySender,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import (
-    CommonCallbackData,
     ConversationMode,
     ConversationStateCommon,
     ConversationStateStudent,
@@ -24,7 +22,6 @@ from samanthas_telegram_bot.conversation.auxil.shortcuts import (
     answer_callback_query_and_get_data,
     store_selected_language_level,
 )
-from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
@@ -84,7 +81,6 @@ async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONT
     """Stores teaching language (not English). Asks for level."""
 
     query, language_code = await answer_callback_query_and_get_data(update)
-
     context.user_data.levels_for_teaching_language[language_code] = []
 
     await CQReplySender.ask_language_level(context, query, show_done_button=False)
@@ -256,32 +252,19 @@ async def assessment_store_answer_ask_question_or_get_result_if_finished(
 async def send_smalltalk_url(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """If student wants SmallTalk test, gives URL. Asks student to press 'Done' when finished."""
     query, data = await answer_callback_query_and_get_data(update)
-    bot_data = context.bot_data
     user_data = context.user_data
-    locale: Locale = user_data.locale
 
     user_data.student_agreed_to_smalltalk = True
-    user_data.student_smalltalk_test_id, url = await send_user_data_get_smalltalk_test(
+    (
+        user_data.student_smalltalk_test_id,
+        user_data.student_smalltalk_interview_url,
+    ) = await send_user_data_get_smalltalk_test(
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         email=user_data.email,
         context=context,
     )
-    await query.edit_message_text(
-        bot_data.phrases["give_smalltalk_url"][locale]
-        + f"\n\n[*{bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
-        parse_mode=ParseMode.MARKDOWN_V2,
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        bot_data.phrases["answer_smalltalk_done"][locale],
-                        callback_data=CommonCallbackData.DONE,
-                    )
-                ]
-            ]
-        ),
-    )
+    await CQReplySender.send_smalltalk_url(context, query)
     return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
 
 
@@ -310,7 +293,7 @@ async def skip_smalltalk_ask_communication_language(
 async def ask_communication_language_after_smalltalk(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores nothing, just asks about communication language in class."""
+    """Asks about communication language in class. Stores no data."""
     query, _ = await answer_callback_query_and_get_data(update)
     # We will request results from SmallTalk later to increase chance that it's ready.
     await CQReplySender.ask_class_communication_languages(context, query)
@@ -322,7 +305,6 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
 ) -> int:
     """Stores communication language, asks about non-teaching help or starts review.
 
-    This callback is intended for students only.
     If a student is 15 or older, asks about additional help. Otherwise, proceeds to review.
     """
     (

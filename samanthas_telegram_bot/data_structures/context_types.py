@@ -159,6 +159,7 @@ class UserData:
     student_can_read_in_english: bool | None = None
     student_agreed_to_smalltalk: bool | None = None
     student_smalltalk_test_id: str | None = None
+    student_smalltalk_interview_url: str | None = None
     student_smalltalk_result: SmalltalkResult | None = None
     # False instead of None is intended, because the value is set based on other answers.
     # By default, the student doesn't need an oral interview before they are included
