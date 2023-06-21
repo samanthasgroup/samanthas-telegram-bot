@@ -98,6 +98,27 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         for item in tb_list
         if "/virtualenvs/" not in item  # don't show traceback lines from external modules
     )
+    tb_string = f"<code>{tb_string}</code>"
+
+    if update.message is not None:
+        tb_string = (
+            f"{tb_string}\n<strong>Message received from user</strong>: {update.message.text}\n"
+        )
+        # TODO this will not work for now because the user has to reply to the message,
+        #  not just send his message after bot's.  This could be solved by ForceReply()
+        #  as reply_markup where possible.
+        if update.message.reply_to_message is not None:
+            tb_string = (
+                f"{tb_string}\n<strong>This was a reply to message from bot</strong>: "
+                f"{update.message.reply_to_message.text}\n"
+            )
+
+    if update.callback_query is not None:
+        tb_string = (
+            f"{tb_string}\n<strong>Message the user reacted to</strong> (first 100 chars):\n\n"
+            f"{update.effective_message.text[:100]}...\n\n"
+            f"<strong>Data from button pressed</strong>: {update.callback_query.data}\n"
+        )
 
     await logs(
         bot=context.bot,
@@ -105,7 +126,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         level=LoggingLevel.EXCEPTION,
         text=(
             "Registration bot encountered an exception:"
-            f"\n<code>\n{tb_string}</code>\n"
+            f"\n\n{tb_string}\n"
             f"@{os.environ.get('BOT_OWNER_USERNAME')}"
         ),
         parse_mode_for_admin_group_message=ParseMode.HTML,
