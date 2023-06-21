@@ -17,23 +17,20 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateCommon,
     ConversationStateStudent,
 )
-from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.auxil.shortcuts import (
+from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
     store_selected_language_level,
 )
+from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
 logger = logging.getLogger(__name__)
 
 
-async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores age group for student, asks time slots for Monday."""
-
-    query = update.callback_query
-    data = query.data
-
+async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores student's age group, asks timezone."""
+    query, data = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
 
     age_range_id = int(data)
@@ -42,6 +39,7 @@ async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT
         age_range_id
     ].age_from
     user_data.student_age_to = context.bot_data.student_ages_for_age_range_id[age_range_id].age_to
+
     await log_and_notify(
         bot=context.bot,
         level=LoggingLevel.INFO,
@@ -56,8 +54,8 @@ async def store_age_ask_slots_for_monday(update: Update, context: CUSTOM_CONTEXT
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-    await CQReplySender.ask_time_slot(context, query)
-    return ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+    await CQReplySender.ask_timezone(context, query)
+    return ConversationStateCommon.TIME_SLOTS_START
 
 
 async def ask_if_can_read_in_english(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:

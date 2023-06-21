@@ -11,11 +11,11 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateCommon,
     ConversationStateTeacherAdult,
 )
-from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.auxil.shortcuts import (
+from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
     store_selected_language_level,
 )
+from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.data_structures.constants import TEACHER_PEER_HELP_TYPES
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import TeachingMode
@@ -23,15 +23,15 @@ from samanthas_telegram_bot.data_structures.enums import TeachingMode
 logger = logging.getLogger(__name__)
 
 
-async def ask_adult_teacher_slots_for_monday(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Asks time slots for the first day."""
+async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Ask timezone."""
 
     query, _ = await answer_callback_query_and_get_data(update)
     # this callback is only called if the teacher is an adult
     context.user_data.teacher_is_under_18 = False
 
-    await CQReplySender.ask_time_slot(context, query)
-    return ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
+    await CQReplySender.ask_timezone(context, query)
+    return ConversationStateCommon.TIME_SLOTS_START
 
 
 async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:

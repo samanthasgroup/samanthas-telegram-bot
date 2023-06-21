@@ -1,6 +1,5 @@
 import logging
 from datetime import timedelta
-from math import ceil
 from typing import Union
 
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
@@ -9,6 +8,11 @@ from telegram.constants import ParseMode
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
     UserDataReviewCategory,
+)
+from samanthas_telegram_bot.conversation.auxil.helpers import (
+    make_buttons_yes_no,
+    make_dict_for_message_to_ask_age_student,
+    make_dict_for_message_with_inline_keyboard,
 )
 from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
@@ -69,7 +73,7 @@ class CallbackQueryReplySender:
         role = context.user_data.role
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases[f"ask_class_communication_language_{role}"][
                     locale
                 ],
@@ -96,7 +100,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases[
                     "ask_student_how_long_been_learning_english"
                 ][locale],
@@ -147,7 +151,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=text,
                 buttons=level_buttons,
                 buttons_per_row=3,
@@ -181,7 +185,7 @@ class CallbackQueryReplySender:
         )
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=(
                     f"Question {index + 1} out of "
                     f"{len(context.chat_data.assessment.questions)}\n\n"
@@ -225,7 +229,7 @@ class CallbackQueryReplySender:
         # "Done" button must be there right from the start because the teacher may not be willing
         # to provide any kind help or a student may not need any help
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases[
                     f"ask_non_teaching_help_{context.user_data.role}"
                 ][locale],
@@ -236,19 +240,6 @@ class CallbackQueryReplySender:
                     callback_data=CommonCallbackData.DONE,
                 ),
             )
-        )
-
-    @classmethod
-    async def ask_teacher_additional_help(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks about additional help the teacher can provide (in free text)."""
-
-        await query.edit_message_text(
-            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
         )
 
     @classmethod
@@ -293,10 +284,35 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["review_ask_category"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
+            )
+        )
+
+    @classmethod
+    async def ask_role(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks role (student or teacher)."""
+        locale: Locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=context.bot_data.phrases[f"option_{role}"][locale],
+                callback_data=role,
+            )
+            for role in (Role.STUDENT, Role.TEACHER)
+        ]
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases["ask_role"][locale],
+                buttons=buttons,
+                buttons_per_row=2,
             )
         )
 
@@ -324,31 +340,25 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_student_age(
+    async def ask_student_age_group(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks a student to choose their age group."""
-        locale: Locale = context.user_data.locale
+        """Asks student about their age group."""
+        await query.edit_message_text(**make_dict_for_message_to_ask_age_student(context))
 
-        buttons = [
-            InlineKeyboardButton(
-                text=f"{age_range.age_from}-{age_range.age_to}",
-                callback_data=age_range.id,
-            )
-            for age_range in context.bot_data.age_ranges_for_type[AgeRangeType.STUDENT]
-        ]
+    @classmethod
+    async def ask_teacher_additional_help(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks about additional help the teacher can provide (in free text)."""
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
-                message_text=(
-                    f"{context.bot_data.phrases['student_ukraine_disclaimer'][locale]}\n\n"
-                    f"{context.bot_data.phrases['ask_age'][locale]}"
-                ),
-                buttons=buttons,
-                buttons_per_row=3,
-            )
+            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
+            reply_markup=InlineKeyboardMarkup([]),
         )
 
     @classmethod
@@ -385,7 +395,7 @@ class CallbackQueryReplySender:
         )
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_teacher_student_age_groups"][locale],
                 buttons=buttons_to_show,
                 buttons_per_row=1,
@@ -416,7 +426,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_teacher_group_speaking_club"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
@@ -454,7 +464,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases[
                     "ask_if_over_16_and_can_host_speaking_clubs"
                 ][locale],
@@ -480,7 +490,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_teacher_number_of_groups"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
@@ -509,7 +519,7 @@ class CallbackQueryReplySender:
         # "Done" button must be there right from the start because the teacher may not be willing
         # to provide any kind of peer help
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_teacher_peer_help"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
@@ -539,7 +549,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_teacher_frequency"][locale],
                 buttons=buttons,
                 buttons_per_row=1,
@@ -577,7 +587,7 @@ class CallbackQueryReplySender:
         ]
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases[
                     f"ask_teaching_language_{context.user_data.role}"
                 ][locale],
@@ -624,7 +634,7 @@ class CallbackQueryReplySender:
         )
 
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=message_text,
                 buttons=buttons,
                 buttons_per_row=3,
@@ -730,20 +740,10 @@ class CallbackQueryReplySender:
 
         locale: Locale = context.user_data.locale
 
-        phrase_for_callback_data = {
-            option: context.bot_data.phrases[f"option_{option}"][locale]
-            for option in (CommonCallbackData.YES, CommonCallbackData.NO)
-        }
-
-        buttons = [
-            InlineKeyboardButton(text=value, callback_data=key)
-            for key, value in phrase_for_callback_data.items()
-        ]
-
         await query.edit_message_text(
-            **cls._make_dict_for_message_with_inline_keyboard(
+            **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases[question_phrase_internal_id][locale],
-                buttons=buttons,
+                buttons=make_buttons_yes_no(context),
                 buttons_per_row=2,
                 parse_mode=parse_mode,
             )
@@ -776,44 +776,31 @@ class CallbackQueryReplySender:
             ),
         )
 
-    @staticmethod
-    def _make_dict_for_message_with_inline_keyboard(
-        message_text: str,
-        buttons: list[InlineKeyboardButton],
-        buttons_per_row: int,
-        bottom_row_button: InlineKeyboardButton = None,
-        top_row_button: InlineKeyboardButton = None,
-        parse_mode: Union[ParseMode, None] = None,
-    ) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
-        """Makes a message with an inline keyboard, the number of rows in which depends on how many
-        buttons are passed. The buttons are evenly distributed over the rows. The last row can
-        contain the lone button (that could be e.g. "Next" or "Done").
+    @classmethod
+    async def show_disclaimer(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Shows disclaimer (message text depends on role)."""
+        user_data = context.user_data
+        locale = user_data.locale
 
-        Returns dictionary that can be unpacked into await query.edit_message_text()
-        """
-
-        number_of_rows = ceil(len(buttons) / buttons_per_row)
-
-        if number_of_rows == 0:
-            number_of_rows = 1
-
-        rows = []
-
-        if top_row_button:
-            rows.append([top_row_button])
-
-        copied_buttons = buttons[:]
-        for _ in range(number_of_rows):
-            rows += [
-                copied_buttons[:buttons_per_row]
-            ]  # it works even if there are fewer buttons left
-            del copied_buttons[:buttons_per_row]
-
-        if bottom_row_button:
-            rows.append([bottom_row_button])
-
-        return {
-            "text": message_text,
-            "parse_mode": parse_mode,
-            "reply_markup": InlineKeyboardMarkup(rows),
+        phrase_for_callback_data = {
+            option: context.bot_data.phrases[f"disclaimer_option_{option}"][locale]
+            for option in (CommonCallbackData.OK, CommonCallbackData.ABORT)
         }
+
+        buttons = [
+            InlineKeyboardButton(text=value, callback_data=key)
+            for key, value in phrase_for_callback_data.items()
+        ]
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases[f"{user_data.role}_disclaimer"][locale],
+                buttons=buttons,
+                buttons_per_row=2,
+                parse_mode=None,
+            )
+        )
