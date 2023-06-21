@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Ask timezone. No data is stored here."""
+    """Ask timezone."""
 
     query, _ = await answer_callback_query_and_get_data(update)
     # this callback is only called if the teacher is an adult
