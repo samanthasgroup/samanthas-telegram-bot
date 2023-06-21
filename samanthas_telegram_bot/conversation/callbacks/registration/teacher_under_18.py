@@ -10,7 +10,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateCommon,
     ConversationStateTeacherUnder18,
 )
-from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 

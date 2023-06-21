@@ -9,7 +9,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.conversation.auxil.shortcuts import (
+from samanthas_telegram_bot.conversation.auxil.helpers import (
     make_buttons_yes_no,
     make_dict_for_message_to_ask_age_student,
     make_dict_for_message_with_inline_keyboard,

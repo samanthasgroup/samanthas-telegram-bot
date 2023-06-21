@@ -17,8 +17,8 @@ from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCom
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as TeacherState,
 )
+from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_query_and_get_data
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
 
