@@ -96,7 +96,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     tb_string = "".join(
         EXCEPTION_TRACEBACK_CLEANUP_PATTERN.sub("", item)
         for item in tb_list
-        if "/virtualenvs/" not in item
+        if "/virtualenvs/" not in item  # don't show traceback lines from external modules
     )
 
     await logs(
