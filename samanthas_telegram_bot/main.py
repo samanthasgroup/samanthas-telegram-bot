@@ -34,6 +34,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.data_structures.constants import (
     ALL_LEVELS_PATTERN,
     ENGLISH,
+    EXCEPTION_TRACEBACK_CLEANUP_PATTERN,
     LEARNED_FOR_YEAR_OR_MORE,
 )
 from samanthas_telegram_bot.data_structures.context_types import (
@@ -91,15 +92,21 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """Logs the error and send a telegram message to notify the developer."""
 
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-    tb_string = "".join(tb_list)
+
+    tb_string = "".join(
+        EXCEPTION_TRACEBACK_CLEANUP_PATTERN.sub("", item)
+        for item in tb_list
+        if "/virtualenvs/" not in item
+    )
 
     await logs(
         bot=context.bot,
         update=update,
         level=LoggingLevel.EXCEPTION,
         text=(
-            f"@{os.environ.get('BOT_OWNER_USERNAME')} Registration bot encountered an exception:"
+            "Registration bot encountered an exception:"
             f"\n<code>\n{tb_string}</code>\n"
+            f"@{os.environ.get('BOT_OWNER_USERNAME')}"
         ),
         parse_mode_for_admin_group_message=ParseMode.HTML,
         needs_to_notify_admin_group=True,
