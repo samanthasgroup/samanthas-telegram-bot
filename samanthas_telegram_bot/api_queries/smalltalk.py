@@ -17,7 +17,7 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
 )
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiRequestError
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
@@ -54,18 +54,20 @@ async def send_user_data_get_smalltalk_test(
     try:
         url = data.get("test_link")
     except AttributeError:
-        await log_and_notify(
+        await logs(
             bot=context.bot,
             level=LoggingLevel.ERROR,
             text=f"SmallTalk returned invalid JSON when requested to send link to test: {data}",
+            needs_to_notify_admin_group=True,
         )
         return None, None
 
     if url is None:
-        await log_and_notify(
+        await logs(
             bot=context.bot,
             level=LoggingLevel.ERROR,
             text=f"SmallTalk returned JSON but it seems to contain no URL to test: {data}",
+            needs_to_notify_admin_group=True,
         )
         return None, None
 
@@ -82,20 +84,22 @@ async def get_smalltalk_result(
     user_data = context.user_data
 
     while True:
-        logger.info(f"Chat {user_data.chat_id}: Trying to receive results from SmallTalk")
+        logger.info("Trying to receive results from SmallTalk")
         data = await get_json_with_results(
             test_id=user_data.student_smalltalk_test_id, context=context
         )
         if data is None:
-            await log_and_notify(
+            await logs(
                 bot=context.bot,
+                update=update,
                 level=LoggingLevel.ERROR,
                 # Error text in get_json_with_results() contains status code and response,
                 # and here it contains user info:
                 text=(
-                    f"Chat {user_data.chat_id}: Failed to receive data from SmallTalk "
+                    f"Failed to receive data from SmallTalk "
                     f"for {user_data.first_name} {user_data.last_name}"
                 ),
+                needs_to_notify_admin_group=True,
             )
             return None
 
@@ -103,13 +107,15 @@ async def get_smalltalk_result(
         attempts = 0
 
         if result is None:
-            await log_and_notify(
+            await logs(
                 bot=context.bot,
+                update=update,
                 level=LoggingLevel.ERROR,
                 text=(
-                    f"Chat {user_data.chat_id}: Failed to process data from SmallTalk "
+                    f"Failed to process data from SmallTalk "
                     f"for {user_data.first_name} {user_data.last_name}"
                 ),
+                needs_to_notify_admin_group=True,
             )
             user_data.comment = (
                 f"{user_data.comment}\n- Could not load results of SmallTalk assessment\n"
@@ -118,13 +124,15 @@ async def get_smalltalk_result(
             return None
 
         if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
-            await log_and_notify(
+            await logs(
                 bot=context.bot,
+                update=update,
                 level=LoggingLevel.INFO,
                 text=(
-                    f"Chat {user_data.chat_id}: {user_data.first_name} {user_data.last_name} "
+                    f"User {user_data.first_name} {user_data.last_name} "
                     f"didn't finish the SmallTalk assessment."
                 ),
+                needs_to_notify_admin_group=True,
             )
             user_data.comment = (
                 f"{user_data.comment}\n- SmallTalk assessment not finished\nCheck {result.url}"
@@ -136,33 +144,37 @@ async def get_smalltalk_result(
                     SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS
                     * SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS
                 )
-                await log_and_notify(
+                await logs(
                     bot=context.bot,
+                    update=update,
                     level=LoggingLevel.ERROR,
                     text=(
-                        f"Chat {user_data.chat_id}: SmallTalk results for {user_data.first_name} "
+                        f"SmallTalk results for {user_data.first_name} "
                         f"{user_data.last_name} still not ready after "
                         f"{total_seconds_waiting / 60} minutes. "
                         f"Interview ID {user_data.student_smalltalk_test_id}."
                     ),
+                    needs_to_notify_admin_group=True,
                 )
                 user_data.comment = (
                     f"{user_data.comment}\n- SmallTalk assessment results were not ready\n"
                     f"Interview ID {user_data.student_smalltalk_test_id}"
                 )
 
-            logger.info(f"Chat {user_data.chat_id}: SmallTalk results not ready. Waiting...")
+            logger.info("SmallTalk results not ready. Waiting...")
             attempts += 1
             await asyncio.sleep(SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS)
         else:
-            await log_and_notify(
+            await logs(
                 bot=context.bot,
+                update=update,
                 level=LoggingLevel.INFO,
                 text=(
-                    f"Chat {user_data.chat_id}: Received [SmallTalk results for "
+                    f"Received [SmallTalk results for "
                     f"{user_data.first_name} {user_data.last_name}]({result.url})"
                 ),
                 parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
+                needs_to_notify_admin_group=True,
             )
             return result
 
@@ -184,13 +196,14 @@ async def get_json_with_results(test_id: str, context: CUSTOM_CONTEXT_TYPES) -> 
     if response.status_code == httpx.codes.OK:
         return response.json()
 
-    await log_and_notify(
+    await logs(
         bot=context.bot,
         level=LoggingLevel.ERROR,
         text=(
             f"Did not receive JSON from SmallTalk. {response.status_code=}, {response.headers=}, "
             f"{response.content=}"
         ),
+        needs_to_notify_admin_group=True,
     )
 
     return None

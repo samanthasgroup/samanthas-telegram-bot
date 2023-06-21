@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import typing
 
 import phonenumbers
@@ -16,7 +15,7 @@ from telegram.ext import ConversationHandler
 from samanthas_telegram_bot.api_queries.api_client import ApiClient
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -34,8 +33,6 @@ from samanthas_telegram_bot.data_structures.constants import EMAIL_PATTERN, LOCA
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
 
-logger = logging.getLogger(__name__)
-
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Starts the conversation and asks the user about the interface language.
@@ -45,7 +42,13 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     context.user_data.clear_student_data()
     context.user_data.chat_id = update.effective_chat.id
-    logger.info(f"Chat ID: {context.user_data.chat_id}")
+
+    await logs(
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text="Registration process started",
+        update=update,
+    )
 
     context.chat_data.mode = ConversationMode.NORMAL
 
@@ -175,11 +178,11 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
     """Says goodbye to user that did not accept disclaimer."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    await log_and_notify(
+    await logs(
         bot=context.bot,
         level=LoggingLevel.INFO,
         text="User didn't accept the disclaimer. Cancelling registration.",
-        needs_to_notify_admin_group=False,
+        update=update,
     )
     await query.edit_message_text(
         context.bot_data.phrases["bye_cancel"][context.user_data.locale],
@@ -278,8 +281,11 @@ async def store_username_if_available_ask_phone_or_email(
     if data == "store_username_yes" and username:
         context.user_data.phone_number = None  # in case it was entered at previous run of the bot
         context.user_data.tg_username = username
-        logger.info(
-            f"Chat {update.effective_chat.id}. Username {username} will be stored in the database."
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            text=f"{username=} will be stored in the database.",
+            update=update,
         )
         await query.edit_message_text(
             context.bot_data.phrases["ask_email"][context.user_data.locale],
@@ -318,9 +324,11 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         # Any European region would work (GB, DE, etc.).  Ireland is used for sentimental reasons.
         parsed_phone_number = phonenumbers.parse(number=phone_number_to_parse, region="IE")
     except phonenumbers.phonenumberutil.NumberParseException:
-        logger.info(
-            f"Chat {update.effective_chat.id}. "
-            f"Could not parse phone number {phone_number_to_parse}"
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.WARNING,
+            update=update,
+            text=f"Could not parse phone number {phone_number_to_parse}",
         )
         parsed_phone_number = None
 
@@ -330,9 +338,14 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
             parsed_phone_number, phonenumbers.PhoneNumberFormat.E164
         )
     else:
-        logger.info(
-            f"Chat {update.effective_chat.id}. Invalid phone number {parsed_phone_number} "
-            f"(parsed from {phone_number_to_parse})"
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.WARNING,
+            update=update,
+            text=(
+                f"Invalid phone number {parsed_phone_number} "
+                f"(parsed from {phone_number_to_parse})"
+            ),
         )
         await update.message.reply_text(
             f"{phone_number_to_parse} {context.bot_data.phrases['invalid_phone_number'][locale]}",
@@ -345,7 +358,12 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await update.message.reply_text(context.bot_data.phrases["ask_email"][locale])
-    logger.info(f"Chat {update.effective_chat.id}. Phone: {context.user_data.phone_number}")
+    await logs(
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        update=update,
+        text=f"Phone number: {context.user_data.phone_number}",
+    )
     return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
 
 
@@ -443,9 +461,11 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
         context.bot_data.day_and_time_slot_for_slot_id[slot_id]
         for slot_id in sorted(user_data.day_and_time_slot_ids)
     )
-    logger.info(
-        f"Chat {update.effective_chat.id}. "
-        f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}",
+    await logs(
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        update=update,
+        text=f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}",
     )
 
     # reset day of week to Monday for possible review or re-run
@@ -456,7 +476,12 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
             context.bot_data.phrases["no_slots_selected"][user_data.locale],
             show_alert=True,
         )
-        logger.info(f"Chat {update.effective_chat.id}. User has selected no slots at all")
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            update=update,
+            text="User has selected no slots at all",
+        )
         await CQReplySender.ask_time_slot(context, query)
         return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
@@ -548,10 +573,12 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     if result is True:
         await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
     else:
-        await log_and_notify(
+        await logs(
             bot=context.bot,
             text=f"Cannot send to backend: {user_data=}",
             level=LoggingLevel.CRITICAL,
+            needs_to_notify_admin_group=True,
+            update=update,
         )
 
     return ConversationHandler.END
@@ -560,7 +587,12 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
 async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Cancels and ends the conversation."""
 
-    logger.info(f"Chat {update.effective_chat.id}. User canceled the conversation.")
+    await logs(
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        update=update,
+        text="User aborted registration process.",
+    )
 
     # the /cancel command could come even before the user chooses the locale
     if context.user_data.locale:
@@ -596,12 +628,19 @@ async def _process_student_language_and_level_from_smalltalk(
 
     if user_data.student_smalltalk_result and user_data.student_smalltalk_result.level:
         level = user_data.student_smalltalk_result.level
-        logger.info(f"Chat {update.effective_chat.id}. Setting {level=} based on SmallTalk test.")
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            update=update,
+            text=f"Setting {level=} based on SmallTalk test.",
+        )
     else:
         level = user_data.student_assessment_resulting_level
-        logger.info(
-            f"Chat {update.effective_chat.id}. No SmallTalk result loaded or level "
-            f"is None. Using {level=} from written assessment."
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            update=update,
+            text=f"No SmallTalk result loaded or level is None. Using {level=} from written test.",
         )
 
     user_data.language_and_level_ids = [
@@ -617,10 +656,14 @@ async def _set_student_language_and_level_for_english_starters(
         user_data.language_and_level_ids = [
             context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
         ]
-        logger.info(
-            f"Chat {update.effective_chat.id}. "
-            f"Setting level formally to A0 ({user_data.language_and_level_ids}) "
-            f"because user needs oral interview in English"
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            update=update,
+            text=(
+                f"Setting level formally to A0 ({user_data.language_and_level_ids}) "
+                "because user needs personal oral interview in English"
+            ),
         )
         user_data.comment = f"{user_data.comment}\n- NEEDS ORAL INTERVIEW!"
 

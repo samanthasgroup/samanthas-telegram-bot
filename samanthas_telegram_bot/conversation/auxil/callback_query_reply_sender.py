@@ -1,10 +1,11 @@
-import logging
 from datetime import timedelta
 from typing import Union
 
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
     UserDataReviewCategory,
@@ -23,8 +24,6 @@ from samanthas_telegram_bot.data_structures.constants import (
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.models import AssessmentQuestion
-
-logger = logging.getLogger(__name__)
 
 
 class CallbackQueryReplySender:
@@ -170,9 +169,13 @@ class CallbackQueryReplySender:
         index = context.chat_data.current_assessment_question_index
         current_question: AssessmentQuestion = questions[index]
 
-        logger.debug(
-            f"Preparing to ask question #{index + 1}"
-            f" of {len(context.chat_data.assessment.questions)}, QID {current_question.id}"
+        await logs(
+            bot=context.bot,
+            level=LoggingLevel.DEBUG,
+            text=(
+                f"Preparing to ask question #{index + 1}"
+                f" of {len(context.chat_data.assessment.questions)}, QID {current_question.id}"
+            ),
         )
 
         buttons = [

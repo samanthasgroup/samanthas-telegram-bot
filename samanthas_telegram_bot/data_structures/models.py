@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Optional, TypedDict
 
 from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
+from samanthas_telegram_bot.data_structures.constants import WEEKDAYS
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, SmalltalkTestStatus
 
 
@@ -53,6 +54,9 @@ class DayAndTimeSlot:
     day_of_week_index: int
     from_utc_hour: int
     to_utc_hour: int
+
+    def __str__(self) -> str:
+        return f"{WEEKDAYS[self.day_of_week_index]} {self.from_utc_hour}-{self.to_utc_hour} UTC"
 
 
 @dataclass(frozen=True)

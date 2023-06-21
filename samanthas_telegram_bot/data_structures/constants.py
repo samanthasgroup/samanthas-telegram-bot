@@ -24,6 +24,9 @@ EMAIL_PATTERN = re.compile(
     "|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])"
 )
 
+EXCEPTION_TRACEBACK_CLEANUP_PATTERN = re.compile(r"File .+/")  # it is intended to be greedy
+"""Pattern to remove the long 'File:/path/to/file/' portion, but leave the file name."""
+
 LOW_LEVELS = ("A0", "A1")
 LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
 ALL_LEVELS = LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST
@@ -60,3 +63,5 @@ TEACHER_PEER_HELP_TYPES = (
     "can_work_in_tandem",
 )
 """These types are used in `UserData`, callback data, setting boolean flags for teacher."""
+
+WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")

@@ -22,7 +22,7 @@ import samanthas_telegram_bot.conversation.callbacks.registration.student as stu
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
     ConversationStateCommon,
@@ -34,6 +34,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.data_structures.constants import (
     ALL_LEVELS_PATTERN,
     ENGLISH,
+    EXCEPTION_TRACEBACK_CLEANUP_PATTERN,
     LEARNED_FOR_YEAR_OR_MORE,
 )
 from samanthas_telegram_bot.data_structures.context_types import (
@@ -47,10 +48,9 @@ load_dotenv()
 
 logging_level = typing.cast(str, os.environ.get("LOGGING_LEVEL"))
 logging.basicConfig(
-    format="%(asctime)s - %(module)s (%(funcName)s:%(lineno)s) - %(levelname)s - %(message)s",
+    format="%(asctime)s - %(levelname)s - %(message)s | %(module)s (%(funcName)s:%(lineno)s)",
     level=getattr(logging, logging_level),
 )
-logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
@@ -92,16 +92,45 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """Logs the error and send a telegram message to notify the developer."""
 
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
-    tb_string = "".join(tb_list)
 
-    await log_and_notify(
+    tb_string = "".join(
+        EXCEPTION_TRACEBACK_CLEANUP_PATTERN.sub("", item)
+        for item in tb_list
+        if "/virtualenvs/" not in item  # don't show traceback lines from external modules
+    )
+    tb_string = f"<code>{tb_string}</code>"
+
+    if update.message is not None:
+        tb_string = (
+            f"{tb_string}\n<strong>Message received from user</strong>: {update.message.text}\n"
+        )
+        # TODO this will not work for now because the user has to reply to the message,
+        #  not just send his message after bot's.  This could be solved by ForceReply()
+        #  as reply_markup where possible.
+        if update.message.reply_to_message is not None:
+            tb_string = (
+                f"{tb_string}\n<strong>This was a reply to message from bot</strong>: "
+                f"{update.message.reply_to_message.text}\n"
+            )
+
+    if update.callback_query is not None:
+        tb_string = (
+            f"{tb_string}\n<strong>Message the user reacted to</strong> (first 100 chars):\n\n"
+            f"{update.effective_message.text[:100]}...\n\n"
+            f"<strong>Data from button pressed</strong>: {update.callback_query.data}\n"
+        )
+
+    await logs(
         bot=context.bot,
+        update=update,
         level=LoggingLevel.EXCEPTION,
         text=(
-            f"@{os.environ.get('BOT_OWNER_USERNAME')} Registration bot encountered an exception:"
-            f"\n<code>\n{tb_string}</code>\n"
+            "Registration bot encountered an exception:"
+            f"\n\n{tb_string}\n"
+            f"@{os.environ.get('BOT_OWNER_USERNAME')}"
         ),
         parse_mode_for_admin_group_message=ParseMode.HTML,
+        needs_to_notify_admin_group=True,
     )
 
 
