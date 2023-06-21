@@ -6,8 +6,6 @@ when the corresponding question was asked in normal conversation flow.
 Since chat is supposed to be in review mode by now, the user will return straight back
 to review menu after they give amended information "upstream" in the conversation.
 """
-import logging
-
 from telegram import InlineKeyboardMarkup, Update
 
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
@@ -21,8 +19,6 @@ from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_qu
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
-
-logger = logging.getLogger(__name__)
 
 
 async def first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:

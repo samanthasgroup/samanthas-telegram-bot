@@ -1,7 +1,7 @@
-import logging
-
 from telegram import Update
 
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -19,8 +19,6 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.data_structures.constants import TEACHER_PEER_HELP_TYPES
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import TeachingMode
-
-logger = logging.getLogger(__name__)
 
 
 async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -65,10 +63,15 @@ async def ask_class_communication_language(update: Update, context: CUSTOM_CONTE
     """Asks for communication language in class. No data is stored here."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    logger.info(
-        f"Chat {update.effective_chat.id}. Selected teaching language(s) and level(s): "
-        f"{context.user_data.levels_for_teaching_language} "
-        f"(IDs: {context.user_data.language_and_level_ids})"
+    await logs(
+        update=update,
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text=(
+            "Selected teaching language(s) and level(s): "
+            f"{context.user_data.levels_for_teaching_language} "
+            f"(IDs: {context.user_data.language_and_level_ids})"
+        ),
     )
 
     if context.chat_data.mode == ConversationMode.REVIEW:
@@ -186,9 +189,11 @@ async def ask_non_teaching_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     """Asks the teacher for non-teaching help they can provide to the students."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    logger.info(
-        f"Chat {update.effective_chat.id}. IDs of student ages "
-        f"{context.user_data.teacher_student_age_range_ids}"
+    await logs(
+        update=update,
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text=f"IDs of student ages {context.user_data.teacher_student_age_range_ids}",
     )
     if context.chat_data.mode == ConversationMode.REVIEW:
         await query.delete_message()
@@ -243,7 +248,12 @@ async def ask_additional_skills_comment(update: Update, context: CUSTOM_CONTEXT_
         for help_type in TEACHER_PEER_HELP_TYPES
         if getattr(user_data.teacher_peer_help, help_type) is True
     )
-    logger.info(f"Chat {update.effective_chat.id}: teacher's peer help: {selected_types}")
+    await logs(
+        update=update,
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text=f"Teacher's peer help: {selected_types}",
+    )
 
     await CQReplySender.ask_teacher_additional_help(context, query)
     return ConversationStateTeacherAdult.ASK_REVIEW

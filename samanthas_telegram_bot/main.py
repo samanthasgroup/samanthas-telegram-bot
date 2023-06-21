@@ -22,7 +22,7 @@ import samanthas_telegram_bot.conversation.callbacks.registration.student as stu
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
     ConversationStateCommon,
@@ -50,7 +50,6 @@ logging.basicConfig(
     format="%(asctime)s - %(module)s (%(funcName)s:%(lineno)s) - %(levelname)s - %(message)s",
     level=getattr(logging, logging_level),
 )
-logger = logging.getLogger(__name__)
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
@@ -94,14 +93,16 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
     tb_string = "".join(tb_list)
 
-    await log_and_notify(
+    await logs(
         bot=context.bot,
+        update=update,
         level=LoggingLevel.EXCEPTION,
         text=(
             f"@{os.environ.get('BOT_OWNER_USERNAME')} Registration bot encountered an exception:"
             f"\n<code>\n{tb_string}</code>\n"
         ),
         parse_mode_for_admin_group_message=ParseMode.HTML,
+        needs_to_notify_admin_group=True,
     )
 
 

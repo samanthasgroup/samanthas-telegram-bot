@@ -60,3 +60,5 @@ TEACHER_PEER_HELP_TYPES = (
     "can_work_in_tandem",
 )
 """These types are used in `UserData`, callback data, setting boolean flags for teacher."""
+
+WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")

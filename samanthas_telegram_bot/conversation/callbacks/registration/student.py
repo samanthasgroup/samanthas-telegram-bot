@@ -1,10 +1,8 @@
-import logging
-
 from telegram import Update
 
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.assessment import (
     prepare_assessment,
     process_results,
@@ -25,8 +23,6 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
-logger = logging.getLogger(__name__)
-
 
 async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores student's age group, asks timezone."""
@@ -40,14 +36,14 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     ].age_from
     user_data.student_age_to = context.bot_data.student_ages_for_age_range_id[age_range_id].age_to
 
-    await log_and_notify(
+    await logs(
+        update=update,
         bot=context.bot,
         level=LoggingLevel.INFO,
         text=(
             f"Age group of the student: ID {user_data.student_age_range_id} "
             f"({user_data.student_age_from}-{user_data.student_age_to} years old)"
         ),
-        needs_to_notify_admin_group=False,
     )
 
     if context.chat_data.mode == ConversationMode.REVIEW:
@@ -99,12 +95,19 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
     # this callback is called if pattern matches "yes"
     user_data.student_can_read_in_english = True
 
-    logger.info(f"Chat {update.effective_chat.id}. User can read in English.")
+    await logs(
+        update=update, bot=context.bot, level=LoggingLevel.INFO, text="User can read in English"
+    )
 
     if user_data.student_age_to <= 12:
         # young students: mark as requiring interview, ask about communication language
         user_data.student_needs_oral_interview = True
-        logger.info(f"Chat {update.effective_chat.id}. User needs oral interview in English.")
+        await logs(
+            update=update,
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            text="User needs oral interview in English.",
+        )
         await CQReplySender.ask_class_communication_languages(context, query)
         return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW
     elif user_data.student_age_to < 18:
@@ -131,8 +134,6 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
     # this callback is only called if pattern matches "No"
     user_data.student_can_read_in_english = False
 
-    logger.info(f"Chat {update.effective_chat.id}. User cannot read in English")
-
     # Adult students get A0...
     if user_data.student_age_from >= 18:
         user_data.language_and_level_ids = [
@@ -141,7 +142,12 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
     else:
         # ...while young students get no level and are marked to require oral interview.
         user_data.student_needs_oral_interview = True
-        logger.info(f"Chat {update.effective_chat.id}. User needs oral interview in English.")
+        await logs(
+            update=update,
+            bot=context.bot,
+            level=LoggingLevel.INFO,
+            text="User needs oral interview in English.",
+        )
 
     await CQReplySender.ask_class_communication_languages(context, query)
     return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW
@@ -173,9 +179,11 @@ async def start_assessment_for_teen_student_that_learned_for_year_or_more(
     """Starts assessment for young students that have been learning English for a year or more."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    logger.info(
-        f"Chat {update.effective_chat.id}. "
-        f"Adolescent student has learned English for year or more. Starting assessment"
+    await logs(
+        update=update,
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text="Adolescent student has learned English for year or more. Starting assessment",
     )
     await prepare_assessment(context, query)
     return ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL
@@ -187,9 +195,11 @@ async def ask_communication_language_for_teen_student_that_learned_less_than_yea
     """Stores that teen student needs oral interview (no test). Asks communication language."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    logger.info(
-        f"Chat {update.effective_chat.id}. "
-        f"Student has learned English for less than a year. Will need oral interview"
+    await logs(
+        update=update,
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text="Student has learned English for less than a year. Will need oral interview",
     )
     context.user_data.student_needs_oral_interview = True
 
@@ -233,7 +243,12 @@ async def store_assessment_answer_ask_next_question_or_get_result_if_finished(
         return next_state
 
     if int(data) in context.chat_data.ids_of_dont_know_options_in_assessment:
-        logger.debug(f"Chat {update.effective_chat.id}. User replied 'I don't know'")
+        await logs(
+            update=update,
+            bot=context.bot,
+            level=LoggingLevel.DEBUG,
+            text="User replied 'I don't know'",
+        )
         context.chat_data.assessment_dont_knows_in_a_row += 1
     else:
         context.chat_data.assessment_dont_knows_in_a_row = 0

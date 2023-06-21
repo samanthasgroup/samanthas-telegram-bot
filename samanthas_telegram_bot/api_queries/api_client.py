@@ -1,7 +1,6 @@
 import logging
 import os
 import typing
-from logging import Logger
 from typing import Any
 
 import httpx
@@ -31,11 +30,11 @@ from samanthas_telegram_bot.api_queries.auxil.enums import (
 )
 from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiRequestError
 from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
-from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 class ApiClient:
@@ -47,7 +46,7 @@ class ApiClient:
     @classmethod
     async def chat_id_is_registered(cls, chat_id: int) -> bool:
         """Checks whether the chat ID is already stored in the database."""
-        logger.info(f"Checking with the backend if chat ID {chat_id} exists...")
+        LOGGER.info(f"Checking with the backend if chat ID {chat_id} exists...")
 
         response = await cls._make_async_request(
             method=HttpMethod.GET,
@@ -56,7 +55,7 @@ class ApiClient:
         )
 
         exists = response.status_code == httpx.codes.OK
-        logger.info(f"... {chat_id} {exists=} ({response.status_code=})")
+        LOGGER.info(f"... {chat_id} {exists=} ({response.status_code=})")
         return exists
 
     @classmethod
@@ -74,7 +73,6 @@ class ApiClient:
             url=API_URL_STUDENTS_LIST_CREATE,
             data=user_data.student_as_dict(update=update, personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
-            logger=logger,
             success_message=cls._generate_success_message_for_person_creation(
                 context=context, personal_info_id=personal_info_id
             ),
@@ -85,7 +83,12 @@ class ApiClient:
         )
 
         if not user_data.student_assessment_answers:
-            logger.info(f"Chat {user_data.chat_id}: no assessment answers to send")
+            await logs(
+                bot=context.bot,  # type:ignore[attr-defined]
+                level=LoggingLevel.INFO,
+                update=update,
+                text="No assessment answers to send",
+            )
             return result is not None
 
         result = await cls._send_to_backend(
@@ -94,7 +97,6 @@ class ApiClient:
             url=API_URL_ENROLLMENT_TEST_SEND_RESULT,
             data=user_data.student_enrollment_test_as_dict(personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
-            logger=logger,
             success_message=f"Added assessment answers for {personal_info_id=}",
             failure_message=f"Failed to send written assessment for {personal_info_id=})",
             failure_logging_level=LoggingLevel.CRITICAL,
@@ -117,7 +119,6 @@ class ApiClient:
             url=API_URL_TEACHERS_LIST_CREATE,
             data=user_data.teacher_as_dict(update=update, personal_info_id=personal_info_id),
             expected_status_code=httpx.codes.CREATED,
-            logger=logger,
             success_message=cls._generate_success_message_for_person_creation(
                 context=context, personal_info_id=personal_info_id
             ),
@@ -145,7 +146,6 @@ class ApiClient:
                 update=update, personal_info_id=personal_info_id
             ),
             expected_status_code=httpx.codes.CREATED,
-            logger=logger,
             success_message=cls._generate_success_message_for_person_creation(
                 context=context, personal_info_id=personal_info_id
             ),
@@ -166,13 +166,13 @@ class ApiClient:
         if not name_for_logger:
             name_for_logger = url_infix.replace("_", " ")
 
-        logger.info(f"Getting {name_for_logger} from the backend...")
+        LOGGER.info(f"Getting {name_for_logger} from the backend...")
 
         # synchronous requests are only run at application startup, so no exception handling needed
         response = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
 
         data = response.json()
-        logger.info(f"...received {len(data)} {name_for_logger}.")
+        LOGGER.info(f"...received {len(data)} {name_for_logger}.")
 
         return data
 
@@ -189,9 +189,13 @@ class ApiClient:
         )
         number_of_questions = len(context.chat_data.assessment.questions)  # type: ignore[attr-defined]  # noqa
 
-        logger.info(
-            f"Chat {user_data.chat_id}: {len(answer_ids)} out of "
-            f"{number_of_questions} questions were answered. Receiving level from backend..."
+        await logs(
+            bot=context.bot,  # type:ignore[attr-defined]
+            level=LoggingLevel.INFO,
+            text=(
+                f"Chat {user_data.chat_id}: {len(answer_ids)} out of "
+                f"{number_of_questions} questions were answered. Receiving level from backend..."
+            ),
         )
 
         data = await cls._send_to_backend(
@@ -200,7 +204,6 @@ class ApiClient:
             url=API_URL_ENROLLMENT_TEST_GET_LEVEL,
             data={"answers": answer_ids, "number_of_questions": number_of_questions},
             expected_status_code=httpx.codes.OK,
-            logger=logger,
             success_message="Checked result of written assessment",
             failure_message="Failed to send results of written assessment and receive level",
             failure_logging_level=LoggingLevel.CRITICAL,
@@ -212,7 +215,7 @@ class ApiClient:
         except KeyError:
             return None
 
-        logger.info(f"{level=}")
+        LOGGER.info(f"{level=}")
         return level
 
     @classmethod
@@ -225,7 +228,7 @@ class ApiClient:
         """Checks whether user with given first and last name and email already exists in DB."""
         data_to_check = f"user {first_name} {last_name} ({email})"
 
-        logger.info(f"Checking with the backend if {data_to_check} already exists...")
+        LOGGER.info(f"Checking with the backend if {data_to_check} already exists...")
         response = await cls._make_async_request(
             method=HttpMethod.POST,
             url=API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
@@ -234,7 +237,7 @@ class ApiClient:
 
         # this is correct: `exists` is False if status is 200 OK
         exists = response.status_code != httpx.codes.OK
-        logger.info(f"... {data_to_check} {exists=} ({response.status_code=}, {response.json()=})")
+        LOGGER.info(f"... {data_to_check} {exists=} ({response.status_code=}, {response.json()=})")
         return exists
 
     @classmethod
@@ -255,13 +258,12 @@ class ApiClient:
             url=API_URL_PERSONAL_INFO_LIST_CREATE,
             data=user_data.personal_info_as_dict(),
             expected_status_code=httpx.codes.CREATED,
-            logger=logger,
             success_message=f"Created {common_message_part}",
             failure_message=failure_message,
             failure_logging_level=LoggingLevel.CRITICAL,
         )
         if data:
-            logger.info(f"{data['id']=}")
+            LOGGER.info(f"{data['id']=}")
             return typing.cast(int, data["id"])
         raise ApiRequestError(failure_message)
 
@@ -319,7 +321,6 @@ class ApiClient:
         url: str,
         data: DataDict,
         expected_status_code: int,
-        logger: Logger,
         success_message: str,
         failure_message: str,
         success_logging_level: LoggingLevel = LoggingLevel.INFO,
@@ -349,7 +350,7 @@ class ApiClient:
             failure_message_suffix = escape_for_markdown(failure_message_suffix)
 
         if response.status_code != expected_status_code:
-            await log_and_notify(
+            await logs(
                 bot=context.bot,  # type: ignore[attr-defined]
                 level=failure_logging_level,
                 text=f"{message_prefix}{failure_message}{failure_message_suffix}",
@@ -359,7 +360,7 @@ class ApiClient:
             )
             return None
 
-        await log_and_notify(
+        await logs(
             bot=context.bot,  # type: ignore[attr-defined]
             level=success_logging_level,
             text=f"{message_prefix}{success_message}{message_suffix}",
@@ -378,5 +379,5 @@ class ApiClient:
                 failure_message_suffix += exc_info
             return None
         else:
-            logger.debug(f"Response JSON: {response_json}")
+            LOGGER.debug(f"Response JSON: {response_json}")
             return response_json
