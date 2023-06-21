@@ -20,13 +20,13 @@ from samanthas_telegram_bot.auxil.log_and_notify import log_and_notify
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData, ConversationMode
+from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent as StudentState,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import (
-    ConversationStateTeacherAdult as TeacherState,
+    ConversationStateTeacherAdult as AdultTeacherState,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.auxil.shortcuts import answer_callback_query_and_get_data
@@ -105,70 +105,92 @@ async def store_locale_ask_if_already_registered(
         question_phrase_internal_id="ask_already_with_us",
     )
 
-    return CommonState.CHECK_CHAT_ID_ASK_TIMEZONE
+    return CommonState.CHECK_CHAT_ID_ASK_ROLE
 
 
-async def redirect_to_coordinator_if_registered_check_chat_id_ask_timezone(
+async def redirect_registered_user_to_coordinator(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Checks user's answer if they are registered, checks chat ID, asks timezone.
+    """If user is already registered (as per their answer), redirects to coordinator."""
+    query, _ = await answer_callback_query_and_get_data(update)
 
-    If user is already registered (as per their answer), redirects to coordinator.
-    Otherwise, checks if Telegram chat ID is already present in the back end.
-    If it is, asks the user if they still want to proceed with registration.
+    await query.edit_message_text(
+        context.bot_data.phrases["reply_go_to_other_chat"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
+    )
+    return ConversationHandler.END
 
-    If the user said they were not registered and chat ID was not found,
-    asks timezone.
+
+async def check_chat_id_ask_role_if_id_does_not_exist(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Checks user's answer if they are registered, checks chat ID, asks role.
+
+    Checks if Telegram chat ID is already present in the back end.
+    If it is, asks the user if they still want to proceed with registration. Otherwise,
+    asks their desired role (student, teacher).
     """
-    # TODO ask role right here
     query, data = await answer_callback_query_and_get_data(update)
-
-    if data == CommonCallbackData.YES:
-        await query.edit_message_text(
-            context.bot_data.phrases["reply_go_to_other_chat"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return ConversationHandler.END
 
     if await ApiClient.chat_id_is_registered(chat_id=update.effective_chat.id):
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
-        return CommonState.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE
+        return CommonState.ASK_ROLE_OR_BYE
 
-    await CQReplySender.ask_timezone(context, query)
-    return CommonState.ASK_FIRST_NAME
+    await CQReplySender.ask_role(context, query)
+    return CommonState.SHOW_DISCLAIMER
 
 
-async def say_bye_if_does_not_want_to_register_another_or_ask_timezone(
+async def say_bye_if_does_not_want_to_register_another_person(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """If user does not want to register another person, says bye. Otherwise, asks timezone."""
+    """If user does not want to register another person, says bye."""
+    query, _ = await answer_callback_query_and_get_data(update)
 
-    query, data = await answer_callback_query_and_get_data(update)
-
-    if data == CommonCallbackData.NO:
-        await query.edit_message_text(
-            context.bot_data.phrases["bye_wait_for_message_from_bot"][context.user_data.locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
-        return ConversationHandler.END
-
-    await CQReplySender.ask_timezone(context, query)
-    return CommonState.ASK_FIRST_NAME
-
-
-async def store_timezone_ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores UTC offset, asks first name."""
-    query, data = await answer_callback_query_and_get_data(update)
-
-    context.user_data.utc_offset_hour, context.user_data.utc_offset_minute = (
-        int(item) for item in data.split(":")
+    await query.edit_message_text(
+        context.bot_data.phrases["bye_wait_for_message_from_bot"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
     )
+    return ConversationHandler.END
 
-    if context.chat_data.mode == ConversationMode.REVIEW:
-        await MessageSender.ask_review(update, context)
-        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
+
+async def ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks role. No data is stored here"""
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    await CQReplySender.ask_role(context, query)
+    return CommonState.SHOW_DISCLAIMER
+
+
+async def store_role_show_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Stores role, shows disclaimer."""
+    query, context.user_data.role = await answer_callback_query_and_get_data(update)
+
+    await CQReplySender.show_disclaimer(context, query)
+    return CommonState.ASK_FIRST_NAME_OR_BYE
+
+
+async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Says goodbye to user that did not accept disclaimer."""
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    await log_and_notify(
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text="User didn't accept the disclaimer. Cancelling registration.",
+        needs_to_notify_admin_group=False,
+    )
+    await query.edit_message_text(
+        context.bot_data.phrases["bye_cancel"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
+    )
+    return ConversationHandler.END
+
+
+async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Asks first name. No data is stored here"""
+    query, _ = await answer_callback_query_and_get_data(update)
 
     await query.edit_message_text(
         context.bot_data.phrases["ask_first_name"][context.user_data.locale],
@@ -263,7 +285,7 @@ async def store_username_if_available_ask_phone_or_email(
             context.bot_data.phrases["ask_email"][context.user_data.locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
-        return CommonState.ASK_ROLE
+        return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
 
     context.user_data.tg_username = None
     await query.delete_message()
@@ -324,35 +346,36 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
 
     await update.message.reply_text(context.bot_data.phrases["ask_email"][locale])
     logger.info(f"Chat {update.effective_chat.id}. Phone: {context.user_data.phone_number}")
-    return CommonState.ASK_ROLE
+    return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
 
 
-async def store_email_check_existence_ask_role(
+async def store_email_check_existence_ask_age(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores the email, checks existence and asks whether user wants to be student or teacher.
 
     Stores the email. If the user with these contact details exists, redirects to goodbye.
-    Otherwise, asks whether the user wants to be a student or a teacher.
+    Otherwise, asks age depending on role ("Are you 18+" for teacher, age group for student).
     """
 
     if update.message is None:
-        return CommonState.ASK_ROLE
+        return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
 
-    locale: Locale = context.user_data.locale
+    user_data = context.user_data
+    locale: Locale = user_data.locale
 
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
         await update.message.reply_text(context.bot_data.phrases["invalid_email"][locale])
-        return CommonState.ASK_ROLE
+        return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
 
-    context.user_data.email = email
+    user_data.email = email
 
     # terminate conversation if the person with these personal data already exists
     if await ApiClient.person_with_first_name_last_name_email_exists_in_database(
-        first_name=context.user_data.first_name,
-        last_name=context.user_data.last_name,
-        email=context.user_data.email,
+        first_name=user_data.first_name,
+        last_name=user_data.last_name,
+        email=user_data.email,
     ):
         await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
         return ConversationHandler.END
@@ -362,41 +385,31 @@ async def store_email_check_existence_ask_role(
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-    await update.message.reply_text(
-        context.bot_data.phrases["ask_role"][locale],
-        reply_markup=InlineKeyboardMarkup(
-            [
-                [
-                    InlineKeyboardButton(
-                        text=context.bot_data.phrases[f"option_{role}"][locale],
-                        callback_data=role,
-                    )
-                    for role in (Role.STUDENT, Role.TEACHER)
-                ],
-            ]
-        ),
+    await getattr(MessageSender, f"ask_age_{user_data.role}")(update, context)
+    return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
+
+
+# callbacks for asking timezone are in student and teacher_adult
+
+
+async def store_timezone_ask_slots_for_monday(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores timezone, asks time slots for Monday."""
+
+    query, data = await answer_callback_query_and_get_data(update)
+    user_data = context.user_data
+
+    user_data.utc_offset_hour, user_data.utc_offset_minute = (
+        int(item) for item in data.split(":")
     )
-    return CommonState.ASK_AGE
 
+    if context.chat_data.mode == ConversationMode.REVIEW:
+        await MessageSender.ask_review(update, context)
+        return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-async def store_role_ask_age(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores the role and asks the user what their age is (the question depends on role)."""
-
-    query, context.user_data.role = await answer_callback_query_and_get_data(update)
-
-    match context.user_data.role:
-        case Role.STUDENT:
-            await CQReplySender.ask_student_age(context, query)
-            return StudentState.TIME_SLOTS_START
-        case Role.TEACHER:
-            await CQReplySender.ask_yes_no(
-                context,
-                query,
-                question_phrase_internal_id="ask_if_18",
-            )
-            return TeacherState.TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB
-        case _:
-            raise NotImplementedError(f"{context.user_data.role=} not supported")
+    await CQReplySender.ask_time_slot(context, query)
+    return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
 
 async def store_one_time_slot_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -461,7 +474,7 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
 
     # This is the bifurcation point in the conversation: next state depends on role.
     if user_data.role == Role.TEACHER:
-        return TeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
+        return AdultTeacherState.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE
     elif user_data.role == Role.STUDENT:
         return StudentState.ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST
     else:

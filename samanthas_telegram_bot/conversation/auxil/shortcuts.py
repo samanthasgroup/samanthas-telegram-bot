@@ -1,6 +1,12 @@
-from telegram import CallbackQuery, Update
+from math import ceil
+from typing import Union
 
+from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.constants import ParseMode
+
+from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 
 
 async def answer_callback_query_and_get_data(update: Update) -> tuple[CallbackQuery, str]:
@@ -12,6 +18,81 @@ async def answer_callback_query_and_get_data(update: Update) -> tuple[CallbackQu
     query = update.callback_query
     await query.answer()
     return query, query.data
+
+
+def make_buttons_with_age_ranges_for_students(
+    context: CUSTOM_CONTEXT_TYPES,
+) -> list[InlineKeyboardButton]:
+    return [
+        InlineKeyboardButton(
+            text=f"{age_range.age_from}-{age_range.age_to}",
+            callback_data=age_range.id,
+        )
+        for age_range in context.bot_data.age_ranges_for_type[AgeRangeType.STUDENT]
+    ]
+
+
+def make_buttons_yes_no(context: CUSTOM_CONTEXT_TYPES) -> list[InlineKeyboardButton]:
+    """Produces two buttons for inline keyboard: 'yes' and 'no' (localized)."""
+    phrase_for_callback_data = {
+        option: context.bot_data.phrases[f"option_{option}"][context.user_data.locale]
+        for option in (CommonCallbackData.YES, CommonCallbackData.NO)
+    }
+
+    return [
+        InlineKeyboardButton(text=value, callback_data=key)
+        for key, value in phrase_for_callback_data.items()
+    ]
+
+
+def make_dict_for_message_with_inline_keyboard(
+    message_text: str,
+    buttons: list[InlineKeyboardButton],
+    buttons_per_row: int,
+    bottom_row_button: InlineKeyboardButton = None,
+    top_row_button: InlineKeyboardButton = None,
+    parse_mode: Union[ParseMode, None] = None,
+) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    """Makes a message with an inline keyboard, the number of rows in which depends on how many
+    buttons are passed. The buttons are evenly distributed over the rows. The last row can
+    contain the lone button (that could be e.g. "Next" or "Done").
+
+    Returns dictionary that can be unpacked into await query.edit_message_text()
+    """
+
+    number_of_rows = ceil(len(buttons) / buttons_per_row)
+
+    if number_of_rows == 0:
+        number_of_rows = 1
+
+    rows = []
+
+    if top_row_button:
+        rows.append([top_row_button])
+
+    copied_buttons = buttons[:]
+    for _ in range(number_of_rows):
+        rows += [copied_buttons[:buttons_per_row]]  # it works even if there are fewer buttons left
+        del copied_buttons[:buttons_per_row]
+
+    if bottom_row_button:
+        rows.append([bottom_row_button])
+
+    return {
+        "text": message_text,
+        "parse_mode": parse_mode,
+        "reply_markup": InlineKeyboardMarkup(rows),
+    }
+
+
+def make_dict_for_message_to_ask_age_student(
+    context: CUSTOM_CONTEXT_TYPES,
+) -> dict[str, str | InlineKeyboardMarkup]:
+    return make_dict_for_message_with_inline_keyboard(
+        message_text=context.bot_data.phrases["ask_age"][context.user_data.locale],
+        buttons=make_buttons_with_age_ranges_for_students(context),
+        buttons_per_row=3,
+    )
 
 
 def store_selected_language_level(context: CUSTOM_CONTEXT_TYPES, level: str) -> None:

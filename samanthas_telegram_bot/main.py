@@ -127,18 +127,29 @@ def main() -> None:
             ConversationStateCommon.IS_REGISTERED: [
                 CallbackQueryHandler(common_main.store_locale_ask_if_already_registered)
             ],
-            ConversationStateCommon.CHECK_CHAT_ID_ASK_TIMEZONE: [
+            ConversationStateCommon.CHECK_CHAT_ID_ASK_ROLE: [
                 CallbackQueryHandler(
-                    common_main.redirect_to_coordinator_if_registered_check_chat_id_ask_timezone
-                )
+                    common_main.redirect_registered_user_to_coordinator,
+                    pattern=CommonCallbackData.YES,  # "Yes, I am already registered here"
+                ),
+                CallbackQueryHandler(common_main.check_chat_id_ask_role_if_id_does_not_exist),
             ],
-            ConversationStateCommon.CHECK_IF_WANTS_TO_REGISTER_ANOTHER_PERSON_ASK_TIMEZONE: [
+            ConversationStateCommon.ASK_ROLE_OR_BYE: [
                 CallbackQueryHandler(
-                    common_main.say_bye_if_does_not_want_to_register_another_or_ask_timezone
-                )
+                    common_main.say_bye_if_does_not_want_to_register_another_person,
+                    pattern=CommonCallbackData.NO,  # "No, I don't want to register anyone else"
+                ),
+                CallbackQueryHandler(common_main.ask_role),
             ],
-            ConversationStateCommon.ASK_FIRST_NAME: [
-                CallbackQueryHandler(common_main.store_timezone_ask_first_name)
+            ConversationStateCommon.SHOW_DISCLAIMER: [
+                CallbackQueryHandler(common_main.store_role_show_disclaimer)
+            ],
+            ConversationStateCommon.ASK_FIRST_NAME_OR_BYE: [
+                CallbackQueryHandler(
+                    common_main.say_bye_if_disclaimer_not_accepted,
+                    pattern=CommonCallbackData.ABORT,
+                ),
+                CallbackQueryHandler(common_main.ask_first_name),
             ],
             ConversationStateCommon.ASK_LAST_NAME: [
                 MessageHandler(
@@ -164,27 +175,29 @@ def main() -> None:
                     common_main.store_phone_ask_email,
                 )
             ],
-            ConversationStateCommon.ASK_ROLE: [
+            ConversationStateCommon.ASK_AGE_OR_BYE_IF_PERSON_EXISTS: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
-                    common_main.store_email_check_existence_ask_role,
+                    common_main.store_email_check_existence_ask_age,
                 )
             ],
-            ConversationStateCommon.ASK_AGE: [
-                CallbackQueryHandler(common_main.store_role_ask_age)
-            ],
-            # Callbacks for asking day and time slots differ slightly, depending on role
-            ConversationStateStudent.TIME_SLOTS_START: [
-                CallbackQueryHandler(student.store_age_ask_slots_for_monday)
-            ],
-            ConversationStateTeacherAdult.TIME_SLOTS_START_OR_ASK_YOUNG_TEACHER_ABOUT_SPEAKING_CLUB: [  # noqa:E501
+            # Callbacks for asking timezone depend on role (don't ask teen teachers about timezone)
+            ConversationStateCommon.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB: [
                 CallbackQueryHandler(
-                    adult_teacher.ask_adult_teacher_slots_for_monday,
-                    pattern=CommonCallbackData.YES,  # "Yes, I am 18 or older"
+                    adult_teacher.ask_timezone,
+                    pattern=CommonCallbackData.YES,  # Teacher: "Yes, I am 18 or older"
                 ),
-                CallbackQueryHandler(young_teacher.ask_readiness_to_host_speaking_club),
+                CallbackQueryHandler(
+                    young_teacher.ask_readiness_to_host_speaking_club,
+                    pattern=CommonCallbackData.NO,
+                ),
+                # students don't reply "yes" or "no": they choose their age group
+                CallbackQueryHandler(student.store_age_ask_timezone),
             ],
-            # Menu of time slots works the same for students and teachers
+            # Callbacks for asking day and time slots (2 states: start and menu) are the same
+            ConversationStateCommon.TIME_SLOTS_START: [
+                CallbackQueryHandler(common_main.store_timezone_ask_slots_for_monday)
+            ],
             ConversationStateCommon.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE: [
                 CallbackQueryHandler(
                     common_main.store_last_time_slot_ask_slots_for_next_day_or_teaching_language,
@@ -317,25 +330,25 @@ def main() -> None:
                 )
             ],
             # MIDDLE OF CONVERSATION: YOUNG TEACHER CALLBACKS
-            ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE_OR_BYE: [
+            ConversationStateTeacherUnder18.ASK_COMMUNICATION_LANGUAGE_OR_BYE: [
                 CallbackQueryHandler(
                     young_teacher.ask_communication_language,
                     pattern=CommonCallbackData.YES,  # "Yes, I'm ready to host speaking clubs"
                 ),
                 CallbackQueryHandler(young_teacher.bye_cannot_work, pattern=CommonCallbackData.NO),
             ],
-            ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE: [
+            ConversationStateTeacherUnder18.ASK_SPEAKING_CLUB_LANGUAGE: [
                 CallbackQueryHandler(
                     young_teacher.store_communication_language_ask_speaking_club_language
                 )
             ],
-            ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_ADDITIONAL_SKILLS_COMMENT: [
+            ConversationStateTeacherUnder18.ASK_ADDITIONAL_SKILLS_COMMENT: [
                 CallbackQueryHandler(
                     young_teacher.store_speaking_club_language_ask_additional_skills_comment
                 )
             ],
             # young teachers don't get to the review
-            ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_FINAL_COMMENT: [
+            ConversationStateTeacherUnder18.ASK_FINAL_COMMENT: [
                 MessageHandler(
                     filters.TEXT & ~filters.COMMAND,
                     young_teacher.store_additional_help_comment_ask_final_comment,

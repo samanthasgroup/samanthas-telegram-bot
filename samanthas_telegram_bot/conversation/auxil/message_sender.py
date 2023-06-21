@@ -15,6 +15,11 @@ from telegram import (
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData, ConversationMode
+from samanthas_telegram_bot.conversation.auxil.shortcuts import (
+    make_buttons_yes_no,
+    make_dict_for_message_to_ask_age_student,
+    make_dict_for_message_with_inline_keyboard,
+)
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
@@ -29,6 +34,24 @@ class MessageSender:
     All methods in this class are **static methods**. This is a class is just a namespace
     and a way to be stylistically consistent with other helper classes.
     """
+
+    @staticmethod
+    async def ask_age_student(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Asks student about their age group."""
+        await update.effective_message.reply_text(
+            **make_dict_for_message_to_ask_age_student(context)
+        )
+
+    @staticmethod
+    async def ask_age_teacher(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Asks teacher if they are 18+."""
+        await update.effective_message.reply_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases["ask_if_18"][context.user_data.locale],
+                buttons=make_buttons_yes_no(context),
+                buttons_per_row=2,
+            )
+        )
 
     @staticmethod
     async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:

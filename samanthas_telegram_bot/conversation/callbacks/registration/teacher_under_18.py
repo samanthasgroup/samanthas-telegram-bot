@@ -27,7 +27,7 @@ async def ask_readiness_to_host_speaking_club(
     await CQReplySender.ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
         context, query
     )
-    return ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_COMMUNICATION_LANGUAGE_OR_BYE
+    return ConversationStateTeacherUnder18.ASK_COMMUNICATION_LANGUAGE_OR_BYE
 
 
 async def bye_cannot_work(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -46,7 +46,7 @@ async def ask_communication_language(update: Update, context: CUSTOM_CONTEXT_TYP
     context.user_data.teacher_can_host_speaking_club = True
 
     await CQReplySender.ask_class_communication_languages(context, query)
-    return ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_SPEAKING_CLUB_LANGUAGE
+    return ConversationStateTeacherUnder18.ASK_SPEAKING_CLUB_LANGUAGE
 
 
 async def store_communication_language_ask_speaking_club_language(
@@ -59,7 +59,7 @@ async def store_communication_language_ask_speaking_club_language(
     ) = await answer_callback_query_and_get_data(update)
 
     await CQReplySender.ask_teaching_languages(context, query, show_done_button=False)
-    return ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_ADDITIONAL_SKILLS_COMMENT
+    return ConversationStateTeacherUnder18.ASK_ADDITIONAL_SKILLS_COMMENT
 
 
 async def store_speaking_club_language_ask_additional_skills_comment(
@@ -85,7 +85,7 @@ async def store_speaking_club_language_ask_additional_skills_comment(
     await update.effective_chat.send_message(
         context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale]
     )
-    return ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_FINAL_COMMENT
+    return ConversationStateTeacherUnder18.ASK_FINAL_COMMENT
 
 
 class CommonState:
@@ -97,7 +97,7 @@ async def store_additional_help_comment_ask_final_comment(
 ) -> int:
     """For young teachers: stores comment on additional help, asks for final comment."""
     if update.message is None:
-        return ConversationStateTeacherUnder18.ASK_YOUNG_TEACHER_FINAL_COMMENT
+        return ConversationStateTeacherUnder18.ASK_FINAL_COMMENT
     locale: Locale = context.user_data.locale
 
     context.user_data.teacher_additional_skills_comment = update.message.text

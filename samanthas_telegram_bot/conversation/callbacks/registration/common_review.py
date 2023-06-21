@@ -15,9 +15,6 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 )
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
-    ConversationStateStudent as StudentState,
-)
-from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as TeacherState,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
@@ -61,14 +58,14 @@ async def email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         context.bot_data.phrases["ask_email"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return CommonState.ASK_ROLE
+    return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
 
 
 async def timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
 
     await CQReplySender.ask_timezone(context, query)
-    return CommonState.ASK_FIRST_NAME
+    return CommonState.TIME_SLOTS_START
 
 
 async def day_and_time_slots(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -99,8 +96,8 @@ async def student_age_groups(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
     query, _ = await answer_callback_query_and_get_data(update)
 
     if context.user_data.role == Role.STUDENT:
-        await CQReplySender.ask_student_age(context, query)
-        return StudentState.TIME_SLOTS_START
+        await CQReplySender.ask_student_age_group(context, query)
+        return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
 
     # TODO is it in the menu?
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
