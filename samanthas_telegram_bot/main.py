@@ -48,7 +48,7 @@ load_dotenv()
 
 logging_level = typing.cast(str, os.environ.get("LOGGING_LEVEL"))
 logging.basicConfig(
-    format="%(asctime)s - %(module)s (%(funcName)s:%(lineno)s) - %(levelname)s - %(message)s",
+    format="%(asctime)s - %(levelname)s - %(message)s | %(module)s (%(funcName)s:%(lineno)s)",
     level=getattr(logging, logging_level),
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
