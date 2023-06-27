@@ -4,6 +4,8 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
@@ -93,6 +95,41 @@ def make_dict_for_message_to_ask_age_student(
         buttons=make_buttons_with_age_ranges_for_students(context),
         buttons_per_row=3,
     )
+
+
+async def prepare_assessment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    """Resets assessment-related data for student and chooses appropriate assessment questions.
+
+    Run this function only after the student's age has been asked.
+
+    Run this function even in the case the student chooses a language that has
+    no assessment to avoid the risk of wrong assessment data being sent in case
+    of registration of another student from same Telegram account.
+    """
+    # prepare questions and set index to 0
+    age_range_id = context.user_data.student_age_range_id
+    await logs(
+        update=update,
+        bot=context.bot,
+        level=LoggingLevel.INFO,
+        text=(
+            f"Using assessment for {age_range_id=} ({context.user_data.student_age_from}-"
+            f"{context.user_data.student_age_to} years old)"
+        ),
+    )
+    context.chat_data.assessment = context.bot_data.assessment_for_age_range_id[age_range_id]
+    context.user_data.student_assessment_answers = []
+    context.user_data.student_assessment_resulting_level = None
+    context.user_data.student_agreed_to_smalltalk = False
+    context.chat_data.current_assessment_question_index = 0
+    context.chat_data.current_assessment_question_id = context.chat_data.assessment.questions[0].id
+    context.chat_data.ids_of_dont_know_options_in_assessment = {
+        option.id
+        for question in context.chat_data.assessment.questions
+        for option in question.options
+        if option.means_user_does_not_know_the_answer()
+    }
+    context.chat_data.assessment_dont_knows_in_a_row = 0
 
 
 def store_selected_language_level(context: CUSTOM_CONTEXT_TYPES, level: str) -> None:

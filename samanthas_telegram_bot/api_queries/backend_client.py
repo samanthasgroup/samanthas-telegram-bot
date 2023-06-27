@@ -74,7 +74,7 @@ class BackendClient(BaseApiClient):
         return bool(await cls._create_person(update, context))
 
     @classmethod
-    async def get_level_of_written_test(
+    async def get_level_after_assessment(
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
