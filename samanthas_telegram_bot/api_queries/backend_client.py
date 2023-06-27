@@ -152,7 +152,10 @@ class BackendClient(BaseApiClient):
 
     @classmethod
     async def _create_person(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-        """Creates a person, returns their personal info ID."""
+        """Creates a person, returns their personal info ID.
+
+        Type of person to be created is determined based on ``context``.
+        """
         personal_info_id = await cls._create_personal_info_get_id(update, context)
         url, data = cls._get_url_and_data_for_person_creation(
             update=update,
