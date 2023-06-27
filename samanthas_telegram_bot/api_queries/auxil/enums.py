@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import Enum
 
 
 class HttpMethod(str, Enum):
@@ -15,9 +15,3 @@ class LoggingLevel(str, Enum):
     ERROR = "error"
     CRITICAL = "critical"
     EXCEPTION = "exception"
-
-
-class SendToAdminGroupMode(Enum):
-    FAILURE_ONLY = auto()
-    SUCCESS_ONLY = auto()
-    SUCCESS_AND_FAILURE = auto()

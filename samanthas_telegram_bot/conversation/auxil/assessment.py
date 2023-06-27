@@ -1,7 +1,7 @@
-from telegram import CallbackQuery
+from telegram import CallbackQuery, Update
 
-from samanthas_telegram_bot.api_queries.api_client import ApiClient
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_queries.backend_client import BackendClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender,
@@ -10,6 +10,7 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
     CallbackQueryReplySender as CQReplySender,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateStudent
+from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.constants import LEVELS_ELIGIBLE_FOR_ORAL_TEST
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
@@ -44,10 +45,12 @@ async def prepare_assessment(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery
     await CallbackQueryReplySender.ask_start_assessment(context, query)
 
 
-async def process_results(context: CUSTOM_CONTEXT_TYPES, query: CallbackQuery) -> int:
+async def process_results(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Processes results of a written assessment, returns appropriate next conversation state."""
+    query, _ = await answer_callback_query_and_get_data(update)
+
     context.user_data.student_assessment_resulting_level = (
-        await ApiClient.get_level_of_written_test(context=context)
+        await BackendClient.get_level_of_written_test(update, context)
     )
     if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
         await CQReplySender.ask_yes_no(

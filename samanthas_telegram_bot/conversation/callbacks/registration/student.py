@@ -217,8 +217,7 @@ async def assessment_ask_first_question(update: Update, context: CUSTOM_CONTEXT_
 
 async def get_result_of_aborted_assessment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Gets result of an assessment if the student has aborted it."""
-    query, _ = await answer_callback_query_and_get_data(update)
-    next_state = await process_results(context, query)
+    next_state = await process_results(update, context)
     return next_state
 
 

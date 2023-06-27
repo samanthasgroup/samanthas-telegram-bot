@@ -3,12 +3,15 @@
 # so speed is irrelevant.
 # Their being synchronous enables us to include them into BotData.__init__() without workarounds.
 import logging
+from typing import Any
 
-from samanthas_telegram_bot.api_queries.api_client import ApiClient
+import httpx
+
 from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_INFIX_DAY_AND_TIME_SLOTS,
     API_URL_INFIX_ENROLLMENT_TESTS,
     API_URL_INFIX_LANGUAGES_AND_LEVELS,
+    API_URL_PREFIX,
 )
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 from samanthas_telegram_bot.data_structures.models import (
@@ -35,7 +38,7 @@ def get_age_ranges() -> dict[AgeRangeType, tuple[AgeRange, ...]]:
     corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
     """
 
-    data = ApiClient.get_json(url_infix="age_ranges")
+    data = _get_json(url_infix="age_ranges")
 
     age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
         type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -62,7 +65,7 @@ def get_assessments(lang_code: str) -> dict[int, Assessment]:
     Returns a dictionary matching an age range ID to assessment.
     """
 
-    data = ApiClient.get_json(
+    data = _get_json(
         url_infix=API_URL_INFIX_ENROLLMENT_TESTS,
         name_for_logger=f"assessments for {lang_code=}",
         params={"language": lang_code},
@@ -104,7 +107,7 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
         """Takes a string like 05:00:00 and returns hours (5 in this example)."""
         return int(str_.split(":")[0])
 
-    data = ApiClient.get_json(url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS)
+    data = _get_json(url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS)
 
     return tuple(
         DayAndTimeSlot(
@@ -120,7 +123,7 @@ def get_day_and_time_slots() -> tuple[DayAndTimeSlot, ...]:
 def get_languages_and_levels() -> tuple[LanguageAndLevel, ...]:
     """Gets languages and levels from the backend."""
 
-    data = ApiClient.get_json(
+    data = _get_json(
         url_infix=API_URL_INFIX_LANGUAGES_AND_LEVELS,
         name_for_logger="combinations of languages and levels",
     )
@@ -129,3 +132,23 @@ def get_languages_and_levels() -> tuple[LanguageAndLevel, ...]:
         LanguageAndLevel(id=item["id"], language_id=item["language"]["id"], level=item["level"])
         for item in data
     )
+
+
+def _get_json(
+    url_infix: str,
+    name_for_logger: str | None = None,
+    params: dict[str, str] | None = None,
+) -> Any:
+    """Function for simple synchronous GET requests with logging."""
+    if not name_for_logger:
+        name_for_logger = url_infix.replace("_", " ")
+
+    logger.info(f"Getting {name_for_logger} from the backend...")
+
+    # synchronous requests are only run at application startup, so no exception handling needed
+    response = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
+
+    data = response.json()
+    logger.info(f"...received {len(data)} {name_for_logger}.")
+
+    return data

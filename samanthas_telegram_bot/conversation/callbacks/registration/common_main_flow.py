@@ -12,8 +12,8 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_queries.api_client import ApiClient
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_queries.backend_client import BackendClient
 from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
@@ -135,7 +135,7 @@ async def check_chat_id_ask_role_if_id_does_not_exist(
     """
     query, data = await answer_callback_query_and_get_data(update)
 
-    if await ApiClient.chat_id_is_registered(chat_id=update.effective_chat.id):
+    if await BackendClient.chat_id_is_registered(chat_id=update.effective_chat.id):
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
@@ -390,10 +390,8 @@ async def store_email_check_existence_ask_age(
     user_data.email = email
 
     # terminate conversation if the person with these personal data already exists
-    if await ApiClient.person_with_first_name_last_name_email_exists_in_database(
-        first_name=user_data.first_name,
-        last_name=user_data.last_name,
-        email=user_data.email,
+    if await BackendClient.person_with_first_name_last_name_email_exists_in_database(
+        update, context
     ):
         await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
         return ConversationHandler.END
@@ -556,19 +554,17 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     else:
         phrase_id = "bye_wait_for_message_from_bot"
 
-    if user_data.role == Role.STUDENT:
-        if user_data.student_needs_oral_interview:
-            await _set_student_language_and_level_for_english_starters(update, context)
-        elif user_data.student_agreed_to_smalltalk:
-            await _process_student_language_and_level_from_smalltalk(update, context)
-        result = await ApiClient.create_student(update, context)
-    elif user_data.role == Role.TEACHER:
-        if user_data.teacher_is_under_18:
-            result = await ApiClient.create_teacher_under_18(update, context)
-        else:
-            result = await ApiClient.create_teacher(update, context)
-    else:
-        result = False
+    match user_data.role:
+        case Role.STUDENT:
+            if user_data.student_needs_oral_interview:
+                await _set_student_language_and_level_for_english_starters(update, context)
+            elif user_data.student_agreed_to_smalltalk:
+                await _process_student_language_and_level_from_smalltalk(update, context)
+            result = await BackendClient.create_student(update, context)
+        case Role.TEACHER:
+            result = await BackendClient.create_adult_or_young_teacher(update, context)
+        case _:
+            raise NotImplementedError(f"Logic for {user_data.role=} not implemented.")
 
     if result is True:
         await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
