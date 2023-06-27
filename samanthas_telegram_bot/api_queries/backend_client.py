@@ -154,7 +154,7 @@ class BackendClient(BaseApiClient):
     async def _create_person(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         """Creates a person, returns their personal info ID."""
         personal_info_id = await cls._create_personal_info_get_id(update, context)
-        url, data = cls._get_url_and_data_to_post(
+        url, data = cls._get_url_and_data_for_person_creation(
             update=update,
             context=context,
             personal_info_id=personal_info_id,
@@ -234,12 +234,12 @@ class BackendClient(BaseApiClient):
         return personal_data_id
 
     @staticmethod
-    def _get_url_and_data_to_post(
+    def _get_url_and_data_for_person_creation(
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
         personal_info_id: int,
     ) -> tuple[str, DataDict]:
-        """Returns url and data for a POST request depending on user data."""
+        """Returns url and data for a POST request to create a person, based on user data."""
         user_data = context.user_data
         if user_data.role not in (Role.STUDENT, Role.TEACHER):
             raise NotImplementedError(
