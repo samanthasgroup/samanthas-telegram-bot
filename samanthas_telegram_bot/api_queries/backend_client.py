@@ -20,7 +20,7 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
     API_URL_YOUNG_TEACHERS_LIST_CREATE,
     DataDict,
 )
-from samanthas_telegram_bot.api_queries.auxil.enums import HttpMethod, LoggingLevel
+from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.auxil.exceptions import (
     BackendClientError,
     BaseApiClientError,
@@ -39,19 +39,28 @@ class BackendClient(BaseApiClient):
     """Client for requests to the backend."""
 
     @classmethod
-    async def chat_id_is_registered(cls, chat_id: int) -> bool:
-        """Checks whether the chat ID is already stored in the database."""
-        logger.info(f"Checking with the backend if chat ID {chat_id} exists...")
+    async def chat_id_is_registered(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
+        """Checks whether the chat ID is already stored in the backend."""
+        chat_id = update.effective_chat.id
 
-        response = await cls._make_async_request(
-            method=HttpMethod.GET,
-            url=API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
-            params={"registration_telegram_bot_chat_id": chat_id},
-        )
+        logger.info(f"Checking with the backend if {chat_id=} exists...")
 
-        exists = response.status_code == httpx.codes.OK
-        logger.info(f"... {chat_id} {exists=} ({response.status_code=})")
-        return exists
+        try:
+            status_code, _ = await cls.get(
+                update=update,
+                context=context,
+                url=API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
+                params={"registration_telegram_bot_chat_id": chat_id},
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(f"{chat_id=} already exists"),
+                    # TODO change if we change the status code in backend to NOT_FOUND
+                    httpx.codes.BAD_REQUEST: NotificationParams(f"{chat_id=} does not exist"),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(f"Failed to check if {chat_id=} exists.") from err
+
+        return status_code == httpx.codes.OK
 
     @classmethod
     async def create_student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:

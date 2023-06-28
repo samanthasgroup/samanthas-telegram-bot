@@ -135,7 +135,7 @@ async def check_chat_id_ask_role_if_id_does_not_exist(
     """
     query, data = await answer_callback_query_and_get_data(update)
 
-    if await BackendClient.chat_id_is_registered(chat_id=update.effective_chat.id):
+    if await BackendClient.chat_id_is_registered(update, context):
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )

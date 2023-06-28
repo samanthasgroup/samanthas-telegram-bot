@@ -22,8 +22,9 @@ class BaseApiClient:
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
         url: str,
-        data: DataDict,
         notification_params_for_status_code: NotificationParamsForStatusCode,
+        data: DataDict | None = None,
+        params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
         return await cls._make_request(
             method=HttpMethod.GET,
@@ -31,6 +32,7 @@ class BaseApiClient:
             context=context,
             url=url,
             data=data,
+            params=params,
             notification_params_for_status_code=notification_params_for_status_code,
         )
 
@@ -40,8 +42,9 @@ class BaseApiClient:
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
         url: str,
-        data: DataDict,
         notification_params_for_status_code: NotificationParamsForStatusCode,
+        data: DataDict,  # cannot be None for POST
+        params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
         return await cls._make_request(
             method=HttpMethod.POST,
@@ -49,6 +52,7 @@ class BaseApiClient:
             context=context,
             url=url,
             data=data,
+            params=params,
             notification_params_for_status_code=notification_params_for_status_code,
         )
 
@@ -59,10 +63,11 @@ class BaseApiClient:
         context: CUSTOM_CONTEXT_TYPES,
         method: HttpMethod,
         url: str,
-        data: DataDict,
         notification_params_for_status_code: NotificationParamsForStatusCode,
+        data: DataDict | None = None,
+        params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
-        response = await cls._make_async_request(method=method, url=url, data=data)
+        response = await cls._make_async_request(method=method, url=url, data=data, params=params)
         status_code, json_data = cls._get_status_code_and_json(response)
 
         try:
