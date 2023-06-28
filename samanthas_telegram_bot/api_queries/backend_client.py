@@ -105,7 +105,7 @@ class BackendClient(BaseApiClient):
                 httpx.codes.OK: NotificationParams(message="Checked result of written assessment"),
                 httpx.codes.BAD_REQUEST: NotificationParams(
                     message="Failed to send results of written assessment and receive level",
-                    logging_level=LoggingLevel.EXCEPTION,
+                    logging_level=LoggingLevel.ERROR,
                     notify_admins=True,
                 ),
             },
@@ -181,7 +181,7 @@ class BackendClient(BaseApiClient):
                         context=context,
                         personal_info_id=personal_info_id,
                     ),
-                    logging_level=LoggingLevel.EXCEPTION,
+                    logging_level=LoggingLevel.ERROR,
                     notify_admins=True,
                     parse_mode_for_bot_message=None,
                 ),
@@ -213,7 +213,7 @@ class BackendClient(BaseApiClient):
                 ),
                 httpx.codes.BAD_REQUEST: NotificationParams(
                     message=failure_message,
-                    logging_level=LoggingLevel.EXCEPTION,
+                    logging_level=LoggingLevel.ERROR,
                     notify_admins=True,
                 ),
             },
@@ -343,7 +343,7 @@ class BackendClient(BaseApiClient):
                 ),
                 httpx.codes.BAD_REQUEST: NotificationParams(
                     f"Failed to send written assessment for {personal_info_id=})",
-                    logging_level=LoggingLevel.EXCEPTION,
+                    logging_level=LoggingLevel.ERROR,
                 ),
             },
         )

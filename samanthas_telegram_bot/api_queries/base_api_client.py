@@ -67,11 +67,11 @@ class BaseApiClient:
 
         try:
             notification_params = notification_params_for_status_code[status_code]
-        except KeyError:
+        except KeyError as err:
             raise ApiClientError(
                 f"Unexpected {status_code=} after sending a {method} "
                 f"request to {url} with {data=}. JSON data received: {json_data}"
-            )
+            ) from err
 
         await logs(
             bot=context.bot,
