@@ -35,7 +35,7 @@ class BaseApiClient:
             let the API client raise its own exception and handle it accordingly
             (e.g. with an exception handler in the bot).
         """
-        return await cls._make_request(
+        return await cls._make_request_and_get_data(
             method=HttpMethod.GET,
             update=update,
             context=context,
@@ -64,7 +64,7 @@ class BaseApiClient:
             let the API client raise its own exception and handle it accordingly
             (e.g. with an exception handler in the bot).
         """
-        return await cls._make_request(
+        return await cls._make_request_and_get_data(
             method=HttpMethod.POST,
             update=update,
             context=context,
@@ -75,7 +75,7 @@ class BaseApiClient:
         )
 
     @classmethod
-    async def _make_request(
+    async def _make_request_and_get_data(
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
