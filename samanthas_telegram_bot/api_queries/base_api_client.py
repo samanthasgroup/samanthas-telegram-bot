@@ -1,11 +1,16 @@
+import asyncio
 import logging
 
 import httpx
 from httpx import Response
 from telegram import Update
 
-from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
-from samanthas_telegram_bot.api_queries.auxil.enums import HttpMethod
+from samanthas_telegram_bot.api_queries.auxil.constants import (
+    MAX_ATTEMPTS_TO_GET_DATA_FROM_API,
+    TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
+    DataDict,
+)
+from samanthas_telegram_bot.api_queries.auxil.enums import HttpMethod, LoggingLevel
 from samanthas_telegram_bot.api_queries.auxil.exceptions import BaseApiClientError
 from samanthas_telegram_bot.api_queries.auxil.models import NotificationParamsForStatusCode
 from samanthas_telegram_bot.auxil.log_and_notify import logs
@@ -85,8 +90,46 @@ class BaseApiClient:
         data: DataDict | None = None,
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
-        response = await cls._make_async_request(method=method, url=url, data=data, params=params)
-        status_code, json_data = cls._get_status_code_and_json(response)
+        attempts = 0
+
+        while True:
+            try:
+                response = await cls._make_async_request(
+                    method=method, url=url, data=data, params=params
+                )
+                break
+            except NotImplementedError as err:
+                raise BaseApiClientError(
+                    f"Failed to send {method.upper()} request to {url=}"
+                ) from err
+            except (httpx.NetworkError, httpx.TimeoutException) as err:
+                attempts += 1
+                if attempts == 1:
+                    # TODO maybe also notify the user
+                    await logs(
+                        bot=context.bot,
+                        update=update,
+                        text=(
+                            f"Failed to reach {url=} with {method=}. "
+                            f"Will try {MAX_ATTEMPTS_TO_GET_DATA_FROM_API - attempts} more times "
+                            f"with {TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS} "
+                            "between attempts."
+                        ),
+                        level=LoggingLevel.WARNING,
+                        needs_to_notify_admin_group=True,
+                    )
+                elif attempts == MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
+                    raise BaseApiClientError(
+                        f"Tried to reach {url=} with {method=}. Failed "
+                        f"{MAX_ATTEMPTS_TO_GET_DATA_FROM_API} times, will stop trying now."
+                    ) from err
+
+                await asyncio.sleep(TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS)
+
+        try:
+            status_code, json_data = cls._get_status_code_and_json(response)
+        except AttributeError as err:
+            raise BaseApiClientError("Could not load JSON") from err
 
         try:
             notification_params = notification_params_for_status_code[status_code]
@@ -131,10 +174,10 @@ class BaseApiClient:
         status_code = response.status_code
         try:
             response_json = response.json()
-        except AttributeError:
-            raise BaseApiClientError(
+        except AttributeError as err:
+            raise AttributeError(
                 f"Response contains no JSON. Response status code: {status_code}"
-            )
+            ) from err
 
         logger.debug(f"JSON: {response_json}")
         return response.status_code, response_json

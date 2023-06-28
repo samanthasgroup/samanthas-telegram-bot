@@ -10,10 +10,10 @@ from telegram import Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_queries.auxil.constants import (
-    SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS,
-    SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS,
+    MAX_ATTEMPTS_TO_GET_DATA_FROM_API,
     SMALLTALK_URL_GET_RESULTS,
     SMALLTALK_URL_GET_TEST,
+    TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
 )
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_queries.auxil.exceptions import BaseApiClientError
@@ -138,10 +138,10 @@ async def get_smalltalk_result(
             )
             return None
         elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
-            if attempts > SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS:
+            if attempts > MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
                 total_seconds_waiting = (
-                    SMALLTALK_MAX_ATTEMPTS_TO_GET_RESULTS
-                    * SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS
+                    MAX_ATTEMPTS_TO_GET_DATA_FROM_API
+                    * TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS
                 )
                 await logs(
                     bot=context.bot,
@@ -162,7 +162,7 @@ async def get_smalltalk_result(
 
             logger.info("SmallTalk results not ready. Waiting...")
             attempts += 1
-            await asyncio.sleep(SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_ATTEMPTS)
+            await asyncio.sleep(TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS)
         else:
             await logs(
                 bot=context.bot,
