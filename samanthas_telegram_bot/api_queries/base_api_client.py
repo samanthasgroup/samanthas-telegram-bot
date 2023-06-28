@@ -6,7 +6,7 @@ from telegram import Update
 
 from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
 from samanthas_telegram_bot.api_queries.auxil.enums import HttpMethod
-from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiClientError
+from samanthas_telegram_bot.api_queries.auxil.exceptions import BaseApiClientError
 from samanthas_telegram_bot.api_queries.auxil.models import NotificationParamsForStatusCode
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
@@ -68,7 +68,7 @@ class BaseApiClient:
         try:
             notification_params = notification_params_for_status_code[status_code]
         except KeyError as err:
-            raise ApiClientError(
+            raise BaseApiClientError(
                 f"Unexpected {status_code=} after sending a {method} "
                 f"request to {url} with {data=}. JSON data received: {json_data}"
             ) from err
@@ -109,7 +109,9 @@ class BaseApiClient:
         try:
             response_json = response.json()
         except AttributeError:
-            raise ApiClientError(f"Response contains no JSON. Response status code: {status_code}")
+            raise BaseApiClientError(
+                f"Response contains no JSON. Response status code: {status_code}"
+            )
 
         logger.debug(f"JSON: {response_json}")
         return response.status_code, response_json

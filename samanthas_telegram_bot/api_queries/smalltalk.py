@@ -16,7 +16,7 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
     SMALLTALK_URL_GET_TEST,
 )
 from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_queries.auxil.exceptions import ApiClientError
+from samanthas_telegram_bot.api_queries.auxil.exceptions import BaseApiClientError
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -217,7 +217,7 @@ def process_smalltalk_json(data: Any) -> SmalltalkResult | None:
         return None
 
     if status not in SmalltalkTestStatus._value2member_map_:  # noqa
-        raise ApiClientError(f"SmallTalk returned {status=} but we have no logic for it.")
+        raise BaseApiClientError(f"SmallTalk returned {status=} but we have no logic for it.")
 
     if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
         logger.info("User has not yet completed the interview")

@@ -21,6 +21,10 @@ from samanthas_telegram_bot.api_queries.auxil.constants import (
     DataDict,
 )
 from samanthas_telegram_bot.api_queries.auxil.enums import HttpMethod, LoggingLevel
+from samanthas_telegram_bot.api_queries.auxil.exceptions import (
+    BackendClientError,
+    BaseApiClientError,
+)
 from samanthas_telegram_bot.api_queries.auxil.models import NotificationParams
 from samanthas_telegram_bot.api_queries.base_api_client import BaseApiClient
 from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
@@ -96,20 +100,22 @@ class BackendClient(BaseApiClient):
             ),
         )
 
-        _, data = await cls.post(
-            update=update,
-            context=context,
-            url=API_URL_ENROLLMENT_TEST_GET_LEVEL,
-            data={"answers": answer_ids, "number_of_questions": number_of_questions},
-            notification_params_for_status_code={
-                httpx.codes.OK: NotificationParams(message="Checked result of written assessment"),
-                httpx.codes.BAD_REQUEST: NotificationParams(
-                    message="Failed to send results of written assessment and receive level",
-                    logging_level=LoggingLevel.ERROR,
-                    notify_admins=True,
-                ),
-            },
-        )
+        try:
+            _, data = await cls.post(
+                update=update,
+                context=context,
+                url=API_URL_ENROLLMENT_TEST_GET_LEVEL,
+                data={"answers": answer_ids, "number_of_questions": number_of_questions},
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(
+                        message="Checked result of written assessment"
+                    ),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(
+                "Failed to send results of written assessment and receive level"
+            ) from err
 
         try:
             level = typing.cast(str, data["resulting_level"])  # type: ignore[index]
@@ -137,16 +143,20 @@ class BackendClient(BaseApiClient):
             update=update,
             text=f"Checking with the backend if {data_to_check} already exists...",
         )
-        status_code, data = await cls.post(
-            update=update,
-            context=context,
-            url=API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
-            data={"first_name": first_name, "last_name": last_name, "email": email},
-            notification_params_for_status_code={
-                httpx.codes.OK: NotificationParams(message=f"{data_to_check} does not exist"),
-                httpx.codes.CONFLICT: NotificationParams(message=f"{data_to_check} exists"),
-            },
-        )
+
+        try:
+            status_code, data = await cls.post(
+                update=update,
+                context=context,
+                url=API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
+                data={"first_name": first_name, "last_name": last_name, "email": email},
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(message=f"{data_to_check} does not exist"),
+                    httpx.codes.CONFLICT: NotificationParams(message=f"{data_to_check} exists"),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(f"Failed to check existence of {data_to_check=}") from err
 
         return status_code == httpx.codes.CONFLICT
 
@@ -163,30 +173,30 @@ class BackendClient(BaseApiClient):
             personal_info_id=personal_info_id,
         )
 
-        status_code, _ = await cls.post(
-            context=context,
-            update=update,
-            url=url,
-            data=data,
-            notification_params_for_status_code={
-                httpx.codes.CREATED: NotificationParams(
-                    message=cls._generate_success_message_for_person_creation(
-                        context=context, personal_info_id=personal_info_id
+        try:
+            status_code, _ = await cls.post(
+                context=context,
+                update=update,
+                url=url,
+                data=data,
+                notification_params_for_status_code={
+                    httpx.codes.CREATED: NotificationParams(
+                        message=cls._generate_success_message_for_person_creation(
+                            context=context, personal_info_id=personal_info_id
+                        ),
+                        notify_admins=True,
+                        parse_mode_for_bot_message=ParseMode.MARKDOWN_V2,
                     ),
-                    notify_admins=True,
-                    parse_mode_for_bot_message=ParseMode.MARKDOWN_V2,
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(
+                cls._generate_failure_message_for_person_creation(
+                    context=context,
+                    personal_info_id=personal_info_id,
                 ),
-                httpx.codes.BAD_REQUEST: NotificationParams(
-                    message=cls._generate_failure_message_for_person_creation(
-                        context=context,
-                        personal_info_id=personal_info_id,
-                    ),
-                    logging_level=LoggingLevel.ERROR,
-                    notify_admins=True,
-                    parse_mode_for_bot_message=None,
-                ),
-            },
-        )
+            ) from err
+
         return personal_info_id
 
     @classmethod
@@ -199,25 +209,22 @@ class BackendClient(BaseApiClient):
             f"personal data record for {user_data.first_name} "
             f"{user_data.last_name} ({user_data.email})"
         )
-        failure_message = f"Failed to create {common_message_part}"
 
-        _, data = await cls.post(
-            context=context,
-            update=update,
-            url=API_URL_PERSONAL_INFO_LIST_CREATE,
-            data=user_data.personal_info_as_dict(),
-            notification_params_for_status_code={
-                httpx.codes.CREATED: NotificationParams(
-                    message=f"Created {common_message_part}",
-                    notify_admins=True,
-                ),
-                httpx.codes.BAD_REQUEST: NotificationParams(
-                    message=failure_message,
-                    logging_level=LoggingLevel.ERROR,
-                    notify_admins=True,
-                ),
-            },
-        )
+        try:
+            _, data = await cls.post(
+                context=context,
+                update=update,
+                url=API_URL_PERSONAL_INFO_LIST_CREATE,
+                data=user_data.personal_info_as_dict(),
+                notification_params_for_status_code={
+                    httpx.codes.CREATED: NotificationParams(
+                        message=f"Created {common_message_part}",
+                        notify_admins=True,
+                    ),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(f"Failed to create {common_message_part}") from err
 
         # for mypy
         if not isinstance(data, dict):
@@ -332,19 +339,22 @@ class BackendClient(BaseApiClient):
             )
             return bool(personal_info_id)
 
-        status_code, _ = await cls.post(
-            update=update,
-            context=context,
-            url=API_URL_ENROLLMENT_TEST_SEND_RESULT,
-            data=user_data.student_enrollment_test_as_dict(personal_info_id=personal_info_id),
-            notification_params_for_status_code={
-                httpx.codes.CREATED: NotificationParams(
-                    f"Added assessment answers for {personal_info_id=}"
-                ),
-                httpx.codes.BAD_REQUEST: NotificationParams(
-                    f"Failed to send written assessment for {personal_info_id=})",
-                    logging_level=LoggingLevel.ERROR,
-                ),
-            },
-        )
+        try:
+            status_code, _ = await cls.post(
+                update=update,
+                context=context,
+                url=API_URL_ENROLLMENT_TEST_SEND_RESULT,
+                data=user_data.student_enrollment_test_as_dict(personal_info_id=personal_info_id),
+                notification_params_for_status_code={
+                    httpx.codes.CREATED: NotificationParams(
+                        f"Added assessment answers for {personal_info_id=}"
+                    ),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(
+                f"Failed to send written assessment for {personal_info_id=})"
+            ) from err
+
+        # return True would have the same effect, but this is more explicit
         return status_code == httpx.codes.CREATED

@@ -1,2 +1,6 @@
-class ApiClientError(Exception):
+class BaseApiClientError(Exception):
+    pass
+
+
+class BackendClientError(BaseApiClientError):
     pass
