@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from samanthas_telegram_bot.api_queries.auxil.constants import (
+from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_INFIX_DAY_AND_TIME_SLOTS,
     API_URL_INFIX_ENROLLMENT_TESTS,
     API_URL_INFIX_LANGUAGES_AND_LEVELS,

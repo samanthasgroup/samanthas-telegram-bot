@@ -4,7 +4,7 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,

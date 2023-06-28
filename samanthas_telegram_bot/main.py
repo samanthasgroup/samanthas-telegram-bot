@@ -21,7 +21,7 @@ import samanthas_telegram_bot.conversation.callbacks.registration.common_review 
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,

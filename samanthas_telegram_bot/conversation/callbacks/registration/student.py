@@ -1,8 +1,8 @@
 from telegram import Update
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_queries.backend_client import BackendClient
-from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
+from samanthas_telegram_bot.api_clients import BackendClient
+from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.smalltalk import send_user_data_get_smalltalk_test
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,

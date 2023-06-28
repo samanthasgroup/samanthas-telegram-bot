@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from telegram import Bot, Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
 
 load_dotenv()

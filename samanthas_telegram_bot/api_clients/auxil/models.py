@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 
 
 @dataclass(frozen=True)

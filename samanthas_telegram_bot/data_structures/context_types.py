@@ -6,7 +6,7 @@ from typing import Literal
 from telegram import Update
 from telegram.ext import CallbackContext, ExtBot
 
-from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
+from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
 from samanthas_telegram_bot.data_structures.constants import Locale

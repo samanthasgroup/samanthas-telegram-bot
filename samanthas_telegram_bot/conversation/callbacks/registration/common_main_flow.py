@@ -12,9 +12,9 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_queries.backend_client import BackendClient
-from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
+from samanthas_telegram_bot.api_clients import BackendClient
+from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.smalltalk import get_smalltalk_result
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
