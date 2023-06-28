@@ -127,7 +127,6 @@ async def get_smalltalk_result(
             await logs(
                 bot=context.bot,
                 update=update,
-                level=LoggingLevel.INFO,
                 text=(
                     f"User {user_data.first_name} {user_data.last_name} "
                     f"didn't finish the SmallTalk assessment."
@@ -168,7 +167,6 @@ async def get_smalltalk_result(
             await logs(
                 bot=context.bot,
                 update=update,
-                level=LoggingLevel.INFO,
                 text=(
                     f"Received [SmallTalk results for "
                     f"{user_data.first_name} {user_data.last_name}]({result.url})"

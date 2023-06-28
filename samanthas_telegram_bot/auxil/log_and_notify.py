@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 async def logs(
     bot: Bot,
-    level: LoggingLevel,
     text: str,
+    level: LoggingLevel = LoggingLevel.INFO,
     stacklevel: int = CALLER_LOGGING_STACK_LEVEL,
     needs_to_notify_admin_group: bool = False,
     parse_mode_for_admin_group_message: ParseMode | None = None,

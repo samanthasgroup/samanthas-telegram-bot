@@ -4,7 +4,6 @@ from typing import Union
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -111,7 +110,6 @@ async def prepare_assessment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> N
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=(
             f"Using assessment for {age_range_id=} ({context.user_data.student_age_from}-"
             f"{context.user_data.student_age_to} years old)"

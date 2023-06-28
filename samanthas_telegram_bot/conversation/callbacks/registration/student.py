@@ -38,7 +38,6 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=(
             f"Age group of the student: ID {user_data.student_age_range_id} "
             f"({user_data.student_age_from}-{user_data.student_age_to} years old)"
@@ -98,9 +97,7 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
     # this callback is called if pattern matches "yes"
     user_data.student_can_read_in_english = True
 
-    await logs(
-        update=update, bot=context.bot, level=LoggingLevel.INFO, text="User can read in English"
-    )
+    await logs(update=update, bot=context.bot, text="User can read in English")
 
     if user_data.student_age_to <= 12:
         # young students: mark as requiring interview, ask about communication language
@@ -108,7 +105,6 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
         await logs(
             update=update,
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text="User needs oral interview in English.",
         )
         await CQReplySender.ask_class_communication_languages(context, query)
@@ -148,7 +144,6 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
         await logs(
             update=update,
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text="User needs oral interview in English.",
         )
 
@@ -185,7 +180,6 @@ async def start_assessment_for_teen_student_that_learned_for_year_or_more(
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="Adolescent student has learned English for year or more. Starting assessment",
     )
     await CQReplySender.ask_start_assessment(context, query)
@@ -201,7 +195,6 @@ async def ask_communication_language_for_teen_student_that_learned_less_than_yea
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="Student has learned English for less than a year. Will need oral interview",
     )
     context.user_data.student_needs_oral_interview = True

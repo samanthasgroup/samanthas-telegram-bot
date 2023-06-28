@@ -102,7 +102,6 @@ class BackendClient(BaseApiClient):
 
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text=(
                 f"Chat {user_data.chat_id}: {len(answer_ids)} out of "
                 f"{number_of_questions} questions were answered. Receiving level from backend..."
@@ -246,7 +245,6 @@ class BackendClient(BaseApiClient):
         await logs(
             bot=context.bot,
             update=update,
-            level=LoggingLevel.INFO,
             text=f"Personal data ID: {personal_data_id}",
         )
 
@@ -342,7 +340,6 @@ class BackendClient(BaseApiClient):
         if not user_data.student_assessment_answers:
             await logs(
                 bot=context.bot,
-                level=LoggingLevel.INFO,
                 update=update,
                 text="No assessment answers to send",
             )

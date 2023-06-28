@@ -45,7 +45,6 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="Registration process started",
         update=update,
     )
@@ -180,7 +179,6 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
 
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="User didn't accept the disclaimer. Cancelling registration.",
         update=update,
     )
@@ -283,7 +281,6 @@ async def store_username_if_available_ask_phone_or_email(
         context.user_data.tg_username = username
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text=f"{username=} will be stored in the database.",
             update=update,
         )
@@ -360,7 +357,6 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     await update.message.reply_text(context.bot_data.phrases["ask_email"][locale])
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         update=update,
         text=f"Phone number: {context.user_data.phone_number}",
     )
@@ -461,7 +457,6 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
     )
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         update=update,
         text=f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}",
     )
@@ -476,7 +471,6 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
         )
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
             text="User has selected no slots at all",
         )
@@ -585,7 +579,6 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         update=update,
         text="User aborted registration process.",
     )
@@ -626,7 +619,6 @@ async def _process_student_language_and_level_from_smalltalk(
         level = user_data.student_smalltalk_result.level
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
             text=f"Setting {level=} based on SmallTalk test.",
         )
@@ -634,7 +626,6 @@ async def _process_student_language_and_level_from_smalltalk(
         level = user_data.student_assessment_resulting_level
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
             text=f"No SmallTalk result loaded or level is None. Using {level=} from written test.",
         )
@@ -654,7 +645,6 @@ async def _set_student_language_and_level_for_english_starters(
         ]
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
             text=(
                 f"Setting level formally to A0 ({user_data.language_and_level_ids}) "
