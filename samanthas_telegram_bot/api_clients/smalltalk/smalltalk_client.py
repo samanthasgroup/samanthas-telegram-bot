@@ -2,6 +2,7 @@
 import asyncio
 import logging
 import os
+import typing
 from typing import Any
 
 import httpx
@@ -16,8 +17,10 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     SMALLTALK_URL_GET_TEST,
 )
 from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.api_clients.auxil.models import NotificationParams
 from samanthas_telegram_bot.api_clients.base.base_api_client import BaseApiClient
 from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientError
+from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -32,53 +35,51 @@ ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
 
 
 class SmallTalkClient(BaseApiClient):
-    pass
+    @classmethod
+    async def send_user_data_get_smalltalk_test(
+        cls,
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> tuple[str | None, str | None]:
+        """Gets SmallTalk interview ID and test URL."""
+        user_data = context.user_data
 
+        try:
+            _, data = await cls.post(
+                update=update,
+                context=context,
+                url=SMALLTALK_URL_GET_TEST,
+                headers=HEADERS,
+                json_data={
+                    "test_id": ORAL_TEST_ID,
+                    "first_name": user_data.first_name,
+                    "last_name": user_data.last_name,
+                    "email": user_data.email,
+                },  # TODO possibly webhook
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(
+                        "Received data that should contain the link to SmallTalk test"
+                    ),
+                },
+            )
+        except BaseApiClientError as err:
+            raise SmallTalkClientError("Failed to get data with test link from SmallTalk") from err
 
-async def send_user_data_get_smalltalk_test(
-    first_name: str,
-    last_name: str,
-    email: str,
-    context: CUSTOM_CONTEXT_TYPES,
-) -> tuple[str | None, str | None]:
-    """Gets SmallTalk interview ID and test URL."""
+        try:
+            url = data.get("test_link")  # type:ignore[union-attr]
+        except AttributeError as err:
+            raise SmallTalkClientError(
+                f"SmallTalk returned invalid JSON when requested to send test link: {data}"
+            ) from err
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            url=SMALLTALK_URL_GET_TEST,
-            headers=HEADERS,
-            json={
-                "test_id": ORAL_TEST_ID,
-                "first_name": first_name,
-                "last_name": last_name,
-                "email": email,
-            },  # TODO possibly webhook
-        )
+        if url is None:
+            raise SmallTalkClientError(
+                f"SmallTalk returned JSON but it seems to contain no URL to test: {data}"
+            )
 
-    data = response.json()
-    try:
-        url = data.get("test_link")
-    except AttributeError:
-        await logs(
-            bot=context.bot,
-            level=LoggingLevel.ERROR,
-            text=f"SmallTalk returned invalid JSON when requested to send link to test: {data}",
-            needs_to_notify_admin_group=True,
-        )
-        return None, None
+        await logs(bot=context.bot, text=f"Received URL to oral test: {url}")
 
-    if url is None:
-        await logs(
-            bot=context.bot,
-            level=LoggingLevel.ERROR,
-            text=f"SmallTalk returned JSON but it seems to contain no URL to test: {data}",
-            needs_to_notify_admin_group=True,
-        )
-        return None, None
-
-    logger.info(f"Received URL to oral test: {url}")
-
-    return data["interview_id"], url
+        return typing.cast(str, data["interview_id"]), typing.cast(str, url)  # type:ignore[index]
 
 
 async def get_smalltalk_result(

@@ -2,9 +2,8 @@ from telegram import Update
 
 from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import (
-    send_user_data_get_smalltalk_test,
-)
+from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
+from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import SmallTalkClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -20,6 +19,7 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
     store_selected_language_level,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.callbacks.registration.exceptions import RegistrationError
 from samanthas_telegram_bot.data_structures.constants import ENGLISH, LEVELS_ELIGIBLE_FOR_ORAL_TEST
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
@@ -291,15 +291,14 @@ async def send_smalltalk_url(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
     user_data = context.user_data
 
     user_data.student_agreed_to_smalltalk = True
-    (
-        user_data.student_smalltalk_test_id,
-        user_data.student_smalltalk_interview_url,
-    ) = await send_user_data_get_smalltalk_test(
-        first_name=user_data.first_name,
-        last_name=user_data.last_name,
-        email=user_data.email,
-        context=context,
-    )
+    try:
+        (
+            user_data.student_smalltalk_test_id,
+            user_data.student_smalltalk_interview_url,
+        ) = await SmallTalkClient.send_user_data_get_smalltalk_test(update, context)
+    except SmallTalkClientError as err:
+        raise RegistrationError("Failed to get SmallTalk test") from err
+        pass  # TODO notify student, assign level based on written assessment
     await CQReplySender.send_smalltalk_url(context, query)
     return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
 

@@ -28,7 +28,7 @@ class BaseApiClient:
         context: CUSTOM_CONTEXT_TYPES,
         url: str,
         notification_params_for_status_code: NotificationParamsForStatusCode,
-        data: DataDict | None = None,
+        headers: dict[str, str] | None = None,
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
         """Makes a GET request, returns a tuple containing status code and JSON data.
@@ -45,7 +45,7 @@ class BaseApiClient:
             update=update,
             context=context,
             url=url,
-            data=data,
+            headers=headers,
             params=params,
             notification_params_for_status_code=notification_params_for_status_code,
         )
@@ -57,10 +57,15 @@ class BaseApiClient:
         context: CUSTOM_CONTEXT_TYPES,
         url: str,
         notification_params_for_status_code: NotificationParamsForStatusCode,
-        data: DataDict,  # cannot be None for POST
+        headers: dict[str, str] | None = None,
+        data: DataDict | None = None,
+        json_data: DataDict | None = None,
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
         """Makes a POST request, returns a tuple containing status code and JSON data.
+
+        The ``data`` parameter is passed as ``data``, ``json_data`` as ``json`` to
+        httpx client. You can pass either one of them, but not both at the same time.
 
         Note:
             Only pass **informative** status codes in ``notification_params_for_status_code``.
@@ -69,12 +74,20 @@ class BaseApiClient:
             let the API client raise its own exception and handle it accordingly
             (e.g. with an exception handler in the bot).
         """
+        if data is None and json_data is None:
+            raise TypeError("Either `data` or `json_data` must be provided. You passed nothing.")
+
+        if not (data is None or json_data is None):
+            raise TypeError("Either `data` or `json_data` must be provided, not both.")
+
         return await cls._make_request_and_get_data(
             method=HttpMethod.POST,
             update=update,
             context=context,
             url=url,
+            headers=headers,
             data=data,
+            json_data=json_data,
             params=params,
             notification_params_for_status_code=notification_params_for_status_code,
         )
@@ -87,11 +100,20 @@ class BaseApiClient:
         method: HttpMethod,
         url: str,
         notification_params_for_status_code: NotificationParamsForStatusCode,
+        headers: dict[str, str] | None = None,
         data: DataDict | None = None,
+        json_data: DataDict | None = None,
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
         response = await cls._make_request_with_retries(
-            update=update, context=context, method=method, url=url, data=data, params=params
+            update=update,
+            context=context,
+            method=method,
+            url=url,
+            headers=headers,
+            data=data,
+            json_data=json_data,
+            params=params,
         )
 
         try:
@@ -127,7 +149,9 @@ class BaseApiClient:
         context: CUSTOM_CONTEXT_TYPES,
         method: HttpMethod,
         url: str,
+        headers: dict[str, str] | None = None,
         data: DataDict | None = None,
+        json_data: DataDict | None = None,
         params: DataDict | None = None,
     ) -> Response:
         attempts = 0
@@ -136,7 +160,12 @@ class BaseApiClient:
         while True:
             try:
                 response = await cls._make_one_request(
-                    method=method, url=url, data=data, params=params
+                    method=method,
+                    url=url,
+                    headers=headers,
+                    data=data,
+                    json_data=json_data,
+                    params=params,
                 )
             except (NotImplementedError, httpx.TransportError) as err:
                 # TODO logic can be split here, maybe let user try again in case of httpx error.
@@ -168,13 +197,20 @@ class BaseApiClient:
 
     @staticmethod
     async def _make_one_request(
-        method: HttpMethod, url: str, data: DataDict | None = None, params: DataDict | None = None
+        method: HttpMethod,
+        url: str,
+        headers: dict[str, str] | None = None,
+        data: DataDict | None = None,
+        json_data: DataDict | None = None,
+        params: DataDict | None = None,
     ) -> Response:
         async with httpx.AsyncClient() as client:
             if method == HttpMethod.GET:
-                response = await client.get(url, params=params)
+                response = await client.get(url, headers=headers, params=params)
             elif method == HttpMethod.POST:
-                response = await client.post(url, params=params, data=data)
+                response = await client.post(
+                    url, headers=headers, params=params, data=data, json=json_data
+                )
             else:
                 raise NotImplementedError(f"{method=} not supported")
 
