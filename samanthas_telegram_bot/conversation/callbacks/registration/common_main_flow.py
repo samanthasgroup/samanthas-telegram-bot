@@ -14,7 +14,7 @@ from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import get_smalltalk_result
+from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import SmallTalkClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -613,21 +613,21 @@ async def _process_student_language_and_level_from_smalltalk(
     Language level is stored right after user chooses it during the conversation.
     """
     user_data = context.user_data
-    user_data.student_smalltalk_result = await get_smalltalk_result(update, context)
+    user_data.student_smalltalk_result = await SmallTalkClient.get_result(update, context)
 
     if user_data.student_smalltalk_result and user_data.student_smalltalk_result.level:
         level = user_data.student_smalltalk_result.level
         await logs(
             bot=context.bot,
             update=update,
-            text=f"Setting {level=} based on SmallTalk test.",
+            text=f"Setting {level=} based on SmallTalk test",
         )
     else:
         level = user_data.student_assessment_resulting_level
         await logs(
             bot=context.bot,
             update=update,
-            text=f"No SmallTalk result loaded or level is None. Using {level=} from written test.",
+            text=f"No SmallTalk result loaded or level is empty. Using {level=} from written test",
         )
 
     user_data.language_and_level_ids = [

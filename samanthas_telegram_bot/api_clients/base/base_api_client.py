@@ -30,7 +30,7 @@ class BaseApiClient:
         notification_params_for_status_code: NotificationParamsForStatusCode,
         headers: dict[str, str] | None = None,
         params: DataDict | None = None,
-    ) -> tuple[int, DataDict | None]:
+    ) -> tuple[int, DataDict]:
         """Makes a GET request, returns a tuple containing status code and JSON data.
 
         Note:
@@ -61,7 +61,7 @@ class BaseApiClient:
         data: DataDict | None = None,
         json_data: DataDict | None = None,
         params: DataDict | None = None,
-    ) -> tuple[int, DataDict | None]:
+    ) -> tuple[int, DataDict]:
         """Makes a POST request, returns a tuple containing status code and JSON data.
 
         The ``data`` parameter is passed as ``data``, ``json_data`` as ``json`` to
@@ -104,7 +104,7 @@ class BaseApiClient:
         data: DataDict | None = None,
         json_data: DataDict | None = None,
         params: DataDict | None = None,
-    ) -> tuple[int, DataDict | None]:
+    ) -> tuple[int, DataDict]:
         response = await cls._make_request_with_retries(
             update=update,
             context=context,

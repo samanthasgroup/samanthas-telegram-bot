@@ -3,7 +3,6 @@ import asyncio
 import logging
 import os
 import typing
-from typing import Any
 
 import httpx
 from dotenv import load_dotenv
@@ -11,16 +10,23 @@ from telegram import Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_clients.auxil.constants import (
-    BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
     MAX_ATTEMPTS_TO_GET_DATA_FROM_API,
+    SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
     SMALLTALK_URL_GET_RESULTS,
     SMALLTALK_URL_GET_TEST,
+    DataDict,
 )
 from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_clients.auxil.models import NotificationParams
 from samanthas_telegram_bot.api_clients.base.base_api_client import BaseApiClient
 from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientError
-from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
+from samanthas_telegram_bot.api_clients.smalltalk.exceptions import (
+    SmallTalkClientError,
+    SmallTalkJSONParsingError,
+    SmallTalkLogicError,
+    SmallTalkRequestError,
+)
+from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -36,7 +42,7 @@ ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
 
 class SmallTalkClient(BaseApiClient):
     @classmethod
-    async def send_user_data_get_smalltalk_test(
+    async def send_user_data_get_test(
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
@@ -63,191 +69,205 @@ class SmallTalkClient(BaseApiClient):
                 },
             )
         except BaseApiClientError as err:
-            raise SmallTalkClientError("Failed to get data with test link from SmallTalk") from err
+            raise SmallTalkRequestError(
+                "Failed to get data with test link from SmallTalk"
+            ) from err
 
         try:
-            url = data.get("test_link")  # type:ignore[union-attr]
+            url = data.get("test_link")
         except AttributeError as err:
-            raise SmallTalkClientError(
+            raise SmallTalkRequestError(
                 f"SmallTalk returned invalid JSON when requested to send test link: {data}"
             ) from err
 
         if url is None:
-            raise SmallTalkClientError(
+            raise SmallTalkRequestError(
                 f"SmallTalk returned JSON but it seems to contain no URL to test: {data}"
             )
 
         await logs(bot=context.bot, text=f"Received URL to oral test: {url}")
 
-        return typing.cast(str, data["interview_id"]), typing.cast(str, url)  # type:ignore[index]
+        return typing.cast(str, data["interview_id"]), typing.cast(str, url)
 
+    @classmethod
+    async def get_result(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
+    ) -> SmalltalkResult | None:
+        """Gets results of SmallTalk interview."""
 
-async def get_smalltalk_result(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> SmalltalkResult | None:
-    """Gets results of SmallTalk interview."""
+        user_data = context.user_data
 
-    user_data = context.user_data
+        while True:
+            logger.info("Trying to receive results from SmallTalk")
 
-    while True:
-        logger.info("Trying to receive results from SmallTalk")
-        data = await get_json_with_results(
-            test_id=user_data.student_smalltalk_test_id, context=context
-        )
-        if data is None:
-            await logs(
-                bot=context.bot,
-                update=update,
-                level=LoggingLevel.ERROR,
-                # Error text in get_json_with_results() contains status code and response,
-                # and here it contains user info:
-                text=(
-                    f"Failed to receive data from SmallTalk "
-                    f"for {user_data.first_name} {user_data.last_name}"
-                ),
-                needs_to_notify_admin_group=True,
-            )
-            return None
-
-        result = process_smalltalk_json(data)
-        attempts = 0
-
-        if result is None:
-            await logs(
-                bot=context.bot,
-                update=update,
-                level=LoggingLevel.ERROR,
-                text=(
-                    f"Failed to process data from SmallTalk "
-                    f"for {user_data.first_name} {user_data.last_name}"
-                ),
-                needs_to_notify_admin_group=True,
-            )
-            user_data.comment = (
-                f"{user_data.comment}\n- Could not load results of SmallTalk assessment\n"
-                f"Interview ID: {user_data.student_smalltalk_test_id}"
-            )
-            return None
-
-        if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
-            await logs(
-                bot=context.bot,
-                update=update,
-                text=(
-                    f"User {user_data.first_name} {user_data.last_name} "
-                    f"didn't finish the SmallTalk assessment."
-                ),
-                needs_to_notify_admin_group=True,
-            )
-            user_data.comment = (
-                f"{user_data.comment}\n- SmallTalk assessment not finished\nCheck {result.url}"
-            )
-            return None
-        elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
-            if attempts > MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
-                total_seconds_waiting = (
-                    MAX_ATTEMPTS_TO_GET_DATA_FROM_API
-                    * BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS
+            try:
+                result = await cls._process_data(
+                    update=update,
+                    context=context,
+                    data=await cls._get_data(
+                        update=update, context=context, test_id=user_data.student_smalltalk_test_id
+                    ),
                 )
+            except SmallTalkClientError as err:
+                user_data.comment = (
+                    f"{user_data.comment}\n- Could not load results of SmallTalk assessment\n"
+                    f"Interview ID: {user_data.student_smalltalk_test_id}"
+                )
+                raise SmallTalkClientError(
+                    "Could not process SmallTalk results for "
+                    f"{user_data.first_name} {user_data.last_name}"
+                ) from err
+
+            attempts = 0
+
+            if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
                 await logs(
                     bot=context.bot,
                     update=update,
-                    level=LoggingLevel.ERROR,
                     text=(
-                        f"SmallTalk results for {user_data.first_name} "
-                        f"{user_data.last_name} still not ready after "
-                        f"{total_seconds_waiting / 60} minutes. "
-                        f"Interview ID {user_data.student_smalltalk_test_id}."
+                        f"User {user_data.first_name} {user_data.last_name} "
+                        f"didn't finish the SmallTalk assessment."
                     ),
                     needs_to_notify_admin_group=True,
                 )
                 user_data.comment = (
-                    f"{user_data.comment}\n- SmallTalk assessment results were not ready\n"
-                    f"Interview ID {user_data.student_smalltalk_test_id}"
+                    f"{user_data.comment}\n- SmallTalk assessment not finished\nCheck {result.url}"
                 )
+                return None
+            elif result.status == SmalltalkTestStatus.RESULTS_NOT_READY:
+                if attempts > MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
+                    total_seconds_waiting = (
+                        MAX_ATTEMPTS_TO_GET_DATA_FROM_API
+                        * SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS
+                    )
+                    await logs(
+                        bot=context.bot,
+                        update=update,
+                        level=LoggingLevel.ERROR,
+                        text=(
+                            f"SmallTalk results for {user_data.first_name} "
+                            f"{user_data.last_name} still not ready after "
+                            f"{total_seconds_waiting / 60} minutes. "
+                            f"Interview ID {user_data.student_smalltalk_test_id}."
+                        ),
+                        needs_to_notify_admin_group=True,
+                    )
+                    user_data.comment = (
+                        f"{user_data.comment}\n- SmallTalk assessment results were not ready\n"
+                        f"Interview ID {user_data.student_smalltalk_test_id}"
+                    )
 
-            logger.info("SmallTalk results not ready. Waiting...")
-            attempts += 1
-            await asyncio.sleep(BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS)
-        else:
+                logger.info("SmallTalk results not ready. Waiting...")
+                attempts += 1
+                await asyncio.sleep(SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS)
+            else:
+                await logs(
+                    bot=context.bot,
+                    update=update,
+                    text=(
+                        f"Received [SmallTalk results for "
+                        f"{escape_for_markdown(user_data.first_name)} "
+                        f"{escape_for_markdown(user_data.last_name)}]({result.url})"
+                    ),
+                    parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
+                    needs_to_notify_admin_group=True,
+                )
+                return result
+
+    @classmethod
+    async def _get_data(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES, test_id: str
+    ) -> DataDict:
+        user_data = context.user_data
+
+        try:
+            _, data = await cls.get(
+                update=update,
+                context=context,
+                url=SMALLTALK_URL_GET_RESULTS,
+                headers=HEADERS,
+                params={
+                    "id": test_id,
+                    "additional_fields": (
+                        "detailed_scores,strength_weaknesses,problem_statuses,problem_titles"
+                    ),
+                },
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(
+                        # The data may not contain the results yet, we're just logging
+                        # that status code was 200 OK and hence some data was received
+                        f"Received data from SmallTalk after {user_data.first_name} "
+                        f"{user_data.last_name}'s test"
+                    )
+                },
+            )
+        except BaseApiClientError as err:
+            raise SmallTalkRequestError(
+                "Failed to receive valid response from SmallTalk while getting test results."
+            ) from err
+
+        return data
+
+    @classmethod
+    async def _process_data(
+        cls,
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+        data: DataDict,
+    ) -> SmalltalkResult:
+        status = typing.cast(SmalltalkTestStatus, cls._get_value(data, "status"))
+
+        if status not in SmalltalkTestStatus._value2member_map_:  # noqa
+            raise SmallTalkLogicError(f"SmallTalk returned {status=} but we have no logic for it.")
+
+        if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
+            await logs(
+                bot=context.bot, update=update, text="User has not yet completed the interview"
+            )
+        elif status == SmalltalkTestStatus.RESULTS_NOT_READY:
             await logs(
                 bot=context.bot,
                 update=update,
-                text=(
-                    f"Received [SmallTalk results for "
-                    f"{user_data.first_name} {user_data.last_name}]({result.url})"
-                ),
-                parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
-                needs_to_notify_admin_group=True,
+                text="User has completed the interview but the results are not ready",
             )
-            return result
 
+        if status != SmalltalkTestStatus.RESULTS_READY:
+            return SmalltalkResult(status)
 
-async def get_json_with_results(test_id: str, context: CUSTOM_CONTEXT_TYPES) -> Any:
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            url=SMALLTALK_URL_GET_RESULTS,
-            headers=HEADERS,
-            params={
-                "id": test_id,
-                "additional_fields": (
-                    "detailed_scores,strength_weaknesses,problem_statuses,problem_titles"
-                ),
-            },
+        level = cls._get_value(data, "score")
+
+        level_id = level[:2]  # strip off "p" in "B2p" and the like
+
+        if level.lower().strip() == "undefined":
+            await logs(
+                bot=context.bot,
+                update=update,
+                text="User did not pass enough oral tasks for level to be determined",
+            )
+            level_id = ""
+        elif level_id not in ALL_LEVELS:
+            raise SmallTalkJSONParsingError(f"Unrecognized language level returned: {level}")
+
+        results_url = cls._get_value(data, "report_url")
+
+        await logs(
+            bot=context.bot,
+            update=update,
+            text=f"SmallTalk results: {status=}, {level=}, {results_url=}",
         )
 
-    logger.debug(f"Request headers: {response.request.headers}.")
-    if response.status_code == httpx.codes.OK:
-        return response.json()
+        return SmalltalkResult(
+            status=status,
+            level=level_id,
+            url=results_url,
+            json=data,
+        )
 
-    await logs(
-        bot=context.bot,
-        level=LoggingLevel.ERROR,
-        text=(
-            f"Did not receive JSON from SmallTalk. {response.status_code=}, {response.headers=}, "
-            f"{response.content=}"
-        ),
-        needs_to_notify_admin_group=True,
-    )
-
-    return None
-
-
-def process_smalltalk_json(data: Any) -> SmalltalkResult | None:
-    try:
-        status = data["status"]
-    except KeyError:
-        logger.error(f"No key 'status' found in JSON data. Keys: {', '.join(data.keys())}")
-        return None
-
-    if status not in SmalltalkTestStatus._value2member_map_:  # noqa
-        raise BaseApiClientError(f"SmallTalk returned {status=} but we have no logic for it.")
-
-    if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
-        logger.info("User has not yet completed the interview")
-    elif status == SmalltalkTestStatus.RESULTS_NOT_READY:
-        logger.info("User has completed the interview but the results are not ready")
-
-    if status != SmalltalkTestStatus.RESULTS_READY:
-        return SmalltalkResult(status=status)
-
-    level = data["score"]
-    level_id = level[:2]  # strip off "p" in "B2p" and the like
-
-    if level.lower().strip() == "undefined":
-        logger.info("User did not pass enough oral tasks for level to be determined")
-        level_id = None
-    elif level_id not in ALL_LEVELS:
-        logger.error(f"Unrecognized language level returned by SmallTalk: {level}")
-        level_id = None
-
-    results_url = data["report_url"]
-
-    logger.info(f"SmallTalk results: {status=}, {level=}, {results_url=}")
-
-    return SmalltalkResult(
-        status=status,
-        level=level_id,
-        url=results_url,
-        json=data,
-    )
+    @staticmethod
+    def _get_value(data: DataDict, key: str) -> typing.Any:
+        try:
+            return data[key]
+        except KeyError:
+            raise SmallTalkJSONParsingError(
+                f"No key '{key}' found in JSON data. Keys: {', '.join(data.keys())}"
+            )

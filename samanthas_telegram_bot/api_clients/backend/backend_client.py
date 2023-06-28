@@ -124,7 +124,7 @@ class BackendClient(BaseApiClient):
             ) from err
 
         try:
-            level = typing.cast(str, data["resulting_level"])  # type: ignore[index]
+            level = typing.cast(str, data["resulting_level"])
         except KeyError:
             return None
 

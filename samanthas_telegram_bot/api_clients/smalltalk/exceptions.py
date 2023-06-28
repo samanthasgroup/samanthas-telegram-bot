@@ -3,3 +3,15 @@ from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientErro
 
 class SmallTalkClientError(BaseApiClientError):
     pass
+
+
+class SmallTalkRequestError(SmallTalkClientError):
+    pass
+
+
+class SmallTalkJSONParsingError(SmallTalkClientError):
+    pass
+
+
+class SmallTalkLogicError(SmallTalkClientError):
+    pass

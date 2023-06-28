@@ -295,7 +295,7 @@ async def send_smalltalk_url(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
         (
             user_data.student_smalltalk_test_id,
             user_data.student_smalltalk_interview_url,
-        ) = await SmallTalkClient.send_user_data_get_smalltalk_test(update, context)
+        ) = await SmallTalkClient.send_user_data_get_test(update, context)
     except SmallTalkClientError as err:
         raise RegistrationError("Failed to get SmallTalk test") from err
         pass  # TODO notify student, assign level based on written assessment
