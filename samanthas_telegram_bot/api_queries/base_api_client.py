@@ -26,6 +26,15 @@ class BaseApiClient:
         data: DataDict | None = None,
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
+        """Makes a GET request, returns a tuple containing status code and JSON data.
+
+        Note:
+            Only pass **informative** status codes in ``notification_params_for_status_code``.
+            E.g. If ``404 NOT FOUND`` means something relevant, pass it in, along with
+            notification parameters (how to log and notify admins). For all other cases,
+            let the API client raise its own exception and handle it accordingly
+            (e.g. with an exception handler in the bot).
+        """
         return await cls._make_request(
             method=HttpMethod.GET,
             update=update,
@@ -46,6 +55,15 @@ class BaseApiClient:
         data: DataDict,  # cannot be None for POST
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
+        """Makes a POST request, returns a tuple containing status code and JSON data.
+
+        Note:
+            Only pass **informative** status codes in ``notification_params_for_status_code``.
+            E.g. If ``404 NOT FOUND`` means something relevant, pass it in, along with
+            notification parameters (how to log and notify admins). For all other cases,
+            let the API client raise its own exception and handle it accordingly
+            (e.g. with an exception handler in the bot).
+        """
         return await cls._make_request(
             method=HttpMethod.POST,
             update=update,
