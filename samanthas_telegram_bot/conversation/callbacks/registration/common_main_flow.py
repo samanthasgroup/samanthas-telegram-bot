@@ -14,7 +14,7 @@ from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_clients.smalltalk import get_smalltalk_result
+from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import get_smalltalk_result
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,

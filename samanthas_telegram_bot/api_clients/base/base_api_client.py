@@ -6,8 +6,8 @@ from httpx import Response
 from telegram import Update
 
 from samanthas_telegram_bot.api_clients.auxil.constants import (
+    BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
     MAX_ATTEMPTS_TO_GET_DATA_FROM_API,
-    TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
     DataDict,
 )
 from samanthas_telegram_bot.api_clients.auxil.enums import HttpMethod, LoggingLevel
@@ -90,41 +90,9 @@ class BaseApiClient:
         data: DataDict | None = None,
         params: DataDict | None = None,
     ) -> tuple[int, DataDict | None]:
-        attempts = 0
-
-        while True:
-            try:
-                response = await cls._make_async_request(
-                    method=method, url=url, data=data, params=params
-                )
-                break
-            except NotImplementedError as err:
-                raise BaseApiClientError(
-                    f"Failed to send {method.upper()} request to {url=}"
-                ) from err
-            except (httpx.NetworkError, httpx.TimeoutException) as err:
-                attempts += 1
-                if attempts == 1:
-                    # TODO maybe also notify the user
-                    await logs(
-                        bot=context.bot,
-                        update=update,
-                        text=(
-                            f"Failed to reach {url=} with {method=}. "
-                            f"Will try {MAX_ATTEMPTS_TO_GET_DATA_FROM_API - attempts} more times "
-                            f"with {TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS} "
-                            "between attempts."
-                        ),
-                        level=LoggingLevel.WARNING,
-                        needs_to_notify_admin_group=True,
-                    )
-                elif attempts == MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
-                    raise BaseApiClientError(
-                        f"Tried to reach {url=} with {method=}. Failed "
-                        f"{MAX_ATTEMPTS_TO_GET_DATA_FROM_API} times, will stop trying now."
-                    ) from err
-
-                await asyncio.sleep(TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS)
+        response = await cls._make_request_with_retries(
+            update=update, context=context, method=method, url=url, data=data, params=params
+        )
 
         try:
             status_code, json_data = cls._get_status_code_and_json(response)
@@ -152,8 +120,54 @@ class BaseApiClient:
 
         return status_code, json_data
 
+    @classmethod
+    async def _make_request_with_retries(
+        cls,
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+        method: HttpMethod,
+        url: str,
+        data: DataDict | None = None,
+        params: DataDict | None = None,
+    ) -> Response:
+        attempts = 0
+        timeout = BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS
+
+        while True:
+            try:
+                response = await cls._make_one_request(
+                    method=method, url=url, data=data, params=params
+                )
+            except (NotImplementedError, httpx.TransportError) as err:
+                # TODO logic can be split here, maybe let user try again in case of httpx error.
+                raise BaseApiClientError(
+                    f"Failed to send {method.upper()} request to {url=}"
+                ) from err
+
+            if response.status_code not in (
+                httpx.codes.INTERNAL_SERVER_ERROR,
+                httpx.codes.BAD_GATEWAY,
+                httpx.codes.SERVICE_UNAVAILABLE,
+                httpx.codes.GATEWAY_TIMEOUT,
+            ):
+                return response
+
+            attempts += 1
+            timeout *= 2
+
+            await cls._log_retry(
+                update=update,
+                context=context,
+                url=url,
+                method=method,
+                status_code=response.status_code,
+                attempts=attempts,
+                timeout=timeout,
+            )
+            await asyncio.sleep(timeout)
+
     @staticmethod
-    async def _make_async_request(
+    async def _make_one_request(
         method: HttpMethod, url: str, data: DataDict | None = None, params: DataDict | None = None
     ) -> Response:
         async with httpx.AsyncClient() as client:
@@ -168,6 +182,47 @@ class BaseApiClient:
             f"Sent {method.upper()} request to {url=} with {data=}. {response.status_code=}."
         )
         return response
+
+    @staticmethod
+    async def _log_retry(
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+        url: str,
+        method: HttpMethod,
+        status_code: int,
+        timeout: int,
+        attempts: int,
+    ) -> None:
+        if attempts == 1:
+            await logs(
+                bot=context.bot,
+                update=update,
+                text=(
+                    f"Failed to reach {url=} with {method=} ({status_code=}). "
+                    f"Will try {MAX_ATTEMPTS_TO_GET_DATA_FROM_API - attempts} times before failing"
+                ),
+                level=LoggingLevel.WARNING,
+                needs_to_notify_admin_group=True,
+            )
+            return
+
+        if attempts == MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
+            raise BaseApiClientError(
+                f"Tried to reach {url=} with {method=}. Failed "
+                f"{MAX_ATTEMPTS_TO_GET_DATA_FROM_API} times, will stop trying now."
+            )
+
+        await logs(
+            bot=context.bot,
+            update=update,
+            text=(
+                f"Failed to reach {url=} with {method=} ({status_code=}). "
+                f"Next attempt in {timeout} seconds "
+                f"({MAX_ATTEMPTS_TO_GET_DATA_FROM_API - attempts} attempts left)."
+            ),
+            level=LoggingLevel.WARNING,
+        )
+        return
 
     @staticmethod
     def _get_status_code_and_json(response: Response) -> tuple[int, DataDict]:
