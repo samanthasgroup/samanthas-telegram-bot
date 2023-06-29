@@ -11,6 +11,7 @@ from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_clients.auxil.constants import (
     MAX_ATTEMPTS_TO_GET_DATA_FROM_API,
+    SMALLTALK_RESULTING_LEVEL_UNDEFINED,
     SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
     SMALLTALK_URL_GET_RESULTS,
     SMALLTALK_URL_GET_TEST,
@@ -235,7 +236,7 @@ class SmallTalkClient(BaseApiClient):
 
         level_id = level[:2]  # strip off "p" in "B2p" and the like
 
-        if level.lower().strip() == "undefined":
+        if level.lower().strip() == SMALLTALK_RESULTING_LEVEL_UNDEFINED:
             await logs(
                 bot=context.bot,
                 update=update,
