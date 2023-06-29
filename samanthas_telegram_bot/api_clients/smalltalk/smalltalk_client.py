@@ -232,11 +232,14 @@ class SmallTalkClient(BaseApiClient):
         if status != SmalltalkTestStatus.RESULTS_READY:
             return SmalltalkResult(status)
 
-        level = cls._get_value(data, "score")
+        level: str = cls._get_value(data, "score")
+        level = level.strip()
 
-        level_id = level[:2]  # strip off "p" in "B2p" and the like
+        # 1. Strip off "p" in "B2p" and the like
+        # 2. We use capital letters in our levels, so convert for easier comparison
+        level_id = level.removesuffix("p").upper()
 
-        if level.lower().strip() == SMALLTALK_RESULTING_LEVEL_UNDEFINED:
+        if level.lower() == SMALLTALK_RESULTING_LEVEL_UNDEFINED:
             await logs(
                 bot=context.bot,
                 update=update,
