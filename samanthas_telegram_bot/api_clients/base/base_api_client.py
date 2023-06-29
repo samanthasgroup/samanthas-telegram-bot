@@ -117,7 +117,9 @@ class BaseApiClient:
         )
 
         try:
-            status_code, json_data = cls._get_status_code_and_json(response)
+            status_code, json_data = await cls._get_status_code_and_json(
+                update=update, context=context, response=response
+            )
         except AttributeError as err:
             raise BaseApiClientError("Could not load JSON") from err
 
@@ -160,6 +162,8 @@ class BaseApiClient:
         while True:
             try:
                 response = await cls._make_one_request(
+                    update=update,
+                    context=context,
                     method=method,
                     url=url,
                     headers=headers,
@@ -200,6 +204,8 @@ class BaseApiClient:
 
     @staticmethod
     async def _make_one_request(
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
         method: HttpMethod,
         url: str,
         headers: dict[str, str] | None = None,
@@ -217,8 +223,11 @@ class BaseApiClient:
             else:
                 raise NotImplementedError(f"{method=} not supported")
 
-        logger.debug(
-            f"Sent {method.upper()} request to {url=} with {data=}. {response.status_code=}."
+        await logs(
+            bot=context.bot,
+            update=update,
+            text=f"Sent {method.upper()} request to {url=} with {data=}. {response.status_code=}.",
+            level=LoggingLevel.DEBUG,
         )
         return response
 
@@ -264,7 +273,9 @@ class BaseApiClient:
         return
 
     @staticmethod
-    def _get_status_code_and_json(response: Response) -> tuple[int, DataDict]:
+    async def _get_status_code_and_json(
+        update: Update, context: CUSTOM_CONTEXT_TYPES, response: Response
+    ) -> tuple[int, DataDict]:
         status_code = response.status_code
         try:
             response_json = response.json()
@@ -273,5 +284,7 @@ class BaseApiClient:
                 f"Response contains no JSON. Response status code: {status_code}"
             ) from err
 
-        logger.debug(f"JSON: {response_json}")
+        await logs(
+            bot=context.bot, text=f"JSON: {response_json}", update=update, level=LoggingLevel.DEBUG
+        )
         return response.status_code, response_json
