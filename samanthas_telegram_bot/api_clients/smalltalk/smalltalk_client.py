@@ -99,7 +99,9 @@ class SmallTalkClient(BaseApiClient):
         attempts = 0
 
         while True:
-            logger.info("Trying to receive results from SmallTalk")
+            await logs(
+                bot=context.bot, update=update, text="Trying to receive results from SmallTalk"
+            )
 
             try:
                 result = await cls._process_data(
@@ -157,7 +159,9 @@ class SmallTalkClient(BaseApiClient):
                     )
                     return None
 
-                logger.info("SmallTalk results not ready. Waiting...")
+                await logs(
+                    bot=context.bot, update=update, text="SmallTalk results not ready. Waiting..."
+                )
                 attempts += 1
                 await asyncio.sleep(SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS)
             else:

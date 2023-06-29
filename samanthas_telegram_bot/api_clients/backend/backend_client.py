@@ -41,7 +41,9 @@ class BackendClient(BaseApiClient):
         """Checks whether the chat ID is already stored in the backend."""
         chat_id = update.effective_chat.id
 
-        logger.info(f"Checking with the backend if {chat_id=} exists...")
+        await logs(
+            bot=context.bot, update=update, text=f"Checking with backend if {chat_id=} exists..."
+        )
 
         try:
             status_code, _ = await cls.get(
