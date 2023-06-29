@@ -77,7 +77,7 @@ class BaseApiClient:
         if data is None and json_data is None:
             raise TypeError("Either `data` or `json_data` must be provided. You passed nothing.")
 
-        if not (data is None or json_data is None):
+        if data is not None and json_data is not None:
             raise TypeError("Either `data` or `json_data` must be provided, not both.")
 
         return await cls._make_request_and_get_data(
