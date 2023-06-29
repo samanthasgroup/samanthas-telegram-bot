@@ -9,6 +9,15 @@ class AgeRangeType(str, Enum):
     TEACHER = "teacher"
 
 
+class LoggingLevel(str, Enum):
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+    EXCEPTION = "exception"
+
+
 class Role(str, Enum):
     """Role of a person. Members of this enum can be treated as strings."""
 

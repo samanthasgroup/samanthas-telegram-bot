@@ -8,15 +8,6 @@ class HttpMethod(str, Enum):
     # TODO enhance
 
 
-class LoggingLevel(str, Enum):
-    DEBUG = "debug"
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-    CRITICAL = "critical"
-    EXCEPTION = "exception"
-
-
 class SmalltalkTestStatus(str, Enum):
     """Enumeration of possible statuses of a SmallTalk oral test, returned by its API."""
 

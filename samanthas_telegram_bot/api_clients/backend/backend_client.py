@@ -19,7 +19,6 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_YOUNG_TEACHERS_LIST_CREATE,
     DataDict,
 )
-from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_clients.auxil.models import NotificationParams
 from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientError
 from samanthas_telegram_bot.api_clients.base.base_api_client import BaseApiClient
@@ -28,7 +27,7 @@ from samanthas_telegram_bot.auxil.constants import SPEAKING_CLUB_COORDINATOR_USE
 from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import Role
+from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
 
 logger = logging.getLogger(__name__)
 

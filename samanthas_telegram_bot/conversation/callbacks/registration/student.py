@@ -1,7 +1,6 @@
 from telegram import Update
 
 from samanthas_telegram_bot.api_clients import BackendClient
-from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
 from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import SmallTalkClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
@@ -22,6 +21,7 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.conversation.callbacks.registration.exceptions import RegistrationError
 from samanthas_telegram_bot.data_structures.constants import ENGLISH, LEVELS_ELIGIBLE_FOR_ORAL_TEST
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
 
