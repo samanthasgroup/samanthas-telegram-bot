@@ -5,9 +5,10 @@ Most of the classes correspond to models in the backend.
 from dataclasses import dataclass
 from typing import Optional, TypedDict
 
-from samanthas_telegram_bot.api_queries.auxil.constants import DataDict
+from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
+from samanthas_telegram_bot.api_clients.auxil.enums import SmalltalkTestStatus
 from samanthas_telegram_bot.data_structures.constants import WEEKDAYS
-from samanthas_telegram_bot.data_structures.enums import AgeRangeType, SmalltalkTestStatus
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType
 
 
 @dataclass

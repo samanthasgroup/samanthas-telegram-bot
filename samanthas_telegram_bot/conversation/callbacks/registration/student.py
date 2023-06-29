@@ -1,12 +1,9 @@
 from telegram import Update
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_queries.smalltalk import send_user_data_get_smalltalk_test
+from samanthas_telegram_bot.api_clients import BackendClient
+from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
+from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import SmallTalkClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
-from samanthas_telegram_bot.conversation.auxil.assessment import (
-    prepare_assessment,
-    process_results,
-)
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
@@ -17,10 +14,14 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
+    prepare_assessment,
     store_selected_language_level,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
+from samanthas_telegram_bot.conversation.callbacks.registration.exceptions import RegistrationError
+from samanthas_telegram_bot.data_structures.constants import ENGLISH, LEVELS_ELIGIBLE_FOR_ORAL_TEST
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
 
 
@@ -39,7 +40,6 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=(
             f"Age group of the student: ID {user_data.student_age_range_id} "
             f"({user_data.student_age_from}-{user_data.student_age_to} years old)"
@@ -49,6 +49,10 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
     if context.chat_data.mode == ConversationMode.REVIEW:
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
+
+    # No matter what language the student will choose, we want to prepare assessment-related
+    # data as soon as student's age is determined (see rationale in docstring of function below).
+    await prepare_assessment(update, context)
 
     await CQReplySender.ask_timezone(context, query)
     return ConversationStateCommon.TIME_SLOTS_START
@@ -95,9 +99,7 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
     # this callback is called if pattern matches "yes"
     user_data.student_can_read_in_english = True
 
-    await logs(
-        update=update, bot=context.bot, level=LoggingLevel.INFO, text="User can read in English"
-    )
+    await logs(update=update, bot=context.bot, text="User can read in English")
 
     if user_data.student_age_to <= 12:
         # young students: mark as requiring interview, ask about communication language
@@ -105,7 +107,6 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
         await logs(
             update=update,
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text="User needs oral interview in English.",
         )
         await CQReplySender.ask_class_communication_languages(context, query)
@@ -116,7 +117,7 @@ async def ask_or_start_assessment_for_english_reader_depending_on_age(
         return ConversationStateStudent.ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST
     else:
         # adult students: start assessment
-        await prepare_assessment(context, query)
+        await CQReplySender.ask_start_assessment(context, query)
         return ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL
 
 
@@ -137,7 +138,7 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
     # Adult students get A0...
     if user_data.student_age_from >= 18:
         user_data.language_and_level_ids = [
-            context.bot_data.language_and_level_id_for_language_id_and_level[("en", "A0")]
+            context.bot_data.language_and_level_id_for_language_id_and_level[(ENGLISH, "A0")]
         ]
     else:
         # ...while young students get no level and are marked to require oral interview.
@@ -145,7 +146,6 @@ async def ask_communication_language_for_students_that_cannot_read_in_english(
         await logs(
             update=update,
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text="User needs oral interview in English.",
         )
 
@@ -182,10 +182,9 @@ async def start_assessment_for_teen_student_that_learned_for_year_or_more(
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="Adolescent student has learned English for year or more. Starting assessment",
     )
-    await prepare_assessment(context, query)
+    await CQReplySender.ask_start_assessment(context, query)
     return ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL
 
 
@@ -198,7 +197,6 @@ async def ask_communication_language_for_teen_student_that_learned_less_than_yea
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="Student has learned English for less than a year. Will need oral interview",
     )
     context.user_data.student_needs_oral_interview = True
@@ -217,8 +215,7 @@ async def assessment_ask_first_question(update: Update, context: CUSTOM_CONTEXT_
 
 async def get_result_of_aborted_assessment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Gets result of an assessment if the student has aborted it."""
-    query, _ = await answer_callback_query_and_get_data(update)
-    next_state = await process_results(context, query)
+    next_state = await _process_assessment_results(update, context)
     return next_state
 
 
@@ -239,7 +236,7 @@ async def store_assessment_answer_ask_next_question_or_get_result_if_finished(
     if len(context.user_data.student_assessment_answers) == len(
         context.chat_data.assessment.questions
     ):
-        next_state = await process_results(context, query)
+        next_state = await _process_assessment_results(update, context)
         return next_state
 
     if int(data) in context.chat_data.ids_of_dont_know_options_in_assessment:
@@ -262,21 +259,46 @@ async def store_assessment_answer_ask_next_question_or_get_result_if_finished(
     return ConversationStateStudent.ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL
 
 
+async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Processes results of a written assessment, returns appropriate next conversation state."""
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    context.user_data.student_assessment_resulting_level = (
+        await BackendClient.get_level_after_assessment(update, context)
+    )
+    if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
+        await CQReplySender.ask_yes_no(
+            context,
+            query,
+            question_phrase_internal_id="ask_student_start_oral_test",
+            parse_mode=None,
+        )
+        return ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
+    else:
+        # TODO add some compliment on completing the test even without oral test?
+        context.user_data.language_and_level_ids = [
+            context.bot_data.language_and_level_id_for_language_id_and_level[
+                (ENGLISH, context.user_data.student_assessment_resulting_level)
+            ]
+        ]
+        await CQReplySender.ask_class_communication_languages(context, query)
+        return ConversationStateStudent.ASK_NON_TEACHING_HELP_OR_START_REVIEW
+
+
 async def send_smalltalk_url(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """If student wants SmallTalk test, gives URL. Asks student to press 'Done' when finished."""
     query, data = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
 
     user_data.student_agreed_to_smalltalk = True
-    (
-        user_data.student_smalltalk_test_id,
-        user_data.student_smalltalk_interview_url,
-    ) = await send_user_data_get_smalltalk_test(
-        first_name=user_data.first_name,
-        last_name=user_data.last_name,
-        email=user_data.email,
-        context=context,
-    )
+    try:
+        (
+            user_data.student_smalltalk_test_id,
+            user_data.student_smalltalk_interview_url,
+        ) = await SmallTalkClient.send_user_data_get_test(update, context)
+    except SmallTalkClientError as err:
+        raise RegistrationError("Failed to get SmallTalk test") from err
+        pass  # TODO notify student, assign level based on written assessment
     await CQReplySender.send_smalltalk_url(context, query)
     return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
 
@@ -295,7 +317,7 @@ async def skip_smalltalk_ask_communication_language(
     user_data.student_agreed_to_smalltalk = False
     user_data.language_and_level_ids = [
         context.bot_data.language_and_level_id_for_language_id_and_level[
-            ("en", user_data.student_assessment_resulting_level)
+            (ENGLISH, user_data.student_assessment_resulting_level)
         ]
     ]
 
