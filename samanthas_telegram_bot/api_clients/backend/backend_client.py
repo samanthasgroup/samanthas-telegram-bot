@@ -26,6 +26,7 @@ from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientErro
 from samanthas_telegram_bot.auxil.constants import SPEAKING_CLUB_COORDINATOR_USERNAME
 from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.auxil.log_and_notify import logs
+from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
 
@@ -90,7 +91,7 @@ class BackendClient(BaseApiClient):
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
-    ) -> str | None:
+    ) -> str:
         """Sends answers to written assessment to the backend, gets level and returns it."""
         user_data = context.user_data
 
@@ -124,10 +125,11 @@ class BackendClient(BaseApiClient):
                 "Failed to send results of written assessment and receive level"
             ) from err
 
-        try:
-            level = typing.cast(str, data["resulting_level"])
-        except KeyError:
-            return None
+        level: str = cls._get_value(data, "resulting_level")
+        if level not in ALL_LEVELS:
+            raise BackendClientError(
+                f"Received {level=} from the backend that does not match any accepted level"
+            )
 
         await logs(text=f"{level=}", bot=context.bot, update=update, level=LoggingLevel.INFO)
         return level
@@ -362,3 +364,10 @@ class BackendClient(BaseApiClient):
 
         # return True would have the same effect, but this is more explicit
         return status_code == httpx.codes.CREATED
+
+    @classmethod
+    def _get_value(cls, data: DataDict, key: str) -> typing.Any:
+        try:
+            super()._get_value(data, key)
+        except BaseApiClientError as err:
+            raise BackendClientError("Failed to process data received from backend") from err

@@ -264,11 +264,9 @@ class SmallTalkClient(BaseApiClient):
             json=data,
         )
 
-    @staticmethod
-    def _get_value(data: DataDict, key: str) -> typing.Any:
+    @classmethod
+    def _get_value(cls, data: DataDict, key: str) -> typing.Any:
         try:
-            return data[key]
-        except KeyError:
-            raise SmallTalkJSONParsingError(
-                f"No key '{key}' found in JSON data. Keys: {', '.join(data.keys())}"
-            )
+            super()._get_value(data, key)
+        except BaseApiClientError as err:
+            raise SmallTalkJSONParsingError("Could not parse data from SmallTalk") from err

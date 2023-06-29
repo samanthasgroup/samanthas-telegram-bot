@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Any
 
 import httpx
 from httpx import Response
@@ -283,3 +284,12 @@ class BaseApiClient:
             bot=context.bot, text=f"JSON: {response_json}", update=update, level=LoggingLevel.DEBUG
         )
         return response.status_code, response_json
+
+    @staticmethod
+    def _get_value(data: DataDict, key: str) -> Any:
+        try:
+            return data[key]
+        except KeyError:
+            raise BaseApiClientError(
+                f"No key '{key}' found in JSON data. Keys: {', '.join(data.keys())}"
+            )
