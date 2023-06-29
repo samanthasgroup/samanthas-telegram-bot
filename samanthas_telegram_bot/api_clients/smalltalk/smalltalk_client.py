@@ -209,10 +209,13 @@ class SmallTalkClient(BaseApiClient):
         context: CUSTOM_CONTEXT_TYPES,
         data: DataDict,
     ) -> SmalltalkResult:
-        status = typing.cast(SmalltalkTestStatus, cls._get_value(data, "status"))
-
-        if status not in SmalltalkTestStatus._value2member_map_:  # noqa
-            raise SmallTalkLogicError(f"SmallTalk returned {status=} but we have no logic for it.")
+        status_name = cls._get_value(data, "status")
+        try:
+            status = SmalltalkTestStatus(status_name)
+        except ValueError as err:
+            raise SmallTalkLogicError(
+                f"SmallTalk returned status '{status_name}' but we have no logic for it."
+            ) from err
 
         if status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
             await logs(
