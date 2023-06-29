@@ -3,7 +3,7 @@ import json
 import pytest
 
 import samanthas_telegram_bot.api_clients.smalltalk as smalltalk
-from samanthas_telegram_bot.data_structures.enums import SmalltalkTestStatus
+from samanthas_telegram_bot.api_clients.auxil.enums import SmalltalkTestStatus
 from tests.constants import TEST_DIR
 
 API_TEST_DIR = TEST_DIR / "api_requests"
