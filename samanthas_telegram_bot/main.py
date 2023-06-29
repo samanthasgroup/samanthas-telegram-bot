@@ -22,6 +22,7 @@ import samanthas_telegram_bot.conversation.callbacks.registration.student as stu
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
 from samanthas_telegram_bot.api_clients.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, BOT_OWNER_USERNAME, LOGGING_LEVEL
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
@@ -46,7 +47,7 @@ from samanthas_telegram_bot.data_structures.context_types import (
 
 load_dotenv()
 
-logging_level = typing.cast(str, os.environ.get("LOGGING_LEVEL"))
+logging_level = typing.cast(str, LOGGING_LEVEL)
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s | %(module)s (%(funcName)s:%(lineno)s)",
     level=getattr(logging, logging_level),
@@ -82,7 +83,7 @@ async def post_init(application: Application) -> None:
     )
 
     await application.bot.send_message(
-        chat_id=os.environ.get("ADMIN_CHAT_ID"),
+        chat_id=ADMIN_CHAT_ID,
         text="Registration bot started",
         parse_mode=None,
     )
@@ -127,7 +128,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         text=(
             "Registration bot encountered an exception:"
             f"\n\n{tb_string}\n"
-            f"@{os.environ.get('BOT_OWNER_USERNAME')}"
+            f"@{BOT_OWNER_USERNAME}"
         ),
         parse_mode_for_admin_group_message=ParseMode.HTML,
         needs_to_notify_admin_group=True,
