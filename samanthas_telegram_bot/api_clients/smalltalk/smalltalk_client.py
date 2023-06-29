@@ -96,6 +96,7 @@ class SmallTalkClient(BaseApiClient):
         """Gets results of SmallTalk interview."""
 
         user_data = context.user_data
+        attempts = 0
 
         while True:
             logger.info("Trying to receive results from SmallTalk")
@@ -117,8 +118,6 @@ class SmallTalkClient(BaseApiClient):
                     "Could not process SmallTalk results for "
                     f"{user_data.first_name} {user_data.last_name}"
                 ) from err
-
-            attempts = 0
 
             if result.status == SmalltalkTestStatus.NOT_STARTED_OR_IN_PROGRESS:
                 await logs(
@@ -156,6 +155,7 @@ class SmallTalkClient(BaseApiClient):
                         f"{user_data.comment}\n- SmallTalk assessment results were not ready\n"
                         f"Interview ID {user_data.student_smalltalk_test_id}"
                     )
+                    return None
 
                 logger.info("SmallTalk results not ready. Waiting...")
                 attempts += 1

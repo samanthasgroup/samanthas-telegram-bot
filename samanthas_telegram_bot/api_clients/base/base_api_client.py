@@ -182,7 +182,8 @@ class BaseApiClient:
                 return response
 
             attempts += 1
-            timeout *= 2
+            if attempts > MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
+                raise BaseApiClientError(f"Failed to reach {url} after {attempts} attempts.")
 
             await cls._log_retry(
                 update=update,
@@ -193,7 +194,9 @@ class BaseApiClient:
                 attempts=attempts,
                 timeout=timeout,
             )
+
             await asyncio.sleep(timeout)
+            timeout *= 2
 
     @staticmethod
     async def _make_one_request(
