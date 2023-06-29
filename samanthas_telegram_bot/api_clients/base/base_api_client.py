@@ -187,7 +187,7 @@ class BaseApiClient:
                 return response
 
             attempts += 1
-            if attempts > MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
+            if attempts == MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
                 raise BaseApiClientError(f"Failed to reach {url} after {attempts} attempts.")
 
             await cls._log_retry(
@@ -254,12 +254,6 @@ class BaseApiClient:
                 needs_to_notify_admin_group=True,
             )
             return
-
-        if attempts == MAX_ATTEMPTS_TO_GET_DATA_FROM_API:
-            raise BaseApiClientError(
-                f"Tried to reach {url=} with {method=}. Failed "
-                f"{MAX_ATTEMPTS_TO_GET_DATA_FROM_API} times, will stop trying now."
-            )
 
         await logs(
             bot=context.bot,
