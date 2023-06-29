@@ -73,17 +73,7 @@ class SmallTalkClient(BaseApiClient):
                 "Failed to get data with test link from SmallTalk"
             ) from err
 
-        try:
-            url = data.get("test_link")
-        except AttributeError as err:
-            raise SmallTalkRequestError(
-                f"SmallTalk returned invalid JSON when requested to send test link: {data}"
-            ) from err
-
-        if url is None:
-            raise SmallTalkRequestError(
-                f"SmallTalk returned JSON but it seems to contain no URL to test: {data}"
-            )
+        url = cls._get_value(data, "test_link")
 
         await logs(bot=context.bot, text=f"Received URL to oral test: {url}")
 
