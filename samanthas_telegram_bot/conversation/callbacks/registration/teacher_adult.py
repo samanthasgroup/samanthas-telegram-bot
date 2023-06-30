@@ -1,6 +1,5 @@
 from telegram import Update
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -66,7 +65,6 @@ async def ask_class_communication_language(update: Update, context: CUSTOM_CONTE
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=(
             "Selected teaching language(s) and level(s): "
             f"{context.user_data.levels_for_teaching_language} "
@@ -192,7 +190,6 @@ async def ask_non_teaching_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=f"IDs of student ages {context.user_data.teacher_student_age_range_ids}",
     )
     if context.chat_data.mode == ConversationMode.REVIEW:
@@ -251,7 +248,6 @@ async def ask_additional_skills_comment(update: Update, context: CUSTOM_CONTEXT_
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=f"Teacher's peer help: {selected_types}",
     )
 

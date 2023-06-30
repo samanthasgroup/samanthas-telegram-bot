@@ -12,9 +12,8 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_queries.api_client import ApiClient
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
-from samanthas_telegram_bot.api_queries.smalltalk import get_smalltalk_result
+from samanthas_telegram_bot.api_clients import BackendClient
+from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import SmallTalkClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -31,7 +30,7 @@ from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_qu
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.data_structures.constants import EMAIL_PATTERN, LOCALES, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import Role
+from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -45,7 +44,6 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="Registration process started",
         update=update,
     )
@@ -135,7 +133,7 @@ async def check_chat_id_ask_role_if_id_does_not_exist(
     """
     query, data = await answer_callback_query_and_get_data(update)
 
-    if await ApiClient.chat_id_is_registered(chat_id=update.effective_chat.id):
+    if await BackendClient.chat_id_is_registered(update, context):
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
@@ -180,7 +178,6 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
 
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text="User didn't accept the disclaimer. Cancelling registration.",
         update=update,
     )
@@ -283,7 +280,6 @@ async def store_username_if_available_ask_phone_or_email(
         context.user_data.tg_username = username
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             text=f"{username=} will be stored in the database.",
             update=update,
         )
@@ -360,7 +356,6 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
     await update.message.reply_text(context.bot_data.phrases["ask_email"][locale])
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         update=update,
         text=f"Phone number: {context.user_data.phone_number}",
     )
@@ -390,10 +385,8 @@ async def store_email_check_existence_ask_age(
     user_data.email = email
 
     # terminate conversation if the person with these personal data already exists
-    if await ApiClient.person_with_first_name_last_name_email_exists_in_database(
-        first_name=user_data.first_name,
-        last_name=user_data.last_name,
-        email=user_data.email,
+    if await BackendClient.person_with_first_name_last_name_email_exists_in_database(
+        update, context
     ):
         await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
         return ConversationHandler.END
@@ -463,7 +456,6 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
     )
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         update=update,
         text=f"Slots: {', '.join(str(slot) for slot in slots_for_logging)}",
     )
@@ -478,7 +470,6 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
         )
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
             text="User has selected no slots at all",
         )
@@ -556,19 +547,17 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     else:
         phrase_id = "bye_wait_for_message_from_bot"
 
-    if user_data.role == Role.STUDENT:
-        if user_data.student_needs_oral_interview:
-            await _set_student_language_and_level_for_english_starters(update, context)
-        elif user_data.student_agreed_to_smalltalk:
-            await _process_student_language_and_level_from_smalltalk(update, context)
-        result = await ApiClient.create_student(update, context)
-    elif user_data.role == Role.TEACHER:
-        if user_data.teacher_is_under_18:
-            result = await ApiClient.create_teacher_under_18(update, context)
-        else:
-            result = await ApiClient.create_teacher(update, context)
-    else:
-        result = False
+    match user_data.role:
+        case Role.STUDENT:
+            if user_data.student_needs_oral_interview:
+                await _set_student_language_and_level_for_english_starters(update, context)
+            elif user_data.student_agreed_to_smalltalk:
+                await _process_student_language_and_level_from_smalltalk(update, context)
+            result = await BackendClient.create_student(update, context)
+        case Role.TEACHER:
+            result = await BackendClient.create_adult_or_young_teacher(update, context)
+        case _:
+            raise NotImplementedError(f"Logic for {user_data.role=} not implemented.")
 
     if result is True:
         await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
@@ -589,7 +578,6 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await logs(
         bot=context.bot,
-        level=LoggingLevel.INFO,
         update=update,
         text="User aborted registration process.",
     )
@@ -624,23 +612,21 @@ async def _process_student_language_and_level_from_smalltalk(
     Language level is stored right after user chooses it during the conversation.
     """
     user_data = context.user_data
-    user_data.student_smalltalk_result = await get_smalltalk_result(update, context)
+    user_data.student_smalltalk_result = await SmallTalkClient.get_result(update, context)
 
     if user_data.student_smalltalk_result and user_data.student_smalltalk_result.level:
         level = user_data.student_smalltalk_result.level
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
-            text=f"Setting {level=} based on SmallTalk test.",
+            text=f"Setting {level=} based on SmallTalk test",
         )
     else:
         level = user_data.student_assessment_resulting_level
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
-            text=f"No SmallTalk result loaded or level is None. Using {level=} from written test.",
+            text=f"No SmallTalk result loaded or level is empty. Using {level=} from written test",
         )
 
     user_data.language_and_level_ids = [
@@ -658,7 +644,6 @@ async def _set_student_language_and_level_for_english_starters(
         ]
         await logs(
             bot=context.bot,
-            level=LoggingLevel.INFO,
             update=update,
             text=(
                 f"Setting level formally to A0 ({user_data.language_and_level_ids}) "

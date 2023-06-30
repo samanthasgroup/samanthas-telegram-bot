@@ -1,7 +1,6 @@
 from telegram import Update
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -70,7 +69,6 @@ async def store_speaking_club_language_ask_additional_skills_comment(
     await logs(
         update=update,
         bot=context.bot,
-        level=LoggingLevel.INFO,
         text=f"Young teacher wants to host speaking clubs in {lang_id}",
     )
 

@@ -9,19 +9,20 @@ class AgeRangeType(str, Enum):
     TEACHER = "teacher"
 
 
+class LoggingLevel(str, Enum):
+    DEBUG = "debug"
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    CRITICAL = "critical"
+    EXCEPTION = "exception"
+
+
 class Role(str, Enum):
     """Role of a person. Members of this enum can be treated as strings."""
 
     STUDENT = "student"
     TEACHER = "teacher"
-
-
-class SmalltalkTestStatus(str, Enum):
-    """Enumeration of possible statuses of a SmallTalk oral test, returned by its API."""
-
-    NOT_STARTED_OR_IN_PROGRESS = "sent"  # meaning "link to interview was sent to user"
-    RESULTS_NOT_READY = "processing"
-    RESULTS_READY = "completed"
 
 
 class TeachingMode(str, Enum):

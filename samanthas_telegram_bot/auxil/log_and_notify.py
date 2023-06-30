@@ -1,12 +1,12 @@
 import logging
-import os
 
 from dotenv import load_dotenv
 from telegram import Bot, Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.api_queries.auxil.enums import LoggingLevel
+from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID
 from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
+from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
 load_dotenv()
 
@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 async def logs(
     bot: Bot,
-    level: LoggingLevel,
     text: str,
+    level: LoggingLevel = LoggingLevel.INFO,
     stacklevel: int = CALLER_LOGGING_STACK_LEVEL,
     needs_to_notify_admin_group: bool = False,
     parse_mode_for_admin_group_message: ParseMode | None = None,
@@ -41,7 +41,7 @@ async def logs(
 
     if needs_to_notify_admin_group:
         await bot.send_message(
-            chat_id=os.environ.get("ADMIN_CHAT_ID"),
+            chat_id=ADMIN_CHAT_ID,
             text=full_text,
             parse_mode=parse_mode_for_admin_group_message,
         )
