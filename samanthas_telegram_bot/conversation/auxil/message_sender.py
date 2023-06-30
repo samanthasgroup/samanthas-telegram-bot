@@ -123,8 +123,8 @@ class MessageSender:
                             text=context.bot_data.phrases[f"username_reply_{option}"][locale],
                             callback_data=f"store_username_{option}",
                         )
-                        for option in (CommonCallbackData.YES, CommonCallbackData.NO)
-                    ],
+                    ]  # each button in its own row
+                    for option in (CommonCallbackData.YES, CommonCallbackData.NO)
                 ]
             ),
         )
