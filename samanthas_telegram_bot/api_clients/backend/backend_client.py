@@ -53,8 +53,7 @@ class BackendClient(BaseApiClient):
                 params={"registration_telegram_bot_chat_id": chat_id},
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(f"{chat_id=} already exists"),
-                    # TODO change if we change the status code in backend to NOT_FOUND
-                    httpx.codes.BAD_REQUEST: NotificationParams(f"{chat_id=} does not exist"),
+                    httpx.codes.NOT_ACCEPTABLE: NotificationParams(f"{chat_id=} does not exist"),
                 },
             )
         except BaseApiClientError as err:
