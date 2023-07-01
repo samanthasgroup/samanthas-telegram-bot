@@ -227,7 +227,6 @@ class BackendClient(BaseApiClient):
                 notification_params_for_status_code={
                     httpx.codes.CREATED: NotificationParams(
                         message=f"Created {common_message_part}",
-                        notify_admins=True,
                     ),
                 },
             )
