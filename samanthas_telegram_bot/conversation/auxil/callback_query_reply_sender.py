@@ -1,5 +1,4 @@
 from datetime import timedelta
-from typing import Union
 
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
@@ -736,7 +735,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
         question_phrase_internal_id: str,
-        parse_mode: Union[ParseMode, None] = None,
+        parse_mode: ParseMode | None = None,
     ) -> None:
         """Asks "yes" or "no" (localized)."""
 

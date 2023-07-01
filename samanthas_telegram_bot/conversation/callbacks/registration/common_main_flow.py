@@ -26,9 +26,17 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as AdultTeacherState,
 )
-from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_query_and_get_data
+from samanthas_telegram_bot.conversation.auxil.helpers import (
+    answer_callback_query_and_get_data,
+    notify_speaking_club_coordinator_about_high_level_student,
+)
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.data_structures.constants import EMAIL_PATTERN, LOCALES, Locale
+from samanthas_telegram_bot.data_structures.constants import (
+    EMAIL_PATTERN,
+    LEVELS_TOO_HIGH,
+    LOCALES,
+    Locale,
+)
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
 
@@ -533,32 +541,50 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     For others, stores the general comment. Ends the conversation."""
     user_data = context.user_data
     locale: Locale = user_data.locale
+    role = user_data.role
 
     user_data.comment = update.message.text
 
     await update.effective_chat.send_message(context.bot_data.phrases["processing_wait"][locale])
 
-    # number of groups is None for young teachers and 0 for adults that only want speaking club
-    if user_data.role == Role.TEACHER and not user_data.teacher_number_of_groups:
-        phrase_id = "bye_wait_for_message_from_coordinator"
-    elif user_data.role == Role.STUDENT and user_data.student_needs_oral_interview is True:
-        phrase_id = "bye_go_to_chat_with_coordinator"
-    else:
-        phrase_id = "bye_wait_for_message_from_bot"
-
-    match user_data.role:
+    match role:
         case Role.STUDENT:
             if user_data.student_needs_oral_interview:
                 await _set_student_language_and_level_for_english_starters(update, context)
             elif user_data.student_agreed_to_smalltalk:
                 await _process_student_language_and_level_from_smalltalk(update, context)
-            result = await BackendClient.create_student(update, context)
-        case Role.TEACHER:
-            result = await BackendClient.create_adult_or_young_teacher(update, context)
-        case _:
-            raise NotImplementedError(f"Logic for {user_data.role=} not implemented.")
 
-    if result is True:
+                # We just got the level from SmallTalk so if the student is too advanced
+                # we have to ask them here if they want to join Speaking Club instead of group
+                if (
+                    user_data.student_smalltalk_result.level
+                    and user_data.student_smalltalk_result.level in LEVELS_TOO_HIGH
+                ):
+                    await MessageSender.ask_student_with_high_level_if_wants_speaking_club(
+                        update, context
+                    )
+                    return StudentState.CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE
+
+            person_was_created = await BackendClient.create_student(update, context)
+        case Role.TEACHER:
+            person_was_created = await BackendClient.create_adult_or_young_teacher(update, context)
+        case _:
+            raise NotImplementedError(f"Logic for { role=} not implemented.")
+
+    # number of groups is None for young teachers and zero for adults that only want speaking club
+    if role == Role.TEACHER and not user_data.teacher_number_of_groups:
+        phrase_id = "bye_wait_for_message_from_coordinator"
+    elif role == Role.STUDENT and user_data.student_needs_oral_interview is True:
+        phrase_id = "bye_go_to_chat_with_coordinator"
+    elif role == Role.STUDENT and user_data.student_assessment_resulting_level in LEVELS_TOO_HIGH:
+        # Students with high results in SmallTalk get their own state (above).
+        # Here we're handling those who got high level in "written" assessment and decided to go on
+        # with registration despite the fact that they will only be able to attend Speaking Club.
+        phrase_id = "student_level_too_high_we_will_email_you"
+    else:
+        phrase_id = "bye_wait_for_message_from_bot"
+
+    if person_was_created is True:
         await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
     else:
         await logs(
@@ -568,6 +594,11 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
             needs_to_notify_admin_group=True,
             update=update,
         )
+
+    if user_data.student_assessment_resulting_level in LEVELS_TOO_HIGH:
+        # Same as above: only students with high level in "written" assessment are handled here.
+        # Students with high level in SmallTalk are handled in a separate callback.
+        await notify_speaking_club_coordinator_about_high_level_student(update, context)
 
     return ConversationHandler.END
 

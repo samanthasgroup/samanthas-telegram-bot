@@ -1,4 +1,5 @@
 from telegram import Update
+from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
@@ -14,6 +15,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
+    notify_speaking_club_coordinator_about_high_level_student,
     prepare_assessment,
     store_selected_language_level,
 )
@@ -383,3 +385,31 @@ async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     await update.callback_query.answer()
     await MessageSender.ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
+
+
+async def create_high_level_student(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Special callback for creating students outside common flow.
+
+    It is currently used to create students that after SmallTalk test turn out to be too advanced
+    for regular classes and are asked if they want to join speaking club.
+    If they agree, they are created in this callback.
+    """
+    user_data = context.user_data
+
+    person_was_created = await BackendClient.create_student(update, context)
+
+    if person_was_created is True:
+        await update.effective_chat.send_message(
+            context.bot_data.phrases["student_level_too_high_we_will_email_you"][user_data.locale]
+        )
+        await notify_speaking_club_coordinator_about_high_level_student(update, context)
+    else:
+        await logs(
+            bot=context.bot,
+            text=f"Failed to create student: {user_data=}",
+            level=LoggingLevel.CRITICAL,
+            needs_to_notify_admin_group=True,
+            update=update,
+        )
+
+    return ConversationHandler.END

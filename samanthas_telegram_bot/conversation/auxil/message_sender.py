@@ -42,16 +42,10 @@ class MessageSender:
             **make_dict_for_message_to_ask_age_student(context)
         )
 
-    @staticmethod
-    async def ask_age_teacher(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    @classmethod
+    async def ask_age_teacher(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         """Asks teacher if they are 18+."""
-        await update.effective_message.reply_text(
-            **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases["ask_if_18"][context.user_data.locale],
-                buttons=make_buttons_yes_no(context),
-                buttons_per_row=2,
-            )
-        )
+        await cls.ask_yes_no(update, context, question_phrase_internal_id="ask_if_18")
 
     @staticmethod
     async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
@@ -127,6 +121,34 @@ class MessageSender:
                     for option in (CommonCallbackData.YES, CommonCallbackData.NO)
                 ]
             ),
+        )
+
+    @classmethod
+    async def ask_student_with_high_level_if_wants_speaking_club(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
+    ) -> None:
+        """Asks student whose level of English is too high if they want to join Speaking Club."""
+        await cls.ask_yes_no(
+            update, context, question_phrase_internal_id="student_level_too_high_ask"
+        )
+
+    @staticmethod
+    async def ask_yes_no(
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+        question_phrase_internal_id: str,
+        parse_mode: ParseMode | None = None,
+    ) -> None:
+        """Asks "yes" or "no" (localized)."""
+        await update.message.reply_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases[question_phrase_internal_id][
+                    context.user_data.locale
+                ],
+                buttons=make_buttons_yes_no(context),
+                buttons_per_row=2,
+                parse_mode=parse_mode,
+            )
         )
 
     @staticmethod
