@@ -291,6 +291,13 @@ def main() -> None:
                 CallbackQueryHandler(student.send_smalltalk_url, pattern=CommonCallbackData.YES),
                 CallbackQueryHandler(student.skip_smalltalk_ask_communication_language),
             ],
+            ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_OR_BYE: [
+                CallbackQueryHandler(
+                    student.skip_smalltalk_ask_communication_language,
+                    pattern=CommonCallbackData.YES,  # Yes, I want to attend Speaking Club
+                ),
+                CallbackQueryHandler(common_main.say_bye),
+            ],
             ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK: [
                 CallbackQueryHandler(student.ask_communication_language_after_smalltalk)
             ],

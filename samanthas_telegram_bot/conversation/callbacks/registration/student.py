@@ -19,7 +19,11 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.callbacks.registration.exceptions import RegistrationError
-from samanthas_telegram_bot.data_structures.constants import ENGLISH, LEVELS_ELIGIBLE_FOR_ORAL_TEST
+from samanthas_telegram_bot.data_structures.constants import (
+    ENGLISH,
+    LEVELS_ELIGIBLE_FOR_ORAL_TEST,
+    LEVELS_TOO_HIGH,
+)
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
@@ -263,10 +267,10 @@ async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TY
     """Processes results of a written assessment, returns appropriate next conversation state."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    context.user_data.student_assessment_resulting_level = (
-        await BackendClient.get_level_after_assessment(update, context)
-    )
-    if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
+    level = await BackendClient.get_level_after_assessment(update, context)
+    context.user_data.student_assessment_resulting_level = level
+
+    if level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
         await CQReplySender.ask_yes_no(
             context,
             query,
@@ -274,6 +278,14 @@ async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TY
             parse_mode=None,
         )
         return ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
+    elif level in LEVELS_TOO_HIGH:
+        await CQReplySender.ask_yes_no(
+            context,
+            query,
+            question_phrase_internal_id="student_level_too_high_ask",
+            parse_mode=None,
+        )
+        return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_OR_BYE
     else:
         # TODO add some compliment on completing the test even without oral test?
         context.user_data.language_and_level_ids = [

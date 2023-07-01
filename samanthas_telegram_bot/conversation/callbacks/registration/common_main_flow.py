@@ -572,6 +572,22 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     return ConversationHandler.END
 
 
+async def say_bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Says goodbye to user without storing anything.
+
+    This is for the case when user replies 'No' to something and the conversation
+    should just end.
+    """
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    await logs(bot=context.bot, text="Cancelling registration.", update=update)
+    await query.edit_message_text(
+        context.bot_data.phrases["bye"][context.user_data.locale],
+        reply_markup=InlineKeyboardMarkup([]),
+    )
+    return ConversationHandler.END
+
+
 async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Cancels and ends the conversation."""
 
