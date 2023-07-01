@@ -83,6 +83,7 @@ def make_dict_for_message_with_inline_keyboard(
         "text": message_text,
         "parse_mode": parse_mode,
         "reply_markup": InlineKeyboardMarkup(rows),
+        "disable_web_page_preview": True,
     }
 
 

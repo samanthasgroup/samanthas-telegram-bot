@@ -69,17 +69,16 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # set day of week to Monday to start asking about slots for each day
     context.chat_data.day_index = 0
 
-    greeting = "🚧 ТЕСТОВИЙ РЕЖИМ \| TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
-    greeting += "👋 "
+    greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
     for locale in LOCALES:
         greeting += (
-            rf"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}\!"
-            f" {context.bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
+            rf"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
+            f"{context.bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
         )
 
     await update.message.reply_text(
         greeting,
-        parse_mode=ParseMode.MARKDOWN_V2,
+        parse_mode=None,
         reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(text="українською", callback_data="ua")],
@@ -87,7 +86,6 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
                 [InlineKeyboardButton(text="по-русски", callback_data="ru")],
             ]
         ),
-        disable_web_page_preview=True,
     )
 
     return CommonState.IS_REGISTERED
@@ -104,6 +102,7 @@ async def store_locale_ask_if_already_registered(
         context,
         query,
         question_phrase_internal_id="ask_already_with_us",
+        parse_mode=ParseMode.MARKDOWN_V2,
     )
 
     return CommonState.CHECK_CHAT_ID_ASK_ROLE
