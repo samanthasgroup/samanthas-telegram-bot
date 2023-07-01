@@ -5,6 +5,7 @@ from telegram import Bot, Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID
+from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
@@ -28,14 +29,18 @@ async def logs(
 
     By default, shows calling function's name (due to default stack level).
     """
-    full_text = (
-        text
+    info_about_update = (
+        ""
         if update is None
         else (
             f"Chat {update.effective_chat.id}, user {update.effective_user.full_name} "
-            f"({update.effective_user.username}): {text}"
+            f"({update.effective_user.username}): "
         )
     )
+    if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
+        info_about_update = escape_for_markdown(info_about_update)
+
+    full_text = f"{info_about_update}{text}"
 
     getattr(logger, level)(full_text, stacklevel=stacklevel)
 
