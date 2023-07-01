@@ -572,6 +572,9 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     return ConversationHandler.END
 
 
+# TERMINATORS, COMMANDS, HELPERS
+
+
 async def say_bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Says goodbye to user without storing anything.
 
