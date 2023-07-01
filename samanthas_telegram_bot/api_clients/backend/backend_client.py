@@ -127,7 +127,7 @@ class BackendClient(BaseApiClient):
         level: str = cls._get_value(data, "resulting_level")
         if level not in ALL_LEVELS:
             raise BackendClientError(
-                f"Received {level=} from the backend that does not match any accepted level"
+                f"Received {level=} from backend that does not match any accepted level. {data=}"
             )
 
         await logs(text=f"{level=}", bot=context.bot, update=update, level=LoggingLevel.INFO)
@@ -367,6 +367,6 @@ class BackendClient(BaseApiClient):
     @classmethod
     def _get_value(cls, data: DataDict, key: str) -> typing.Any:
         try:
-            super()._get_value(data, key)
+            return super()._get_value(data, key)
         except BaseApiClientError as err:
             raise BackendClientError("Failed to process data received from backend") from err

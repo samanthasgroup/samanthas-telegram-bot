@@ -267,6 +267,6 @@ class SmallTalkClient(BaseApiClient):
     @classmethod
     def _get_value(cls, data: DataDict, key: str) -> typing.Any:
         try:
-            super()._get_value(data, key)
+            return super()._get_value(data, key)
         except BaseApiClientError as err:
-            raise SmallTalkJSONParsingError("Could not parse data from SmallTalk") from err
+            raise SmallTalkJSONParsingError(f"Could not parse SmallTalk {data=}") from err
