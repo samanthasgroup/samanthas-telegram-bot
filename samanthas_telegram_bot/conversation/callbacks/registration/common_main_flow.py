@@ -541,11 +541,12 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
     For others, stores the general comment. Ends the conversation."""
     user_data = context.user_data
     locale: Locale = user_data.locale
+    phrases = context.bot_data.phrases
     role = user_data.role
 
     user_data.comment = update.message.text
 
-    await update.effective_chat.send_message(context.bot_data.phrases["processing_wait"][locale])
+    await update.effective_chat.send_message(phrases["processing_wait"][locale])
 
     match role:
         case Role.STUDENT:
@@ -573,19 +574,19 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
 
     # number of groups is None for young teachers and zero for adults that only want speaking club
     if role == Role.TEACHER and not user_data.teacher_number_of_groups:
-        phrase_id = "bye_wait_for_message_from_coordinator"
+        text = phrases["bye_wait_for_message_from_coordinator"][locale]
     elif role == Role.STUDENT and user_data.student_needs_oral_interview is True:
-        phrase_id = "bye_go_to_chat_with_coordinator"
+        text = phrases["bye_go_to_chat_with_coordinator"][locale]
     elif role == Role.STUDENT and user_data.student_assessment_resulting_level in LEVELS_TOO_HIGH:
         # Students with high results in SmallTalk get their own state (above).
         # Here we're handling those who got high level in "written" assessment and decided to go on
         # with registration despite the fact that they will only be able to attend Speaking Club.
-        phrase_id = "student_level_too_high_we_will_email_you"
+        text = f"{phrases['student_level_too_high_we_will_email_you'][locale]} {user_data.email}"
     else:
-        phrase_id = "bye_wait_for_message_from_bot"
+        text = phrases["bye_wait_for_message_from_bot"][locale]
 
     if person_was_created is True:
-        await update.effective_chat.send_message(context.bot_data.phrases[phrase_id][locale])
+        await update.effective_chat.send_message(text)
     else:
         await logs(
             bot=context.bot,

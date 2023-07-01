@@ -394,14 +394,17 @@ async def create_high_level_student(update: Update, context: CUSTOM_CONTEXT_TYPE
     for regular classes and are asked if they want to join speaking club.
     If they agree, they are created in this callback.
     """
+    bot_data = context.bot_data
     user_data = context.user_data
 
     person_was_created = await BackendClient.create_student(update, context)
 
     if person_was_created is True:
-        await update.effective_chat.send_message(
-            context.bot_data.phrases["student_level_too_high_we_will_email_you"][user_data.locale]
+        text = (
+            f"{bot_data.phrases['student_level_too_high_we_will_email_you'][user_data.locale]} "
+            f"{user_data.email}"
         )
+        await update.effective_chat.send_message(text)
         await notify_speaking_club_coordinator_about_high_level_student(update, context)
     else:
         await logs(
