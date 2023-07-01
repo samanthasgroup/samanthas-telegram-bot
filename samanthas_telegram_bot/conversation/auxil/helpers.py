@@ -106,8 +106,8 @@ async def notify_speaking_club_coordinator_about_high_level_student(
     await logs(
         bot=context.bot,
         text=(
-            f"@{SPEAKING_CLUB_COORDINATOR_USERNAME}, student {user_data.first_name} "
-            f"{user_data.last_name} ({user_data.email}) has a high level and can only study in"
+            f"Dear @{SPEAKING_CLUB_COORDINATOR_USERNAME}, student {user_data.first_name} "
+            f"{user_data.last_name} ({user_data.email}) has a high level and can only study in "
             "Speaking Club."
         ),
         needs_to_notify_admin_group=True,
