@@ -1,9 +1,9 @@
 from math import ceil
-from typing import Union
 
 from telegram import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 
+from samanthas_telegram_bot.auxil.constants import SPEAKING_CLUB_COORDINATOR_USERNAME
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -52,8 +52,8 @@ def make_dict_for_message_with_inline_keyboard(
     buttons_per_row: int,
     bottom_row_button: InlineKeyboardButton = None,
     top_row_button: InlineKeyboardButton = None,
-    parse_mode: Union[ParseMode, None] = None,
-) -> dict[str, Union[str, str, InlineKeyboardMarkup]]:
+    parse_mode: ParseMode | None = None,
+) -> dict[str, str | InlineKeyboardMarkup]:
     """Makes a message with an inline keyboard, the number of rows in which depends on how many
     buttons are passed. The buttons are evenly distributed over the rows. The last row can
     contain the lone button (that could be e.g. "Next" or "Done").
@@ -94,6 +94,24 @@ def make_dict_for_message_to_ask_age_student(
         message_text=context.bot_data.phrases["ask_age"][context.user_data.locale],
         buttons=make_buttons_with_age_ranges_for_students(context),
         buttons_per_row=3,
+    )
+
+
+async def notify_speaking_club_coordinator_about_high_level_student(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> None:
+    """Lets Speaking Club coordinator know that student is advanced and can only attend SC."""
+    user_data = context.user_data
+
+    await logs(
+        bot=context.bot,
+        text=(
+            f"Dear @{SPEAKING_CLUB_COORDINATOR_USERNAME}, student {user_data.first_name} "
+            f"{user_data.last_name} ({user_data.email}) has a high level and can only study in "
+            "Speaking Club."
+        ),
+        needs_to_notify_admin_group=True,
+        update=update,
     )
 
 

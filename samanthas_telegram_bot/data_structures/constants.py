@@ -28,8 +28,13 @@ EXCEPTION_TRACEBACK_CLEANUP_PATTERN = re.compile(r"File .+/")  # it is intended 
 """Pattern to remove the long 'File:/path/to/file/' portion, but leave the file name."""
 
 LOW_LEVELS = ("A0", "A1")
-LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1", "B2", "C1", "C2")
-ALL_LEVELS = LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST
+# Higher levels can technically pass oral test too, but it was decided not to send students to
+# SmallTalk if their levels are too high for regular classes after "written" assessment.
+LEVELS_ELIGIBLE_FOR_ORAL_TEST = ("A2", "B1")
+LEVELS_TOO_HIGH = ("B2", "C1", "C2")
+"""These levels mean that the student will only be able to attend Speaking Club sessions,
+not regular classes."""
+ALL_LEVELS = LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST + LEVELS_TOO_HIGH
 # in reality, not all of these levels will be taught at the school but it's OK for the pattern
 ALL_LEVELS_PATTERN = re.compile(r"^(A[012])|([BC][12])$")
 

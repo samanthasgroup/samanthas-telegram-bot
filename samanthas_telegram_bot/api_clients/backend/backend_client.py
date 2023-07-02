@@ -227,7 +227,6 @@ class BackendClient(BaseApiClient):
                 notification_params_for_status_code={
                     httpx.codes.CREATED: NotificationParams(
                         message=f"Created {common_message_part}",
-                        notify_admins=True,
                     ),
                 },
             )
@@ -309,7 +308,7 @@ class BackendClient(BaseApiClient):
                 if user_data.teacher_is_under_18
                 else API_URL_TEACHER_RETRIEVE
             )
-        elif user_data == Role.STUDENT:
+        elif user_data.role == Role.STUDENT:
             url_prefix = API_URL_STUDENT_RETRIEVE
         else:
             raise NotImplementedError(f"{user_data.role=} not supported")

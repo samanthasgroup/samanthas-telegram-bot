@@ -1,4 +1,5 @@
 from telegram import Update
+from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.smalltalk.exceptions import SmallTalkClientError
@@ -14,12 +15,17 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
+    notify_speaking_club_coordinator_about_high_level_student,
     prepare_assessment,
     store_selected_language_level,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.conversation.callbacks.registration.exceptions import RegistrationError
-from samanthas_telegram_bot.data_structures.constants import ENGLISH, LEVELS_ELIGIBLE_FOR_ORAL_TEST
+from samanthas_telegram_bot.data_structures.constants import (
+    ENGLISH,
+    LEVELS_ELIGIBLE_FOR_ORAL_TEST,
+    LEVELS_TOO_HIGH,
+)
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 from samanthas_telegram_bot.data_structures.models import AssessmentAnswer
@@ -263,10 +269,10 @@ async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TY
     """Processes results of a written assessment, returns appropriate next conversation state."""
     query, _ = await answer_callback_query_and_get_data(update)
 
-    context.user_data.student_assessment_resulting_level = (
-        await BackendClient.get_level_after_assessment(update, context)
-    )
-    if context.user_data.student_assessment_resulting_level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
+    level = await BackendClient.get_level_after_assessment(update, context)
+    context.user_data.student_assessment_resulting_level = level
+
+    if level in LEVELS_ELIGIBLE_FOR_ORAL_TEST:
         await CQReplySender.ask_yes_no(
             context,
             query,
@@ -274,6 +280,14 @@ async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TY
             parse_mode=None,
         )
         return ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
+    elif level in LEVELS_TOO_HIGH:
+        await CQReplySender.ask_yes_no(
+            context,
+            query,
+            question_phrase_internal_id="student_level_too_high_ask",
+            parse_mode=None,
+        )
+        return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_OR_BYE
     else:
         # TODO add some compliment on completing the test even without oral test?
         context.user_data.language_and_level_ids = [
@@ -371,3 +385,35 @@ async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     await update.callback_query.answer()
     await MessageSender.ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
+
+
+async def create_high_level_student(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Special callback for creating students outside common flow.
+
+    It is currently used to create students that after SmallTalk test turn out to be too advanced
+    for regular classes and are asked if they want to join speaking club.
+    If they agree, they are created in this callback.
+    """
+    bot_data = context.bot_data
+    user_data = context.user_data
+
+    person_was_created = await BackendClient.create_student(update, context)
+
+    if person_was_created is True:
+        text = (
+            f"{bot_data.phrases['student_level_too_high_we_will_email_you'][user_data.locale]} "
+            f"{user_data.email}"
+        )
+        await update.effective_message.delete()
+        await update.effective_chat.send_message(text)
+        await notify_speaking_club_coordinator_about_high_level_student(update, context)
+    else:
+        await logs(
+            bot=context.bot,
+            text=f"Failed to create student: {user_data=}",
+            level=LoggingLevel.CRITICAL,
+            needs_to_notify_admin_group=True,
+            update=update,
+        )
+
+    return ConversationHandler.END

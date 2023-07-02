@@ -63,8 +63,13 @@ class ConversationStateStudent(IntEnum):
     ADOLESCENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
     ASK_QUESTION_IN_TEST_OR_GET_RESULTING_LEVEL = state_auto()
     ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK = state_auto()
+    ASK_COMMUNICATION_LANGUAGE_OR_BYE = state_auto()
     ASK_LEVEL_OR_COMMUNICATION_LANGUAGE_OR_START_TEST = state_auto()
     ASK_NON_TEACHING_HELP_OR_START_REVIEW = state_auto()
+    CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE = state_auto()
+    """People are created in common flow, but this state is student-specific.
+    It is for students who by the end of conversation, when SmallTalk results are retrieved,
+    turn out to be too advanced for regular groups."""
     ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ = (
         state_auto()
     )
