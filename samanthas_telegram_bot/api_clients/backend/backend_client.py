@@ -17,6 +17,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_TEACHERS_LIST_CREATE,
     API_URL_YOUNG_TEACHER_RETRIEVE,
     API_URL_YOUNG_TEACHERS_LIST_CREATE,
+    PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND,
     DataDict,
 )
 from samanthas_telegram_bot.api_clients.auxil.models import NotificationParams
@@ -164,6 +165,11 @@ class BackendClient(BaseApiClient):
                 },
             )
         except BaseApiClientError as err:
+            if PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND in str(err):
+                raise BackendClientError(
+                    f"{PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND} "
+                    f"({email} is invalid)"
+                ) from err
             raise BackendClientError(f"Failed to check existence of {data_to_check=}") from err
 
         return status_code == httpx.codes.CONFLICT
