@@ -29,18 +29,17 @@ async def logs(
 
     By default, shows calling function's name (due to default stack level).
     """
-    info_about_update = (
-        ""
-        if update is None
-        else (
-            f"Chat {update.effective_chat.id}, user {update.effective_user.full_name} "
-            f"({update.effective_user.username}): "
-        )
-    )
-    if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
-        info_about_update = escape_for_markdown(info_about_update)
+    extra_info = ""
 
-    full_text = f"{info_about_update}{text}"
+    if update is not None:
+        user = update.effective_user
+        username_note = f" (@{user.username})" if user.username else ""
+        extra_info = f"Chat {update.effective_chat.id}, user {user.full_name}{username_note}: "
+
+    if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
+        extra_info = escape_for_markdown(extra_info)
+
+    full_text = f"{extra_info}{text}"
 
     getattr(logger, level)(full_text, stacklevel=stacklevel)
 
