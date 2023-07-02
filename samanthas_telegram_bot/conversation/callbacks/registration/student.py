@@ -404,6 +404,7 @@ async def create_high_level_student(update: Update, context: CUSTOM_CONTEXT_TYPE
             f"{bot_data.phrases['student_level_too_high_we_will_email_you'][user_data.locale]} "
             f"{user_data.email}"
         )
+        await update.effective_message.delete()
         await update.effective_chat.send_message(text)
         await notify_speaking_club_coordinator_about_high_level_student(update, context)
     else:
