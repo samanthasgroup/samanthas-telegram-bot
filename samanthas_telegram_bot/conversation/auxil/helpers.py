@@ -7,7 +7,7 @@ from samanthas_telegram_bot.auxil.constants import SPEAKING_CLUB_COORDINATOR_USE
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import AgeRangeType
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, LoggingLevel
 
 
 async def answer_callback_query_and_get_data(update: Update) -> tuple[CallbackQuery, str]:
@@ -125,28 +125,42 @@ async def prepare_assessment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> N
     of registration of another student from same Telegram account.
     """
     # prepare questions and set index to 0
-    age_range_id = context.user_data.student_age_range_id
-    await logs(
-        update=update,
-        bot=context.bot,
-        text=(
-            f"Using assessment for {age_range_id=} ({context.user_data.student_age_from}-"
-            f"{context.user_data.student_age_to} years old)"
-        ),
-    )
-    context.chat_data.assessment = context.bot_data.assessment_for_age_range_id[age_range_id]
-    context.user_data.student_assessment_answers = []
-    context.user_data.student_assessment_resulting_level = None
-    context.user_data.student_agreed_to_smalltalk = False
-    context.chat_data.current_assessment_question_index = 0
-    context.chat_data.current_assessment_question_id = context.chat_data.assessment.questions[0].id
-    context.chat_data.ids_of_dont_know_options_in_assessment = {
-        option.id
-        for question in context.chat_data.assessment.questions
-        for option in question.options
-        if option.means_user_does_not_know_the_answer()
-    }
-    context.chat_data.assessment_dont_knows_in_a_row = 0
+    user_data = context.user_data
+
+    age_range_id = user_data.student_age_range_id
+    age_range_for_log = f"{user_data.student_age_from}-{user_data.student_age_to} years old"
+
+    try:
+        context.chat_data.assessment = context.bot_data.assessment_for_age_range_id[age_range_id]
+    except KeyError:
+        await logs(
+            bot=context.bot,
+            text=(
+                f"No assessment found for {age_range_for_log}. "
+                f"This may be OK if the user really is too young for it."
+            ),
+            level=LoggingLevel.WARNING,
+        )
+    else:
+        await logs(
+            update=update,
+            bot=context.bot,
+            text=f"Using assessment for {age_range_id=} ({age_range_for_log})",
+        )
+        user_data.student_assessment_answers = []
+        user_data.student_assessment_resulting_level = None
+        user_data.student_agreed_to_smalltalk = False
+        context.chat_data.current_assessment_question_index = 0
+        context.chat_data.current_assessment_question_id = context.chat_data.assessment.questions[
+            0
+        ].id
+        context.chat_data.ids_of_dont_know_options_in_assessment = {
+            option.id
+            for question in context.chat_data.assessment.questions
+            for option in question.options
+            if option.means_user_does_not_know_the_answer()
+        }
+        context.chat_data.assessment_dont_knows_in_a_row = 0
 
 
 def store_selected_language_level(context: CUSTOM_CONTEXT_TYPES, level: str) -> None:
