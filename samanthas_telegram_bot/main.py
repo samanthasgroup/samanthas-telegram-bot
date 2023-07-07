@@ -453,7 +453,7 @@ def main() -> None:
         port=5000,
         url_path="registration-bot",
         secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
-        webhook_url="https://admin.samanthasgroup.com/webhooks/registration-bot",
+        webhook_url="http://admin.samanthasgroup.com/webhooks/registration-bot",
         cert=Path(str(os.environ.get("TELEGRAM_WEBHOOK_CERT_PATH"))),
     )
 
