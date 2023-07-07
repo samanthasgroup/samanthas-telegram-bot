@@ -447,8 +447,13 @@ def main() -> None:
 
     application.add_error_handler(error_handler)
 
-    # Run the bot until the user presses Ctrl-C
-    application.run_polling()
+    application.run_webhook(
+        listen="127.0.0.1",
+        port=5000,
+        secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
+        webhook_url="https://admin.samanthasgroup.com/webhooks/registration_bot",
+        cert=os.environ.get("TELEGRAM_WEBHOOK_CERT_PATH"),
+    )
 
 
 if __name__ == "__main__":
