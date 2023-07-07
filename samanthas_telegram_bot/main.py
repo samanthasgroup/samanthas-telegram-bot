@@ -2,7 +2,6 @@ import logging
 import os
 import traceback
 import typing
-from pathlib import Path
 
 from dotenv import load_dotenv
 from telegram import BotCommandScopeAllPrivateChats, Update
@@ -454,7 +453,7 @@ def main() -> None:
         url_path="registration-bot",
         secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
         webhook_url="https://admin.samanthasgroup.com/webhooks/registration-bot",
-        cert=Path(str(os.environ.get("TELEGRAM_WEBHOOK_CERT_PATH"))),
+        cert=os.environ.get("TELEGRAM_WEBHOOK_CERT_PATH"),
     )
 
 
