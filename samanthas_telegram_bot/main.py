@@ -33,9 +33,11 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.data_structures.constants import (
     ALL_LEVELS_PATTERN,
+    BOT_URL_PATH_FOR_WEBHOOK,
     ENGLISH,
     EXCEPTION_TRACEBACK_CLEANUP_PATTERN,
     LEARNED_FOR_YEAR_OR_MORE,
+    WEBHOOK_URL_PREFIX,
 )
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
@@ -43,7 +45,7 @@ from samanthas_telegram_bot.data_structures.context_types import (
     ChatData,
     UserData,
 )
-from samanthas_telegram_bot.data_structures.enums import LoggingLevel
+from samanthas_telegram_bot.data_structures.enums import BotRunMode, LoggingLevel
 
 load_dotenv()
 
@@ -447,13 +449,23 @@ def main() -> None:
 
     application.add_error_handler(error_handler)
 
-    application.run_webhook(
-        listen="127.0.0.1",
-        port=5000,
-        url_path="registration-bot",
-        secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
-        webhook_url="https://admin.samanthasgroup.com/webhooks/registration-bot",
-    )
+    run_mode = os.environ.get("BOT_RUN_MODE")
+
+    match run_mode:
+        case BotRunMode.LONG_POLLING:
+            application.run_polling()
+        case BotRunMode.WEBHOOK:
+            application.run_webhook(
+                listen="127.0.0.1",
+                port=5000,
+                url_path=BOT_URL_PATH_FOR_WEBHOOK,
+                secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
+                webhook_url=f"{WEBHOOK_URL_PREFIX}{BOT_URL_PATH_FOR_WEBHOOK}",
+            )
+        case _:
+            raise NotImplementedError(
+                f"{run_mode=} set in environment variable 'BOT_RUN_MODE' is not supported"
+            )
 
 
 if __name__ == "__main__":
