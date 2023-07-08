@@ -7,6 +7,8 @@ from typing import Literal
 #  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
+BOT_URL_PATH_FOR_WEBHOOK = "registration-bot"
+
 CALLER_LOGGING_STACK_LEVEL = 2
 """Stack level that will make the logger inside an auxiliary function display the name 
 of function/method that called this helper function."""
@@ -69,5 +71,7 @@ TEACHER_PEER_HELP_TYPES = (
     "can_work_in_tandem",
 )
 """These types are used in `UserData`, callback data, setting boolean flags for teacher."""
+
+WEBHOOK_URL_PREFIX = "https://admin.samanthasgroup.com/webhooks/"
 
 WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")

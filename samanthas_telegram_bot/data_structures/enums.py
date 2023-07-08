@@ -2,11 +2,18 @@ from enum import Enum
 
 
 class AgeRangeType(str, Enum):
-    """Enumeration types of age ranges. Members of this enum can be treated as strings."""
+    """Enumeration of types of age ranges. Members of this enum can be treated as strings."""
 
     MATCHING = "matching"
     STUDENT = "student"
     TEACHER = "teacher"
+
+
+class BotRunMode(str, Enum):
+    """Enumeration of possible modes of running the bot."""
+
+    LONG_POLLING = "long_polling"
+    WEBHOOK = "webhook"
 
 
 class LoggingLevel(str, Enum):
