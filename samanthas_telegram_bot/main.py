@@ -217,7 +217,9 @@ async def main() -> None:
                 context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
             )
         )
-        .post_init(post_init)
+        # TODO remove comment
+        # this doesn't get called in configuration with uvicorn and Starlette for some reason
+        # .post_init(post_init)
         .build()
     )
 
