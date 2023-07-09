@@ -13,7 +13,14 @@ from starlette.responses import PlainTextResponse, Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes, TypeHandler
+from telegram.ext import (
+    Application,
+    CallbackContext,
+    CommandHandler,
+    ContextTypes,
+    ExtBot,
+    TypeHandler,
+)
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, BOT_OWNER_USERNAME, LOGGING_LEVEL
@@ -27,7 +34,12 @@ from samanthas_telegram_bot.data_structures.constants import (
     EXCEPTION_TRACEBACK_CLEANUP_PATTERN,
     WEBHOOK_URL_PREFIX,
 )
-from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.context_types import (
+    CUSTOM_CONTEXT_TYPES,
+    BotData,
+    ChatData,
+    UserData,
+)
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
 load_dotenv()
@@ -127,7 +139,7 @@ class WebhookUpdate:
     data: str
 
 
-class CustomContext(CUSTOM_CONTEXT_TYPES):  # type:ignore[misc]
+class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # type:ignore[misc]
     """
     Custom CallbackContext class that makes `user_data` available for updates of type
     `WebhookUpdate`.
@@ -189,8 +201,6 @@ async def main() -> None:
             host="127.0.0.1",
         )
     )
-
-    ContextTypes(context=CustomContext)
 
     # Create the Application and pass it the bot's token.
     application = (
