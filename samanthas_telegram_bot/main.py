@@ -217,9 +217,8 @@ async def main() -> None:
                 context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
             )
         )
-        # TODO remove comment
         # this doesn't get called in configuration with uvicorn and Starlette for some reason
-        # .post_init(post_init)
+        .post_init(post_init)
         .build()
     )
 
@@ -240,7 +239,7 @@ async def main() -> None:
 
     # Run application and webserver together
     async with application:
-        await application.post_init(application)
+        # await application.post_init(application)
         await application.start()
         await webserver.serve()
         await application.stop()
