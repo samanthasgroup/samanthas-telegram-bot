@@ -205,7 +205,7 @@ async def main() -> None:
         )
     )
 
-    # Create the Application and pass it the bot's token.
+    # Create the Application and pass it the token.
     application = (
         Application.builder()
         .token(os.environ.get("BOT_TOKEN"))
@@ -217,7 +217,11 @@ async def main() -> None:
                 context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
             )
         )
-        # this doesn't get called in configuration with uvicorn and Starlette for some reason
+        # This doesn't get called in configuration with uvicorn and Starlette for some reason,
+        # so we call it later in the `async with application:` context manager.
+        # However, if we remove this statement here altogether, the explicit call to `post_init`
+        # in the context manager below will result in a TypeError ('NoneType' object is not
+        # callable)
         .post_init(post_init)
         .build()
     )
@@ -239,7 +243,9 @@ async def main() -> None:
 
     # Run application and webserver together
     async with application:
-        # await application.post_init(application)
+        # contrary to the example in PTB docs, we have to call `post_init` here explicitly,
+        # otherwise it won't be executed
+        await application.post_init(application)
         await application.start()
         await webserver.serve()
         await application.stop()
