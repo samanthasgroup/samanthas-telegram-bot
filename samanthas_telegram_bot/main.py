@@ -238,6 +238,7 @@ async def main() -> None:
 
     # Run application and webserver together
     async with application:
+        await application.post_init()
         await application.start()
         await webserver.serve()
         await application.stop()
