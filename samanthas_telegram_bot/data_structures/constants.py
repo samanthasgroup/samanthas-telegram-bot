@@ -7,7 +7,8 @@ from typing import Literal
 #  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
 
-BOT_URL_PATH_FOR_WEBHOOK = "registration-bot"
+BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK = "chatwoot-to-bot"
+BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK = "registration-bot"
 
 CALLER_LOGGING_STACK_LEVEL = 2
 """Stack level that will make the logger inside an auxiliary function display the name 
