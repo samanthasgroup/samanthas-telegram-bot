@@ -175,10 +175,11 @@ async def main() -> None:
         return PlainTextResponse("Thank you for the submission! It's being forwarded.")
 
     starlette_app = Starlette(
+        debug=True,  # TODO remove
         routes=[
             Route(f"/{BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK}", telegram, methods=["POST"]),
             Route(f"/{BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK}", custom_updates, methods=["POST"]),
-        ]
+        ],
     )
     webserver = uvicorn.Server(
         config=uvicorn.Config(
