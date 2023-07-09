@@ -211,7 +211,7 @@ async def main() -> None:
         .token(os.environ.get("BOT_TOKEN"))
         # Here we set updater to None because we want our custom webhook server to handle
         # the updates and hence we don't need an Updater instance
-        .updater(None)
+        # .updater(None)
         .context_types(
             ContextTypes(
                 context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
