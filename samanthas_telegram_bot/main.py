@@ -211,8 +211,7 @@ async def main() -> None:
 
     # Pass webhook settings to telegram
     await application.bot.set_webhook(
-        # removed 'listen' argument because our webserver is doing the listening
-        port=5000,
+        # removed `listen` and `port` arguments because our webserver does the listening
         url_path=BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK,
         secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
         webhook_url=f"{WEBHOOK_URL_PREFIX}{BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK}",
