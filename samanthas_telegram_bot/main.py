@@ -153,10 +153,12 @@ async def webhook_update(update: WebhookUpdate, context: CUSTOM_CONTEXT_TYPES) -
 
 async def main() -> None:
     """Run the bot."""
+    logger = logging.getLogger(__name__)  # TODO remove
 
     # Set up webserver
     async def telegram(request: Request) -> Response:
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
+        logger.info(request)
         await application.update_queue.put(
             Update.de_json(data=await request.json(), bot=application.bot)
         )
