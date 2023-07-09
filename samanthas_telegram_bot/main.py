@@ -53,6 +53,9 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 async def post_init(application: Application) -> None:
+    logger = logging.getLogger(__name__)  # TODO remove
+    logger.error(f"In post_init {application=}, bot={application.bot}")
+
     await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
     await application.bot.set_my_commands(
         [
@@ -149,8 +152,8 @@ class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # ty
     def from_update(
         cls,
         update: object,
-        application: "Application",
-    ) -> "CustomContext":
+        application: Application,
+    ) -> CallbackContext:
         if isinstance(update, WebhookUpdate):
             return cls(update.data)
         return super().from_update(update, application)
