@@ -53,9 +53,6 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 async def post_init(application: Application) -> None:
-    logger = logging.getLogger(__name__)  # TODO remove
-    logger.error(f"In post_init {application=}, bot={application.bot}")
-
     await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
     await application.bot.set_my_commands(
         [
@@ -173,7 +170,7 @@ async def main() -> None:
     # Set up webserver
     async def telegram(request: Request) -> Response:
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        logger.info(request)
+        logger.info(request.json())
         await application.update_queue.put(
             Update.de_json(data=await request.json(), bot=application.bot)
         )
