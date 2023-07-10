@@ -182,7 +182,7 @@ async def main() -> None:
         """
         # TODO come check of data passed by Chatwoot
 
-        logger.info(request.json())
+        logger.info(await request.json())
         await application.update_queue.put(WebhookUpdate(data=await request.json()))
         return PlainTextResponse("Thank you for the submission! It's being forwarded.")
 
