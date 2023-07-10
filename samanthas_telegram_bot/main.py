@@ -170,7 +170,6 @@ async def main() -> None:
     # Set up webserver
     async def telegram(request: Request) -> Response:
         """Handle incoming Telegram updates by putting them into the `update_queue`"""
-        logger.info(request.json())
         await application.update_queue.put(
             Update.de_json(data=await request.json(), bot=application.bot)
         )
@@ -183,6 +182,7 @@ async def main() -> None:
         """
         # TODO come check of data passed by Chatwoot
 
+        logger.info(request.json())
         await application.update_queue.put(WebhookUpdate(data=await request.json()))
         return PlainTextResponse("Thank you for the submission! It's being forwarded.")
 
