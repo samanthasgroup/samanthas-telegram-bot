@@ -228,11 +228,10 @@ async def main() -> None:
     # register handlers
     application.add_handler(REGISTRATION_CONVERSATION_HANDLER)
     application.add_handler(CommandHandler("help", common_main.send_help))
-    application.add_error_handler(error_handler)
-
     application.add_handler(
         TypeHandler(type=ChatwootUpdate, callback=forward_message_from_chatwoot_to_user)
     )
+    application.add_error_handler(error_handler)
 
     # Pass webhook settings to telegram
     await application.bot.set_webhook(
