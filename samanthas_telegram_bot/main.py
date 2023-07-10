@@ -133,10 +133,10 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
 
 
 @dataclass
-class WebhookUpdate:
+class ChatwootUpdate:
     """Simple dataclass to wrap a custom update type"""
 
-    data: str
+    data: dict[str, str]
 
 
 class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # type:ignore[misc]
@@ -151,15 +151,17 @@ class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # ty
         update: object,
         application: Application,
     ) -> CallbackContext:
-        if isinstance(update, WebhookUpdate):
+        if isinstance(update, ChatwootUpdate):
             return cls(update.data)
         return super().from_update(update, application)
 
 
-async def webhook_update(update: WebhookUpdate, context: CUSTOM_CONTEXT_TYPES) -> None:
-    """Callback that handles the custom updates."""
+async def forward_message_from_chatwoot_to_user(
+    update: ChatwootUpdate, context: CUSTOM_CONTEXT_TYPES
+) -> None:
+    """Callback that forwards messages sent by coordinator in Chatwoot to the user."""
     await context.bot.send_message(
-        chat_id=context.user_data.chat_id, text=update.data, parse_mode=None
+        chat_id=context.user_data.chat_id, text=update.data["content"], parse_mode=None
     )
 
 
@@ -180,10 +182,10 @@ async def main() -> None:
         Handle incoming webhook updates by also putting them into the `update_queue` if
         the required parameters were passed correctly.
         """
-        # TODO come check of data passed by Chatwoot
+        json_data = await request.json()
+        logger.debug(f"Data received from Chatwoot: {json_data}")
 
-        logger.info(await request.json())
-        await application.update_queue.put(WebhookUpdate(data=await request.json()))
+        await application.update_queue.put(ChatwootUpdate(data=json_data))
         return PlainTextResponse("Thank you for the submission! It's being forwarded.")
 
     starlette_app = Starlette(
@@ -228,8 +230,9 @@ async def main() -> None:
     application.add_handler(CommandHandler("help", common_main.send_help))
     application.add_error_handler(error_handler)
 
-    # handler for updates from Chatwoot
-    application.add_handler(TypeHandler(type=WebhookUpdate, callback=webhook_update))
+    application.add_handler(
+        TypeHandler(type=ChatwootUpdate, callback=forward_message_from_chatwoot_to_user)
+    )
 
     # Pass webhook settings to telegram
     await application.bot.set_webhook(
