@@ -242,8 +242,8 @@ async def main() -> None:
 
     # Run application and webserver together
     async with application:
-        # contrary to the example in PTB docs, we have to call `post_init` here explicitly,
-        # otherwise it won't be executed
+        # since we're no longer using run_polling() or start_webhook(),
+        # we have to call `post_init` here explicitly, otherwise it won't be executed
         await application.post_init(application)
         await application.start()
         await webserver.serve()
