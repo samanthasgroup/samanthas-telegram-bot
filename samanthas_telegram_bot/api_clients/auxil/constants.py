@@ -1,6 +1,17 @@
-DataDict = dict[str, int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | None]
+import os
+from typing import cast
 
-API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DataDict = dict[
+    str, int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | "DataDict" | None
+]
+
+DOMAIN = "samanthasgroup.com"
+
+API_URL_PREFIX = f"https://admin.{DOMAIN}/api"
 
 API_URL_ENROLLMENT_TEST_GET_LEVEL = f"{API_URL_PREFIX}/enrollment_test_result/get_level/"
 API_URL_ENROLLMENT_TEST_SEND_RESULT = f"{API_URL_PREFIX}/enrollment_test_result/"
@@ -29,6 +40,17 @@ API_URL_INFIX_LANGUAGES_AND_LEVELS = "languages_and_levels"
 
 BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS = 5
 MAX_ATTEMPTS_TO_GET_DATA_FROM_API = 10
+
+CHATWOOT_ACCOUNT_ID = os.environ.get("CHATWOOT_ACCOUNT_ID")
+"""ID of Chatwoot account is the same for all inboxes. This is like a top-level ID."""
+CHATWOOT_API_TOKEN = os.environ.get("CHATWOOT_API_TOKEN")
+CHATWOOT_HEADERS = {"api_access_token": cast(str, CHATWOOT_API_TOKEN)}
+CHATWOOT_INBOX_ID = os.environ.get("CHATWOOT_INBOX_ID")
+"""This ID defines the Chatwoot channel (inbox) that was created to exchange messages
+between coordinators and users via this bot here.
+See: https://www.chatwoot.com/docs/product/channels/api/create-channel/
+"""
+CHATWOOT_URL_PREFIX = f"https://cw.{DOMAIN}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}"
 
 PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND = "Enter a valid email address"
 

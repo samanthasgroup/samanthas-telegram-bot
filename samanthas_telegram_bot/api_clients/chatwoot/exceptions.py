@@ -7,3 +7,7 @@ class ChatwootClientError(BaseApiClientError):
 
 class ChatwootJSONParsingError(ChatwootClientError):
     pass
+
+
+class ChatwootRequestError(ChatwootClientError):
+    pass

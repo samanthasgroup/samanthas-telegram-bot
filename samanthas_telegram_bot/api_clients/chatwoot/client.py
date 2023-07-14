@@ -8,16 +8,21 @@ from dotenv import load_dotenv
 from telegram import Update
 
 from samanthas_telegram_bot.api_clients.auxil.constants import (
+    CHATWOOT_HEADERS,
+    CHATWOOT_INBOX_ID,
+    CHATWOOT_URL_PREFIX,
     SMALLTALK_RESULTING_LEVEL_UNDEFINED,
     SMALLTALK_URL_GET_RESULTS,
-    SMALLTALK_URL_GET_TEST,
     DataDict,
 )
 from samanthas_telegram_bot.api_clients.auxil.enums import SmalltalkTestStatus
 from samanthas_telegram_bot.api_clients.auxil.models import NotificationParams
 from samanthas_telegram_bot.api_clients.base.base_api_client import BaseApiClient
 from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientError
-from samanthas_telegram_bot.api_clients.chatwoot.exceptions import ChatwootJSONParsingError
+from samanthas_telegram_bot.api_clients.chatwoot.exceptions import (
+    ChatwootJSONParsingError,
+    ChatwootRequestError,
+)
 from samanthas_telegram_bot.api_clients.smalltalk.exceptions import (
     SmallTalkJSONParsingError,
     SmallTalkLogicError,
@@ -42,39 +47,65 @@ class ChatwootClient(BaseApiClient):
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
-    ) -> tuple[str | None, str | None]:
-        """Creates contact in Chatwoot and starts conversation."""
+    ) -> None:
+        """Creates contact in Chatwoot and starts new conversation.
+
+        Steps as described in the docs:
+        https://www.chatwoot.com/docs/product/channels/api/send-messages/
+
+        1. Create contact
+        2. Create conversation
+        3. Send message to this conversation
+        """
         # TODO does conversation/some params depend on role?
+        # TODO do I have to store chatwoot user ID as well?
+        await cls._create_conversation(update, context)
+
+    @classmethod
+    async def _create_conversation(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
+        """Creates new contact in Chatwoot.
+
+        Docs: https://www.chatwoot.com/developers/api/#operation/contactCreate
+        """
         user_data = context.user_data
 
+        url = f"{CHATWOOT_URL_PREFIX}/contacts"
         try:
             _, data = await cls.post(
                 update=update,
                 context=context,
-                url=SMALLTALK_URL_GET_TEST,
-                headers=HEADERS,
+                url=url,
+                headers=CHATWOOT_HEADERS,
                 json_data={
-                    "test_id": ORAL_TEST_ID,
-                    "first_name": user_data.first_name,
-                    "last_name": user_data.last_name,
+                    "inbox_id": CHATWOOT_INBOX_ID,
+                    "name": f"{user_data.first_name} {user_data.last_name}",
                     "email": user_data.email,
-                },  # TODO possibly webhook
+                    "phone": user_data.phone_number,
+                    # TODO "identifier"?
+                    # TODO just testing attributes. TG username is probably not needed. Age? Level?
+                    "custom_attributes": {
+                        "Telegram": user_data.tg_username
+                    },  # FIXME it's flat-typed
+                },
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(
-                        "Received data that should contain the link to SmallTalk test"
+                        "Received data that should contain source_id for the new chat in Chatwoot"
                     ),
                 },
             )
         except BaseApiClientError as err:
-            raise SmallTalkRequestError(
-                "Failed to get data with test link from SmallTalk"
+            raise ChatwootRequestError(
+                "Failed to get data with source_id for the new chat from Chatwoot"
             ) from err
 
-        url = cls._get_value(data, "test_link")
+        try:
+            source_id = data["payload"]["contact_inbox"]["source_id"]  # type:ignore  # TODO
+        except KeyError as err:
+            raise ChatwootJSONParsingError(f"Could not parse Chatwoot {data=}") from err
 
-        await logs(bot=context.bot, text=f"Received URL to oral test: {url}")
+        await logs(bot=context.bot, text=f"Received source_id from Chatwoot: {source_id}")
 
-        return typing.cast(str, data["interview_id"]), typing.cast(str, url)
+        return typing.cast(str, source_id)
 
     @classmethod
     async def _get_data(
@@ -173,6 +204,7 @@ class ChatwootClient(BaseApiClient):
 
     @classmethod
     def _get_value(cls, data: DataDict, key: str) -> typing.Any:
+        # TODO this will only work for flat structure
         try:
             return super()._get_value(data, key)
         except BaseApiClientError as err:
