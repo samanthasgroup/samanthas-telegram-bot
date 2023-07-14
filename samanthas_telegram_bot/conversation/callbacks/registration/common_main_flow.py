@@ -552,8 +552,10 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
     return CommonState.REVIEW_REQUESTED_ITEM
 
 
-async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores comment and ends the conversation.
+async def store_comment_create_person_end_conversation(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Stores comment, creates a person in the backend and ends the conversation.
 
     For a would-be teacher that is under 18, stores their comment about potential useful skills.
     For others, stores the general comment. Ends the conversation."""
@@ -584,6 +586,7 @@ async def store_comment_end_conversation(update: Update, context: CUSTOM_CONTEXT
                     )
                     return StudentState.CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE
 
+            # TODO request chatwoot conversation ID: from backend, then from Chatwoot
             person_was_created = await BackendClient.create_student(update, context)
         case Role.TEACHER:
             person_was_created = await BackendClient.create_adult_or_young_teacher(update, context)

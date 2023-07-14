@@ -10,6 +10,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
+    API_URL_GET_CHATWOOT_CONVERSATION_ID,
     API_URL_PERSONAL_INFO_LIST_CREATE,
     API_URL_STUDENT_RETRIEVE,
     API_URL_STUDENTS_LIST_CREATE,
@@ -85,6 +86,44 @@ class BackendClient(BaseApiClient):
         Returns `True` if successful.
         """
         return bool(await cls._create_person(update, context))
+
+    @classmethod
+    async def get_helpdesk_conversation_id(
+        cls,
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> int | None:
+        """Gets Chatwoot conversation ID for this user by sending chat ID to the backend.
+
+        Returns Chatwoot conversation ID or ``None`` if this no registration has yet occurred from
+        this Telegram account and hence chat ID is not stored in the backend yet.
+        """
+        chat_id = context.user_data.chat_id
+
+        try:
+            _, data = await cls.get(
+                update=update,
+                context=context,
+                url=API_URL_GET_CHATWOOT_CONVERSATION_ID,
+                params={"registration_telegram_bot_chat_id": chat_id},
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(
+                        message=f"Bot chat ID {chat_id} found. Received Chatwoot conversation ID"
+                    ),
+                    httpx.codes.NOT_ACCEPTABLE: NotificationParams(
+                        message=(
+                            f"No chat ID {chat_id} found. "
+                            "This account is not registered in the backend"
+                        )
+                    ),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError("Failed to lookup Chatwoot conversation ID") from err
+
+        chatwoot_conversation_id = typing.cast(int | None, data.get("chatwoot_conversation_id"))
+        await logs(text=f"{chatwoot_conversation_id=}", bot=context.bot, update=update)
+        return chatwoot_conversation_id
 
     @classmethod
     async def get_level_after_assessment(
@@ -181,6 +220,7 @@ class BackendClient(BaseApiClient):
         Type of person to be created is determined based on ``context``.
         """
         personal_info_id = await cls._create_personal_info_get_id(update, context)
+        # FIXME send message to Chatwoot, get chatwoot conversation ID
         url, data = cls._get_url_and_data_for_person_creation(
             update=update,
             context=context,

@@ -150,6 +150,11 @@ class UserData:
     non_teaching_help_types: list[str] | None = None
     comment: str | None = None
 
+    helpdesk_conversation_id: int | None = None
+    """Conversation ID received from the helpdesk platform (currently Chatwoot) after registration 
+    to connect coordinator there to the person communicating with the bot.
+    """
+
     # role-specific attributes:
     student_age_range_id: int | None = None  # for passing back to backend
     student_age_from: int | None = None  # for assessment

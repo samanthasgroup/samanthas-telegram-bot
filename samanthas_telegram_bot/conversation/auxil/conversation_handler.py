@@ -282,7 +282,10 @@ states = {
         ),
     ],
     ConversationStateCommon.BYE: [
-        MessageHandler(filters.TEXT & ~filters.COMMAND, common_main.store_comment_end_conversation)
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND,
+            common_main.store_comment_create_person_end_conversation,
+        )
     ],
     # one student-specific state of the final part of conversation (see its docstring)
     ConversationStateStudent.CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE: [
