@@ -9,13 +9,13 @@ packages = [{include = "samanthas_telegram_bot"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-python-telegram-bot = {extras = ["webhooks"], version = "^20.3"}
-phonenumberslite = "^8.13.15"
+python-telegram-bot = {extras = ["webhooks"], version = "^20.4"}
+phonenumberslite = "^8.13.16"
 python-dotenv = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.3.0"
-ruff = "^0.0.277"
+black = "^23.7.0"
+ruff = "^0.0.278"
 pre-commit = "^3.3.3"
 icecream = "^2.1.3"
 isort = "^5.12.0"
