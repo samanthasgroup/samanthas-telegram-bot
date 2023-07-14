@@ -12,12 +12,11 @@ from telegram import (
 from telegram.constants import ParseMode
 from telegram.ext import ConversationHandler
 
-from samanthas_telegram_bot.api_clients import BackendClient
+from samanthas_telegram_bot.api_clients import BackendClient, SmallTalkClient
 from samanthas_telegram_bot.api_clients.auxil.constants import (
     PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND,
 )
 from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientError
-from samanthas_telegram_bot.api_clients.smalltalk.smalltalk_client import SmallTalkClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
