@@ -9,7 +9,7 @@ packages = [{include = "samanthas_telegram_bot"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-python-telegram-bot = {extras = ["webhooks"], version = "^20.3"}
+python-telegram-bot = {extras = ["webhooks"], version = "^20.4"}
 phonenumberslite = "^8.13.16"
 python-dotenv = "^1.0.0"
 
