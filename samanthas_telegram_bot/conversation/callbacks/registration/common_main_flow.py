@@ -568,6 +568,8 @@ async def store_comment_create_person_end_conversation(
 
     await update.effective_chat.send_message(phrases["processing_wait"][locale])
 
+    # TODO request chatwoot conversation ID: from backend, then from Chatwoot
+
     match role:
         case Role.STUDENT:
             if user_data.student_needs_oral_interview:
@@ -586,7 +588,6 @@ async def store_comment_create_person_end_conversation(
                     )
                     return StudentState.CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE
 
-            # TODO request chatwoot conversation ID: from backend, then from Chatwoot
             person_was_created = await BackendClient.create_student(update, context)
         case Role.TEACHER:
             person_was_created = await BackendClient.create_adult_or_young_teacher(update, context)
