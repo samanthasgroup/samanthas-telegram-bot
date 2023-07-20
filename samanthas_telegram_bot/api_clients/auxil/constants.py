@@ -9,7 +9,7 @@ DataDict = dict[
     str, int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | "DataDict" | None
 ]
 
-DOMAIN = "samanthasgroup.com"
+DOMAIN = "samanthasgroup.com"  # TODO put in environment variable
 
 API_URL_PREFIX = f"https://admin.{DOMAIN}/api"
 
