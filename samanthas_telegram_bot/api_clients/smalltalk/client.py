@@ -37,6 +37,7 @@ from samanthas_telegram_bot.data_structures.models import SmalltalkResult
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+# TODO move to auxil/constants
 HEADERS = {"Authorization": f"Bearer {os.environ.get('SMALLTALK_TOKEN')}"}
 ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
 

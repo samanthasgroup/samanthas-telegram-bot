@@ -3,7 +3,6 @@ import logging
 import os
 import traceback
 import typing
-from dataclasses import dataclass
 
 import uvicorn
 from dotenv import load_dotenv
@@ -13,18 +12,14 @@ from starlette.responses import PlainTextResponse, Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
-from telegram.ext import (
-    Application,
-    CallbackContext,
-    CommandHandler,
-    ContextTypes,
-    ExtBot,
-    TypeHandler,
-)
+from telegram.ext import Application, CommandHandler, ContextTypes, TypeHandler
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, BOT_OWNER_USERNAME, LOGGING_LEVEL
 from samanthas_telegram_bot.auxil.log_and_notify import logs
+from samanthas_telegram_bot.conversation.auxil.chatwoot import (
+    forward_message_from_chatwoot_to_user,
+)
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import (
     REGISTRATION_CONVERSATION_HANDLER,
 )
@@ -40,6 +35,8 @@ from samanthas_telegram_bot.data_structures.context_types import (
     ChatData,
     UserData,
 )
+from samanthas_telegram_bot.data_structures.custom_context import CustomContext
+from samanthas_telegram_bot.data_structures.custom_updates import ChatwootUpdate
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
 load_dotenv()
@@ -50,40 +47,6 @@ logging.basicConfig(
     level=getattr(logging, logging_level),
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
-
-
-async def post_init(application: Application) -> None:
-    await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
-    await application.bot.set_my_commands(
-        [
-            ("start", "Start registration"),
-            ("cancel", "Cancel registration"),
-        ],
-        scope=BotCommandScopeAllPrivateChats(),
-        language_code="en",
-    )
-    await application.bot.set_my_commands(
-        [
-            ("start", "Начать регистрацию"),
-            ("cancel", "Отменить регистрацию"),
-        ],
-        scope=BotCommandScopeAllPrivateChats(),
-        language_code="ru",
-    )
-    await application.bot.set_my_commands(
-        [
-            ("start", "Почати реєстрацію"),
-            ("cancel", "Перервати реєстрацію"),
-        ],
-        scope=BotCommandScopeAllPrivateChats(),
-        language_code="ua",
-    )
-
-    await application.bot.send_message(
-        chat_id=ADMIN_CHAT_ID,
-        text="Registration bot started",
-        parse_mode=None,
-    )
 
 
 async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
@@ -132,36 +95,37 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     )
 
 
-@dataclass
-class ChatwootUpdate:
-    """Simple dataclass to wrap a custom update type"""
+async def post_init(application: Application) -> None:
+    await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
+    await application.bot.set_my_commands(
+        [
+            ("start", "Start registration"),
+            ("cancel", "Cancel registration"),
+        ],
+        scope=BotCommandScopeAllPrivateChats(),
+        language_code="en",
+    )
+    await application.bot.set_my_commands(
+        [
+            ("start", "Начать регистрацию"),
+            ("cancel", "Отменить регистрацию"),
+        ],
+        scope=BotCommandScopeAllPrivateChats(),
+        language_code="ru",
+    )
+    await application.bot.set_my_commands(
+        [
+            ("start", "Почати реєстрацію"),
+            ("cancel", "Перервати реєстрацію"),
+        ],
+        scope=BotCommandScopeAllPrivateChats(),
+        language_code="ua",
+    )
 
-    data: dict[str, str]
-
-
-class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # type:ignore[misc]
-    """
-    Custom CallbackContext class that makes `user_data` available for updates of type
-    `WebhookUpdate`.
-    """
-
-    @classmethod
-    def from_update(
-        cls,
-        update: object,
-        application: Application,
-    ) -> CallbackContext:
-        if isinstance(update, ChatwootUpdate):
-            return cls(application=application)
-        return super().from_update(update, application)
-
-
-async def forward_message_from_chatwoot_to_user(
-    update: ChatwootUpdate, context: CUSTOM_CONTEXT_TYPES
-) -> None:
-    """Callback that forwards messages sent by coordinator in Chatwoot to the user."""
-    await context.bot.send_message(
-        chat_id=context.user_data.chat_id, text=update.data["content"], parse_mode=None
+    await application.bot.send_message(
+        chat_id=ADMIN_CHAT_ID,
+        text="Registration bot started",
+        parse_mode=None,
     )
 
 
@@ -216,12 +180,6 @@ async def main() -> None:
                 context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
             )
         )
-        # This doesn't get called in configuration with uvicorn and Starlette for some reason,
-        # so we call it later in the `async with application:` context manager.
-        # However, if we remove this statement here altogether, the explicit call to `post_init`
-        # in the context manager below will result in a TypeError ('NoneType' object is not
-        # callable)
-        .post_init(post_init)
         .build()
     )
 
@@ -244,7 +202,7 @@ async def main() -> None:
     async with application:
         # since we're no longer using run_polling() or start_webhook(),
         # we have to call `post_init` here explicitly, otherwise it won't be executed
-        await application.post_init(application)
+        await post_init(application)
         await application.start()
         await webserver.serve()
         await application.stop()
