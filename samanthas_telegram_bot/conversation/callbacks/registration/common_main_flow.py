@@ -17,6 +17,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND,
 )
 from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientError
+from samanthas_telegram_bot.api_clients.chatwoot.client import ChatwootClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -144,6 +145,9 @@ async def check_chat_id_ask_role_if_id_does_not_exist(
     query, data = await answer_callback_query_and_get_data(update)
 
     if await BackendClient.chat_id_is_registered(update, context):
+        context.user_data.helpdesk_conversation_id = (
+            await BackendClient.get_helpdesk_conversation_id(update, context)
+        )
         await CQReplySender.ask_yes_no(
             context, query, question_phrase_internal_id="reply_chat_id_found"
         )
@@ -567,7 +571,10 @@ async def store_comment_create_person_end_conversation(
 
     await update.effective_chat.send_message(phrases["processing_wait"][locale])
 
-    # TODO request chatwoot conversation ID: from backend, then from Chatwoot
+    if context.user_data.helpdesk_conversation_id is None:
+        # Chat ID wasn't found in the backend in the beginning of conversation: this account is new
+        # We have to create a conversation in Chatwoot and store its ID
+        await ChatwootClient.create_contact_and_conversation(update, context)
 
     match role:
         case Role.STUDENT:

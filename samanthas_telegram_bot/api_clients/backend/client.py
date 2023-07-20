@@ -1,5 +1,5 @@
 import logging
-import typing
+from typing import Any, cast
 
 import httpx
 from telegram import Update
@@ -99,6 +99,9 @@ class BackendClient(BaseApiClient):
         this Telegram account and hence chat ID is not stored in the backend yet.
         """
         chat_id = context.user_data.chat_id
+        error_message = "Failed to get personal info by chat ID and read Chatwoot conversation ID"
+
+        await logs(bot=context.bot, update=update, text="Requesting Chatwoot conversation ID")
 
         try:
             _, data = await cls.get(
@@ -108,20 +111,26 @@ class BackendClient(BaseApiClient):
                 params={"registration_telegram_bot_chat_id": chat_id},
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(
-                        message=f"Bot chat ID {chat_id} found. Received Chatwoot conversation ID"
-                    ),
-                    httpx.codes.NOT_ACCEPTABLE: NotificationParams(
                         message=(
-                            f"No chat ID {chat_id} found. "
-                            "This account is not registered in the backend"
-                        )
+                            "Received response from the backend that should contain Chatwoot "
+                            "conversation ID."
+                        ),
+                        logging_level=LoggingLevel.DEBUG,
                     ),
                 },
             )
         except BaseApiClientError as err:
-            raise BackendClientError("Failed to lookup Chatwoot conversation ID") from err
+            raise BackendClientError(error_message) from err
 
-        chatwoot_conversation_id = typing.cast(int | None, data.get("chatwoot_conversation_id"))
+        if not data:
+            raise BackendClientError(f"{error_message}: data returned from backend is empty")
+
+        # for mypy
+        if not isinstance(data, list):
+            raise BackendClientError(f"{error_message}: data returned from backend is NOT a list")
+
+        first_item = data[0]
+        chatwoot_conversation_id = cast(int | None, first_item.get("chatwoot_conversation_id"))
         await logs(text=f"{chatwoot_conversation_id=}", bot=context.bot, update=update)
         return chatwoot_conversation_id
 
@@ -147,6 +156,8 @@ class BackendClient(BaseApiClient):
             ),
         )
 
+        error_message = "Failed to send results of written assessment and receive level"
+
         try:
             _, data = await cls.post(
                 update=update,
@@ -160,9 +171,13 @@ class BackendClient(BaseApiClient):
                 },
             )
         except BaseApiClientError as err:
+            raise BackendClientError(error_message) from err
+
+        # for mypy
+        if not isinstance(data, dict):
             raise BackendClientError(
-                "Failed to send results of written assessment and receive level"
-            ) from err
+                f"{error_message} - data returned is not a dictionary:\n{data}"
+            )
 
         level: str = cls._get_value(data, "resulting_level")
         if level not in ALL_LEVELS:
@@ -285,7 +300,7 @@ class BackendClient(BaseApiClient):
                 f"Received data of wrong type when creating a personal info item: {data=}"
             )
 
-        personal_data_id = typing.cast(int, data["id"])
+        personal_data_id = cast(int, data["id"])
 
         await logs(
             bot=context.bot,
@@ -410,7 +425,7 @@ class BackendClient(BaseApiClient):
         return status_code == httpx.codes.CREATED
 
     @classmethod
-    def _get_value(cls, data: DataDict, key: str) -> typing.Any:
+    def _get_value(cls, data: DataDict, key: str) -> Any:
         try:
             return super()._get_value(data, key)
         except BaseApiClientError as err:

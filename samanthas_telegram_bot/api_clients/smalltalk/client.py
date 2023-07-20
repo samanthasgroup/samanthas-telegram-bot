@@ -75,6 +75,10 @@ class SmallTalkClient(BaseApiClient):
                 "Failed to get data with test link from SmallTalk"
             ) from err
 
+        # for mypy
+        if not isinstance(data, dict):
+            raise SmallTalkRequestError(f"Response from SmallTalk is not a dictionary: {data}")
+
         url = cls._get_value(data, "test_link")
 
         await logs(bot=context.bot, text=f"Received URL to oral test: {url}")
@@ -201,6 +205,10 @@ class SmallTalkClient(BaseApiClient):
             raise SmallTalkRequestError(
                 "Failed to receive valid response from SmallTalk while getting test results."
             ) from err
+
+        # for mypy
+        if not isinstance(data, dict):
+            raise SmallTalkRequestError(f"Response from SmallTalk is not a dictionary: {data}")
 
         return data
 
