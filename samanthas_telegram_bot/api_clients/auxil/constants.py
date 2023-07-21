@@ -1,12 +1,15 @@
 import os
-from typing import cast
+from typing import Any, cast
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
 DataDict = dict[
-    str, int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | "DataDict" | None
+    # we have to put Any instead of "DataDict" ForwardRef,
+    # a TypeError exception will be thrown otherwise
+    str,
+    int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | Any | None,
 ]
 
 DOMAIN = "samanthasgroup.com"  # TODO put in environment variable
