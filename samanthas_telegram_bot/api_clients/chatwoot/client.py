@@ -32,7 +32,7 @@ ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
 # TODO no working code here yet
 class ChatwootClient(BaseApiClient):
     @classmethod
-    async def send_message(
+    async def send_message_to_conversation(
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
@@ -109,7 +109,7 @@ class ChatwootClient(BaseApiClient):
         user_data.helpdesk_conversation_id = await cls._start_conversation(
             update, context, source_id
         )
-        return await cls.send_message(update, context, text=text)
+        return await cls.send_message_to_conversation(update, context, text=text)
 
     @classmethod
     async def _create_contact(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
@@ -166,7 +166,7 @@ class ChatwootClient(BaseApiClient):
     async def _start_conversation(
         cls, update: Update, context: CUSTOM_CONTEXT_TYPES, source_id: str
     ) -> int:
-        """Creates new conversation in Chatwoot.
+        """Creates new conversation in Chatwoot and returns its ID.
 
         Docs:
 
