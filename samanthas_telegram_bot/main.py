@@ -47,6 +47,7 @@ logging.basicConfig(
     level=getattr(logging, logging_level),
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
+# FIXME set logging level for webhooks to WARNING
 
 
 async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
