@@ -36,7 +36,6 @@ class ChatwootClient(BaseApiClient):
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
-        conversation_id: int,
         text: str,
     ) -> bool:
         """Sends a message to a conversation in Chatwoot.  Returns `True` if successful.
@@ -46,6 +45,7 @@ class ChatwootClient(BaseApiClient):
         * https://www.chatwoot.com/docs/product/channels/api/send-messages/ (overview)
         * https://www.chatwoot.com/developers/api/#tag/Messages/operation/create-a-new-message-in-a-conversation
         """
+        conversation_id = context.user_data.helpdesk_conversation_id
 
         url = f"{CHATWOOT_URL_PREFIX}/{conversation_id}/messages"
         try:
@@ -89,8 +89,11 @@ class ChatwootClient(BaseApiClient):
         cls,
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
+        text: str,
     ) -> bool:
         """Creates contact in Chatwoot and starts new conversation. Returns `True` if successful.
+
+        **Stores Chatwoot conversation ID in `context.user_data`**
 
         Steps as described in the docs:
         https://www.chatwoot.com/docs/product/channels/api/send-messages/
@@ -103,13 +106,10 @@ class ChatwootClient(BaseApiClient):
         # TODO does conversation/some params depend on role?
         # TODO do I have to store chatwoot user ID as well?
         source_id = await cls._create_contact(update, context)
-        conversation_id = await cls._start_conversation(update, context, source_id)
-        return await cls.send_message(
-            update,
-            context,
-            conversation_id=conversation_id,
-            text=f"New {user_data.role}: {user_data.first_name} {user_data.last_name}",
+        user_data.helpdesk_conversation_id = await cls._start_conversation(
+            update, context, source_id
         )
+        return await cls.send_message(update, context, text=text)
 
     @classmethod
     async def _create_contact(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:

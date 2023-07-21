@@ -203,6 +203,7 @@ class UserData:
             "information_source": self.source,
             "registration_telegram_bot_chat_id": self.chat_id,
             "registration_telegram_bot_language": self.locale,
+            "chatwoot_conversation_id": self.helpdesk_conversation_id,
         }
 
     def student_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
