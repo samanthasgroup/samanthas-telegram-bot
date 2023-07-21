@@ -76,6 +76,9 @@ class BaseApiClient:
             let the API client raise its own exception and handle it accordingly
             (e.g. with an exception handler in the bot).
         """
+        # FIXME change level to DEBUG
+        await logs(bot=context.bot, update=update, text=f"{headers=}, {data=}, {json_data=}")
+
         if data is None and json_data is None:
             raise TypeError("Either `data` or `json_data` must be provided. You passed nothing.")
 
