@@ -29,7 +29,6 @@ HEADERS = {"Authorization": f"Bearer {os.environ.get('SMALLTALK_TOKEN')}"}
 ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
 
 
-# TODO no working code here yet
 class ChatwootClient(BaseApiClient):
     @classmethod
     async def send_message_to_conversation(

@@ -8,7 +8,7 @@ import uvicorn
 from dotenv import load_dotenv
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
@@ -47,7 +47,6 @@ logging.basicConfig(
     level=getattr(logging, logging_level),
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
-# FIXME set logging level for webhooks to WARNING
 
 
 async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
@@ -142,7 +141,7 @@ async def main() -> None:
         )
         return Response()
 
-    async def custom_updates(request: Request) -> PlainTextResponse:
+    async def custom_updates(request: Request) -> Response:
         """
         Handle incoming webhook updates by also putting them into the `update_queue` if
         the required parameters were passed correctly.
@@ -151,10 +150,9 @@ async def main() -> None:
         logger.debug(f"Data received from Chatwoot: {json_data}")
 
         await application.update_queue.put(ChatwootUpdate(data=json_data))
-        return PlainTextResponse("Thank you for the submission! It's being forwarded.")
+        return Response()
 
     starlette_app = Starlette(
-        debug=True,  # TODO remove
         routes=[
             Route(f"/{BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK}", telegram, methods=["POST"]),
             Route(f"/{BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK}", custom_updates, methods=["POST"]),
