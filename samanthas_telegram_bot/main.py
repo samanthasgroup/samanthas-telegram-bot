@@ -47,7 +47,6 @@ logging.basicConfig(
     level=getattr(logging, logging_level),
 )
 logging.getLogger("httpx").setLevel(logging.WARNING)
-logging.getLogger("starlette").setLevel(logging.WARNING)
 
 
 async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
