@@ -136,6 +136,8 @@ class ChatwootClient(BaseApiClient):
                     # A Chatwoot conversation can only be linked to user's Telegram account,
                     # not to their ID in the database.
                     # This is because several users can share one Telegram account.
+                    # FIXME I think I have to put chat ID elsewhere because this "identifier"
+                    #  will not be unique in Chatwoot
                     "identifier": user_data.chat_id,
                     # TODO just testing attributes. TG username is probably not needed. Age? Level?
                     "custom_attributes": {"Telegram": user_data.tg_username},
