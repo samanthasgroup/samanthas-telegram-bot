@@ -7,5 +7,5 @@ async def forward_message_from_chatwoot_to_user(
 ) -> None:
     """Callback that forwards messages sent by coordinator in Chatwoot to the user."""
     await context.bot.send_message(
-        chat_id=context.user_data.chat_id, text=update.message, parse_mode=None
+        chat_id=update.bot_chat_id, text=update.message, parse_mode=None
     )

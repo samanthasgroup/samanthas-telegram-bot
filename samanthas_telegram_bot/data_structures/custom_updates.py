@@ -11,9 +11,12 @@ class ChatwootUpdate:
         logger = logging.getLogger()  # TODO remove
         logger.info(data)
 
-        self.conversation_id = data["conversation"]["id"]  # type:ignore[index]
+        self.chatwoot_conversation_id = data["conversation"]["id"]  # type:ignore[index]
         # FIXME add exception handling
 
+        # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attribute.
+        # It's time to use it now to identify which chat this update belongs to
+        self.bot_chat_id = data["sender"]["identifier"]  # type:ignore[index]
         # Using this attribute name to conform with the `if update.message` check
         # TODO maybe rework that logic and rename this attribute
         self.message = data["content"]
