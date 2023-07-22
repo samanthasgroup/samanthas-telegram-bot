@@ -1,3 +1,6 @@
+import logging
+
+
 class ChatwootUpdate:
     """Class for an update representing an incoming message from Chatwoot.
 
@@ -5,6 +8,9 @@ class ChatwootUpdate:
     """
 
     def __init__(self, data: dict[str, dict[str, str] | str]):
+        logger = logging.getLogger()  # TODO remove
+        logger.info(data)
+
         self.conversation_id = data["conversation"]["id"]  # type:ignore[index]
         # FIXME add exception handling
 
