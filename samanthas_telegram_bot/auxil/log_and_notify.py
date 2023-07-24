@@ -31,7 +31,7 @@ async def logs(
     """
     extra_info = ""
 
-    if update is not None:
+    if isinstance(update, Update):
         user = update.effective_user
         username_note = f" (@{user.username})" if user.username else ""
         extra_info = f"Chat {update.effective_chat.id}, user {user.full_name}{username_note}: "
