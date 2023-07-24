@@ -8,14 +8,20 @@ class ChatwootUpdate:
     """
 
     def __init__(self, data: dict[str, dict[str, str] | str]):
-        logger = logging.getLogger()  # TODO remove
+        logger = logging.getLogger()  # FIXME remove?
         logger.info(data)
 
         self.message = None
 
         if data["event"] == "message_created":
             top_key = "conversation"
-            self.message = data["content"]
+            if data["message_type"] == "outgoing":
+                self.message = data["content"]
+            else:
+                # FIXME debug
+                logger.info(
+                    "This is a message sent to Chatwoot from Bot. No need to show it to user."
+                )
         else:
             top_key = "object"
             # skip handling of the update if this is not an update with a message
