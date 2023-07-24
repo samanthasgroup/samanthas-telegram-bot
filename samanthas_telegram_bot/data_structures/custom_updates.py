@@ -11,6 +11,12 @@ class ChatwootUpdate:
         logger = logging.getLogger()  # TODO remove
         logger.info(data)
 
+        if data["event"] != "message_created":
+            # skip handling of the update if this is not an update with a message
+            # (e.g. some service update saying that a new conversation was created)
+            self.message = None
+            return
+
         self.chatwoot_conversation_id = data["conversation"]["id"]  # type:ignore[index]
         # FIXME add exception handling
 
