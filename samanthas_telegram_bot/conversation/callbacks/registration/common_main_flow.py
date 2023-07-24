@@ -571,12 +571,11 @@ async def store_comment_create_person_end_conversation(
 
     await update.effective_chat.send_message(phrases["processing_wait"][locale])
 
+    message_text = f"New {user_data.role}: {user_data.first_name} {user_data.last_name}"
     if context.user_data.helpdesk_conversation_id is None:
-        # Chat ID wasn't found in the backend in the beginning of conversation: this account is new
-        # We have to create a conversation in Chatwoot and store its ID
-        await ChatwootClient.start_new_conversation(
-            update, context, f"New {user_data.role}: {user_data.first_name} {user_data.last_name}"
-        )
+        await ChatwootClient.start_new_conversation(update, context, text=message_text)
+    else:
+        await ChatwootClient.send_message_to_conversation(update, context, text=message_text)
 
     match role:
         case Role.STUDENT:
