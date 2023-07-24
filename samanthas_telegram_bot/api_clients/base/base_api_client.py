@@ -80,7 +80,7 @@ class BaseApiClient:
         await logs(
             bot=context.bot,
             update=update,
-            text=f"Sending a POST request to {url}. {headers=}, {data=}, {json_data=}",
+            text=f"Sending a POST request to {url} with {headers=}, {data=}, {json_data=}",
         )
 
         if data is None and json_data is None:
