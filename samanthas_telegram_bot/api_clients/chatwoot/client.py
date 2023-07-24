@@ -46,7 +46,7 @@ class ChatwootClient(BaseApiClient):
         """
         conversation_id = context.user_data.helpdesk_conversation_id
 
-        url = f"{CHATWOOT_URL_PREFIX}/{conversation_id}/messages"
+        url = f"{CHATWOOT_URL_PREFIX}/conversations/{conversation_id}/messages"
         try:
             _, data = await cls.post(
                 update=update,
