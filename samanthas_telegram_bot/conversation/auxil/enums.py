@@ -15,10 +15,11 @@ class CommonCallbackData(str, Enum):
 
 
 class ConversationMode(str, Enum):
-    """Enumeration for chat modes: normal or review mode (when user reviews personal info)."""
+    """Enumeration for chat modes."""
 
-    NORMAL = "normal"
-    REVIEW = "review"
+    OPERATOR = "operator"
+    REGISTRATION_MAIN_FLOW = "normal"
+    REGISTRATION_REVIEW = "review"
 
 
 state_index = 0

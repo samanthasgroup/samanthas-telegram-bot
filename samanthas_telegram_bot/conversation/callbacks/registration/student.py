@@ -51,7 +51,7 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
         ),
     )
 
-    if context.chat_data.mode == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
@@ -166,7 +166,7 @@ async def store_non_english_level_ask_communication_language(
     query, language_level = await answer_callback_query_and_get_data(update)
     store_selected_language_level(context=context, level=language_level)
 
-    if context.chat_data.mode == ConversationMode.REVIEW:
+    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
