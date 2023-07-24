@@ -55,7 +55,7 @@ class ChatwootClient(BaseApiClient):
                 headers=CHATWOOT_HEADERS,
                 json_data={
                     "content": text,
-                    "message_type": "incoming",  # FIXME create enum
+                    "message_type": "outgoing",  # FIXME create enum
                     # TODO content_type, content_attributes (not needed now, could be interesting)
                 },
                 notification_params_for_status_code={
