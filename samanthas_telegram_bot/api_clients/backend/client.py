@@ -10,7 +10,6 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
-    API_URL_GET_CHATWOOT_CONVERSATION_ID,
     API_URL_PERSONAL_INFO_LIST_CREATE,
     API_URL_STUDENT_RETRIEVE,
     API_URL_STUDENTS_LIST_CREATE,
@@ -107,7 +106,7 @@ class BackendClient(BaseApiClient):
             _, data = await cls.get(
                 update=update,
                 context=context,
-                url=API_URL_GET_CHATWOOT_CONVERSATION_ID,
+                url=API_URL_PERSONAL_INFO_LIST_CREATE,
                 params={"registration_telegram_bot_chat_id": chat_id},
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(
