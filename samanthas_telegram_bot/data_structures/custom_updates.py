@@ -11,29 +11,24 @@ class ChatwootUpdate:
         logger = logging.getLogger()  # TODO remove
         logger.info(data)
 
-        if data["event"] != "message_created":
+        self.message = None
+
+        if data["event"] == "message_created":
+            top_key = "conversation"
+            self.message = data["content"]
+        else:
+            top_key = "object"
             # skip handling of the update if this is not an update with a message
             # (e.g. some service update saying that a new conversation was created)
-            self.message = None
-            return
 
-        self.chatwoot_conversation_id = data["conversation"]["id"]  # type:ignore[index]
-        # FIXME add exception handling
+        # TODO maybe other message-related events will be needed too
 
-        # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attribute.
+        # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attr.
         # It's time to use it now to identify which chat this update belongs to
-        try:
-            self.bot_chat_id = data["conversation"]["meta"][  # type:ignore[index]
-                "sender"  # type:ignore[index]
-            ][
-                "identifier"  # type:ignore[index]
-            ]
-        except KeyError:
-            self.bot_chat_id = data["object"]["meta"]["sender"]["identifier"]  # type:ignore[index]
-            # FIXME refactor
         # Using this attribute name to conform with the `if update.message` check
-        # TODO maybe rework that logic and rename this attribute
-        self.message = data["content"]
+        self.bot_chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
+
+        self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
 
         # TODO do I need to check message_type for some reason?
         #  I may also want to use data["conversation"]["status"] (open or something else)
