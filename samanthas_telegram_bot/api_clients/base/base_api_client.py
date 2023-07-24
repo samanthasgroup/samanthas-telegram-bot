@@ -77,7 +77,11 @@ class BaseApiClient:
             (e.g. with an exception handler in the bot).
         """
         # FIXME change level to DEBUG
-        await logs(bot=context.bot, update=update, text=f"{headers=}, {data=}, {json_data=}")
+        await logs(
+            bot=context.bot,
+            update=update,
+            text=f"Sending a POST request to {url}. {headers=}, {data=}, {json_data=}",
+        )
 
         if data is None and json_data is None:
             raise TypeError("Either `data` or `json_data` must be provided. You passed nothing.")
@@ -276,6 +280,12 @@ class BaseApiClient:
         update: Update, context: CUSTOM_CONTEXT_TYPES, response: Response
     ) -> tuple[int, DataDict | list[DataDict]]:
         status_code = response.status_code
+        # FIXME set debug level
+        await logs(
+            bot=context.bot,
+            update=update,
+            text=f"Received response {status_code}, {response.content=}",
+        )
         try:
             response_json: DataDict | list[DataDict] = response.json()
         except AttributeError as err:
