@@ -22,9 +22,15 @@ class ChatwootUpdate:
 
         # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attribute.
         # It's time to use it now to identify which chat this update belongs to
-        self.bot_chat_id = data["conversation"]["meta"]["sender"][  # type:ignore[index]  # noqa
-            "identifier"  # type:ignore[index]
-        ]
+        try:
+            self.bot_chat_id = data["conversation"]["meta"][  # type:ignore[index]
+                "sender"  # type:ignore[index]
+            ][
+                "identifier"  # type:ignore[index]
+            ]
+        except KeyError:
+            self.bot_chat_id = data["object"]["meta"]["sender"]["identifier"]  # type:ignore[index]
+            # FIXME refactor
         # Using this attribute name to conform with the `if update.message` check
         # TODO maybe rework that logic and rename this attribute
         self.message = data["content"]
