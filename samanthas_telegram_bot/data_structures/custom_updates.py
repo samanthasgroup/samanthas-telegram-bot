@@ -1,4 +1,10 @@
 import logging
+from enum import Enum
+
+
+class ChatwootMessageDirection(str, Enum):
+    FROM_CHATWOOT_TO_BOT = "outgoing"
+    FROM_BOT_TO_CHATWOOT = "incoming"
 
 
 class ChatwootUpdate:
@@ -15,10 +21,12 @@ class ChatwootUpdate:
 
         if data["event"] == "message_created":
             top_key = "conversation"
-            if data["message_type"] == "outgoing":
+            if data["message_type"] == ChatwootMessageDirection.FROM_CHATWOOT_TO_BOT:
+                self.direction = ChatwootMessageDirection.FROM_CHATWOOT_TO_BOT
                 self.message = data["content"]
             else:
-                # FIXME debug
+                self.direction = ChatwootMessageDirection.FROM_BOT_TO_CHATWOOT
+                # FIXME debug level
                 logger.info(
                     "This is a message sent to Chatwoot from Bot. No need to show it to user."
                 )
