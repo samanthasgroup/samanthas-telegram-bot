@@ -51,8 +51,14 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     The interface language may not match the interface language of the phone, so better to ask.
     """
 
-    context.user_data.clear_student_data()
-    context.user_data.chat_id = update.effective_chat.id
+    user_data = context.user_data
+
+    user_data.clear_student_data()
+    user_data.chat_id = update.effective_chat.id
+
+    # This should not be needed in production, just adding as a precaution to avoid unexpected
+    # side effects of changing contacts in Chatwoot and/or backend
+    user_data.helpdesk_conversation_id = None
 
     await logs(
         bot=context.bot,
@@ -67,11 +73,11 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
     # Methods handling these iterables can be called from different callbacks, so better to set
     # them here, in one place.
-    context.user_data.day_and_time_slot_ids = []
-    context.user_data.language_and_level_ids = []
-    context.user_data.levels_for_teaching_language = {}
-    context.user_data.non_teaching_help_types = []
-    context.user_data.teacher_student_age_range_ids = []
+    user_data.day_and_time_slot_ids = []
+    user_data.language_and_level_ids = []
+    user_data.levels_for_teaching_language = {}
+    user_data.non_teaching_help_types = []
+    user_data.teacher_student_age_range_ids = []
 
     # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
     # but in order to remove selected options from InlineKeyboard, I have to store exact
