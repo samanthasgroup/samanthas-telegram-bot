@@ -61,7 +61,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     )
     tb_string = f"<code>{tb_string}</code>"
 
-    if update.message is not None:
+    if not isinstance(update, ChatwootUpdate) and update.message is not None:
         tb_string = (
             f"{tb_string}\n<strong>Message received from user</strong>: {update.message.text}\n"
         )
@@ -74,7 +74,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
                 f"{update.message.reply_to_message.text}\n"
             )
 
-    if update.callback_query is not None:
+    if not isinstance(update, ChatwootUpdate) and update.callback_query is not None:
         tb_string = (
             f"{tb_string}\n<strong>Message the user reacted to</strong> (first 100 chars):\n\n"
             f"{update.effective_message.text[:100]}...\n\n"
