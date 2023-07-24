@@ -187,7 +187,7 @@ class ChatwootClient(BaseApiClient):
                     "source_id": source_id,
                     # TODO contact_id? custom_attributes for conversation?
                     #  team_id will definitely be very useful, not sure about assignee_id.
-                    "status": "pending",  # FIXME create enum + maybe "open" is more correct here
+                    "status": "open",  # TODO create enum? not sure I'll need other statuses though
                 },
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(
