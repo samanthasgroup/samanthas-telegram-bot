@@ -15,7 +15,7 @@ class ChatwootUpdate:
 
     def __init__(self, data: dict[str, dict[str, str] | str]):
         logger = logging.getLogger()  # FIXME remove?
-        logger.info(data)
+        logger.info(data)  # FIXME debug level
 
         self.message = None
 

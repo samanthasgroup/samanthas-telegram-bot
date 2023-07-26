@@ -17,11 +17,9 @@ from telegram.ext import Application, CommandHandler, ContextTypes, TypeHandler
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, BOT_OWNER_USERNAME, LOGGING_LEVEL
 from samanthas_telegram_bot.auxil.log_and_notify import logs
-from samanthas_telegram_bot.conversation.auxil.chatwoot import (
+from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
+from samanthas_telegram_bot.conversation.callbacks.communication_with_helpdesk.chatwoot import (
     forward_message_from_chatwoot_to_user,
-)
-from samanthas_telegram_bot.conversation.auxil.conversation_handler import (
-    REGISTRATION_CONVERSATION_HANDLER,
 )
 from samanthas_telegram_bot.data_structures.constants import (
     BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK,
@@ -183,7 +181,7 @@ async def main() -> None:
     )
 
     # register handlers
-    application.add_handler(REGISTRATION_CONVERSATION_HANDLER)
+    application.add_handler(CONVERSATION_HANDLER)
     application.add_handler(CommandHandler("help", common_main.send_help))
     application.add_handler(
         TypeHandler(type=ChatwootUpdate, callback=forward_message_from_chatwoot_to_user)

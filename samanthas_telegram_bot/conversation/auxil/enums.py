@@ -17,7 +17,7 @@ class CommonCallbackData(str, Enum):
 class ConversationMode(str, Enum):
     """Enumeration for chat modes."""
 
-    OPERATOR = "operator"
+    COMMUNICATION_WITH_HELPDESK = "operator"
     REGISTRATION_MAIN_FLOW = "normal"
     REGISTRATION_REVIEW = "review"
 
