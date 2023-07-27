@@ -3,13 +3,12 @@ import logging
 import os
 import traceback
 import typing
-from http import HTTPStatus
 
 import uvicorn
 from dotenv import load_dotenv
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import PlainTextResponse, Response
+from starlette.responses import Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
@@ -141,27 +140,8 @@ async def main() -> None:
         return Response()
 
     async def custom_updates(request: Request) -> Response:
-        """
-        Handle incoming webhook updates by also putting them into the `update_queue` if
-        the required parameters were passed correctly.
-        """
-        logger = logging.getLogger(__name__)  # FIXME remove?
-        json_data = await request.json()
-
-        # TODO this is from PTB example, may need refactoring
-        try:
-            int(request.query_params["chat_id"])
-            # user_id = int(request.query_params["user_id"])  # TODO so far I don't need user_data
-        except (KeyError, ValueError) as err:
-            error_message = f"{err}, {json_data=}"
-            logger.error(error_message)
-            return PlainTextResponse(
-                status_code=HTTPStatus.BAD_REQUEST,
-                content=error_message,
-            )
-
-        await application.update_queue.put(ChatwootUpdate(data=json_data))
-
+        """Put incoming webhook updates into the `update_queue`."""
+        await application.update_queue.put(ChatwootUpdate(data=await request.json()))
         return Response()
 
     starlette_app = Starlette(
