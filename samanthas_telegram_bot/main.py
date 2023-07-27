@@ -152,9 +152,10 @@ async def main() -> None:
             int(request.query_params["chat_id"])
             # user_id = int(request.query_params["user_id"])  # TODO so far I don't need user_data
         except (KeyError, ValueError) as err:
+            error_message = f"{err}, {json_data=}"
             return PlainTextResponse(
                 status_code=HTTPStatus.BAD_REQUEST,
-                content=f"{err}, {json_data=}",
+                content=error_message,
             )
 
         await application.update_queue.put(ChatwootUpdate(data=json_data))
