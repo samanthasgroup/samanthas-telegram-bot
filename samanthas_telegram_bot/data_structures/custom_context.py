@@ -17,5 +17,5 @@ class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # ty
         application: Application,
     ) -> CallbackContext:
         if isinstance(update, ChatwootUpdate):
-            return cls(application=application, user_id=update.user_id, chat_id=update.chat_id)
+            return cls(application=application, chat_id=update.chat_id)  # TODO no user_id for now
         return super().from_update(update, application)

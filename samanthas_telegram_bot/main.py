@@ -150,7 +150,7 @@ async def main() -> None:
         # TODO this is from PTB example, may need refactoring
         try:
             chat_id = int(request.query_params["chat_id"])
-            user_id = int(request.query_params["user_id"])
+            # user_id = int(request.query_params["user_id"])  # TODO so far I don't need user_data
             payload = request.query_params["payload"]
         except KeyError:
             content = "Please pass both `chat_id`, `user_id` and `payload` as query parameters."
@@ -168,7 +168,7 @@ async def main() -> None:
             )
 
         await application.update_queue.put(
-            ChatwootUpdate(chat_id=chat_id, user_id=user_id, payload=payload)
+            ChatwootUpdate(chat_id=chat_id, payload=payload)  # TODO not using user_id for now
         )
 
         return Response()

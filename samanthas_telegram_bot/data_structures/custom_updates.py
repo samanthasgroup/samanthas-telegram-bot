@@ -14,13 +14,10 @@ class ChatwootUpdate:
     Docs: https://www.chatwoot.com/docs/product/channels/api/receive-messages
     """
 
-    def __init__(self, chat_id: int, user_id: int, payload: str):
+    def __init__(self, chat_id: int, payload: str):  # TODO not using user_id yet
         logger = logging.getLogger()  # FIXME remove?
 
         data: dict[str, dict[str, str] | str] = json.loads(payload)
-        self.chat_id = chat_id
-        self.user_id = user_id
-        logger.info(f"{self.chat_id=}, {self.user_id=}, {data=}")  # FIXME debug level
 
         self.message = None
 
@@ -45,9 +42,17 @@ class ChatwootUpdate:
         # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attr.
         # It's time to use it now to identify which chat this update belongs to
         # Using this attribute name to conform with the `if update.message` check
+        # FIXME maybe this data has to be moved to "custom_attributes" becuase otherwise
+        #  identifier won't be unique
+        self.chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
+
+        # FIXME maybe this attribute is not needed:
         self.bot_chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
 
         self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
+
+        # self.user_id = user_id  # TODO user_data will be none, but I don't need it now
+        logger.info(f"{self.chat_id=}, {self.chatwoot_conversation_id=}, {data=}")  # FIXME debug
 
         # TODO do I need to check message_type for some reason?
         #  I may also want to use data["conversation"]["status"] (open or something else)
