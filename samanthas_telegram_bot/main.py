@@ -145,6 +145,7 @@ async def main() -> None:
         Handle incoming webhook updates by also putting them into the `update_queue` if
         the required parameters were passed correctly.
         """
+        json_data = await request.json()
 
         # TODO this is from PTB example, may need refactoring
         try:
@@ -153,14 +154,14 @@ async def main() -> None:
             payload = request.query_params["payload"]
         except KeyError:
             content = "Please pass both `chat_id`, `user_id` and `payload` as query parameters."
-            logger.error(f"{content} {request.json()=}")
+            logger.error(f"{content} {json_data=}")
             return PlainTextResponse(
                 status_code=HTTPStatus.BAD_REQUEST,
                 content="Please pass both `chat_id`, `user_id` and `payload` as query parameters.",
             )
         except ValueError:
             content = "The `chat_id` and `user_id` must be strings!"
-            logger.error(f"{content} {request.json()=}")
+            logger.error(f"{content} {json_data=}")
             return PlainTextResponse(
                 status_code=HTTPStatus.BAD_REQUEST,
                 content=content,
