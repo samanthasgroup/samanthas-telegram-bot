@@ -130,7 +130,7 @@ async def post_init(application: Application) -> None:
 
 async def main() -> None:
     """Run the bot."""
-    logger = logging.getLogger(__name__)  # TODO remove
+    logging.getLogger(__name__)  # TODO remove
 
     # Set up webserver
     async def telegram(request: Request) -> Response:
@@ -149,27 +149,15 @@ async def main() -> None:
 
         # TODO this is from PTB example, may need refactoring
         try:
-            chat_id = int(request.query_params["chat_id"])
+            int(request.query_params["chat_id"])
             # user_id = int(request.query_params["user_id"])  # TODO so far I don't need user_data
-            payload = request.query_params["payload"]
-        except KeyError:
-            content = "Please pass both `chat_id`, `user_id` and `payload` as query parameters."
-            logger.error(f"{content} {json_data=}")
+        except (KeyError, ValueError) as err:
             return PlainTextResponse(
                 status_code=HTTPStatus.BAD_REQUEST,
-                content="Please pass both `chat_id`, `user_id` and `payload` as query parameters.",
-            )
-        except ValueError:
-            content = "The `chat_id` and `user_id` must be strings!"
-            logger.error(f"{content} {json_data=}")
-            return PlainTextResponse(
-                status_code=HTTPStatus.BAD_REQUEST,
-                content=content,
+                content=f"{err}, {json_data=}",
             )
 
-        await application.update_queue.put(
-            ChatwootUpdate(chat_id=chat_id, payload=payload)  # TODO not using user_id for now
-        )
+        await application.update_queue.put(ChatwootUpdate(data=json_data))
 
         return Response()
 

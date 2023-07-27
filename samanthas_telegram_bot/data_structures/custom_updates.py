@@ -1,4 +1,3 @@
-import json
 import logging
 from enum import Enum
 
@@ -14,10 +13,8 @@ class ChatwootUpdate:
     Docs: https://www.chatwoot.com/docs/product/channels/api/receive-messages
     """
 
-    def __init__(self, chat_id: int, payload: str):  # TODO not using user_id yet
+    def __init__(self, data: dict[str, dict[str, str] | str]):  # TODO not using user_id yet
         logger = logging.getLogger()  # FIXME remove?
-
-        data: dict[str, dict[str, str] | str] = json.loads(payload)
 
         self.message = None
 
