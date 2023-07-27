@@ -3,12 +3,13 @@ import logging
 import os
 import traceback
 import typing
+from http import HTTPStatus
 
 import uvicorn
 from dotenv import load_dotenv
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import PlainTextResponse, Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
@@ -147,7 +148,26 @@ async def main() -> None:
         json_data = await request.json()
         logger.debug(f"Data received from Chatwoot: {json_data}")
 
-        await application.update_queue.put(ChatwootUpdate(data=json_data))
+        # TODO this is from PTB example, may need refactoring
+        try:
+            chat_id = int(request.query_params["chat_id"])
+            user_id = int(request.query_params["user_id"])
+            payload = request.query_params["payload"]
+        except KeyError:
+            return PlainTextResponse(
+                status_code=HTTPStatus.BAD_REQUEST,
+                content="Please pass both `chat_id`, `user_id` and `payload` as query parameters.",
+            )
+        except ValueError:
+            return PlainTextResponse(
+                status_code=HTTPStatus.BAD_REQUEST,
+                content="The `chat_id` and `user_id` must be strings!",
+            )
+
+        await application.update_queue.put(
+            ChatwootUpdate(chat_id=chat_id, user_id=user_id, payload=payload)
+        )
+
         return Response()
 
     starlette_app = Starlette(
