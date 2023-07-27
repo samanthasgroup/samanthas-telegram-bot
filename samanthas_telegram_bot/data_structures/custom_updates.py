@@ -14,7 +14,7 @@ class ChatwootUpdate:
     """
 
     def __init__(self, data: dict[str, dict[str, str] | str]):  # TODO not using user_id yet
-        logger = logging.getLogger()  # FIXME remove?
+        logger = logging.getLogger(__name__)  # FIXME remove?
 
         self.message = None
 

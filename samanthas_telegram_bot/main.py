@@ -145,6 +145,7 @@ async def main() -> None:
         Handle incoming webhook updates by also putting them into the `update_queue` if
         the required parameters were passed correctly.
         """
+        logger = logging.getLogger(__name__)  # FIXME remove?
         json_data = await request.json()
 
         # TODO this is from PTB example, may need refactoring
@@ -153,6 +154,7 @@ async def main() -> None:
             # user_id = int(request.query_params["user_id"])  # TODO so far I don't need user_data
         except (KeyError, ValueError) as err:
             error_message = f"{err}, {json_data=}"
+            logger.error(error_message)
             return PlainTextResponse(
                 status_code=HTTPStatus.BAD_REQUEST,
                 content=error_message,
