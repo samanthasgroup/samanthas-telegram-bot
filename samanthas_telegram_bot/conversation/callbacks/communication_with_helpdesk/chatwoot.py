@@ -26,7 +26,7 @@ async def forward_message_from_chatwoot_to_user(
             chat_id=update.chat_id, text=update.message, parse_mode=None
         )
         context.bot_data.conversation_mode_for_chat_id[
-            context.user_data.chat_id
+            update.chat_id
         ] = ConversationMode.COMMUNICATION_WITH_HELPDESK
         await logs(
             bot=context.bot,
