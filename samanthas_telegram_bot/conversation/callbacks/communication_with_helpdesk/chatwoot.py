@@ -14,25 +14,24 @@ async def forward_message_from_chatwoot_to_user(
     update: ChatwootUpdate, context: CUSTOM_CONTEXT_TYPES
 ) -> None:
     """Forwards message sent by coordinator in Chatwoot to user, switches communication mode."""
-    await logs(
-        bot=context.bot,
-        text=(
-            f"Received message to be forwarded from Chatwoot to user. {context.user_data=}, "
-            f"{context.chat_data=}, {context.bot_data=}"
-        ),
-    )  # FIXME debug level
+    bot_data = context.bot_data
     if update.direction == ChatwootMessageDirection.FROM_CHATWOOT_TO_BOT:
-        await context.bot.send_message(
-            chat_id=update.chat_id, text=update.message, parse_mode=None
-        )
-        context.bot_data.conversation_mode_for_chat_id[
-            update.chat_id
+        chat_id = update.chat_id
+
+        await logs(
+            bot=context.bot,
+            text=f"Received message to be forwarded from Chatwoot to user in chat {chat_id}",
+        )  # FIXME debug level
+
+        await context.bot.send_message(chat_id=chat_id, text=update.message, parse_mode=None)
+        bot_data.conversation_mode_for_chat_id[
+            chat_id
         ] = ConversationMode.COMMUNICATION_WITH_HELPDESK
         await logs(
             bot=context.bot,
             text=(
                 f"Chat mode after sending message to user: "
-                f"{context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]}"
+                f"{bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]}"
             ),
         )  # FIXME debug level
 
