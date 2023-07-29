@@ -25,10 +25,10 @@ async def forward_message_from_chatwoot_to_user(
         await context.bot.send_message(
             chat_id=update.bot_chat_id, text=update.message, parse_mode=None
         )
-        context.user_data.conversation_mode = ConversationMode.COMMUNICATION_WITH_HELPDESK
+        context.chat_data.mode = ConversationMode.COMMUNICATION_WITH_HELPDESK
         await logs(
             bot=context.bot,
-            text=f"Chat mode after sending message to user: {context.user_data.conversation_mode}",
+            text=f"Chat mode after sending message to user: {context.chat_data.mode}",
         )  # FIXME debug level
 
 
@@ -44,5 +44,5 @@ async def forward_message_from_user_to_chatwoot(
         ),
     )  # FIXME debug level
 
-    if context.user_data.conversation_mode == ConversationMode.COMMUNICATION_WITH_HELPDESK:
+    if context.chat_data.mode == ConversationMode.COMMUNICATION_WITH_HELPDESK:
         await ChatwootClient.send_message_to_conversation(update, context, update.message.text)

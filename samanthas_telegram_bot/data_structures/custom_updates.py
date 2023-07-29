@@ -39,16 +39,17 @@ class ChatwootUpdate:
         # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attr.
         # It's time to use it now to identify which chat this update belongs to
         # Using this attribute name to conform with the `if update.message` check
-        # FIXME maybe this data has to be moved to "custom_attributes" because otherwise
+        # FIXME maybe this data has to be moved to "custom_attributes" becuase otherwise
         #  identifier won't be unique
-        self.user_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
+        self.chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
 
         # FIXME maybe this attribute is not needed:
         self.bot_chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
 
         self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
 
-        logger.info(f"{self.user_id=}, {self.chatwoot_conversation_id=}, {data=}")  # FIXME debug
+        # self.user_id = user_id  # TODO user_data will be none, but I don't need it now
+        logger.info(f"{self.chat_id=}, {self.chatwoot_conversation_id=}, {data=}")  # FIXME debug
 
         # TODO do I need to check message_type for some reason?
         #  I may also want to use data["conversation"]["status"] (open or something else)

@@ -113,6 +113,7 @@ class ChatData:
     """IDs of all question options whose text is 'I don't know'."""
 
     # misc
+    mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
     """Names of callback data for peer help types selected by the user. It is not passed
     to the backend, only used to control the buttons and check number of options selected. 
@@ -149,7 +150,6 @@ class UserData:
     non_teaching_help_types: list[str] | None = None
     comment: str | None = None
 
-    conversation_mode: ConversationMode | None = None
     helpdesk_conversation_id: int | None = None
     """Conversation ID received from the helpdesk platform (currently Chatwoot) after registration 
     to connect coordinator there to the person communicating with the bot.

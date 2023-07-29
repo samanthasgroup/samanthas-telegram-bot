@@ -72,7 +72,7 @@ async def ask_class_communication_language(update: Update, context: CUSTOM_CONTE
         ),
     )
 
-    if context.user_data.conversation_mode == ConversationMode.REGISTRATION_REVIEW:
+    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)  # TODO do the same thing in CQReplySender?
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -91,7 +91,7 @@ async def store_communication_language_ask_teaching_experience(
         context.user_data.communication_language_in_class,
     ) = await answer_callback_query_and_get_data(update)
 
-    if context.user_data.conversation_mode == ConversationMode.REGISTRATION_REVIEW:
+    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -192,7 +192,7 @@ async def ask_non_teaching_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         bot=context.bot,
         text=f"IDs of student ages {context.user_data.teacher_student_age_range_ids}",
     )
-    if context.user_data.conversation_mode == ConversationMode.REGISTRATION_REVIEW:
+    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
         await query.delete_message()
         await MessageSender.ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
