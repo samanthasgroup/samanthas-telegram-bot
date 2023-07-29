@@ -7,6 +7,7 @@ import httpx
 from dotenv import load_dotenv
 from telegram import Update
 
+from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.auxil.constants import (
     CHATWOOT_HEADERS,
     CHATWOOT_INBOX_ID,
@@ -45,6 +46,13 @@ class ChatwootClient(BaseApiClient):
         * https://www.chatwoot.com/developers/api/#tag/Messages/operation/create-a-new-message-in-a-conversation
         """
         conversation_id = context.user_data.helpdesk_conversation_id
+
+        if conversation_id is None:
+            # This should not happen, but in this case the conversation ID
+            # is likely stored in the backend
+            context.user_data.helpdesk_conversation_id = (
+                await BackendClient.get_helpdesk_conversation_id(update, context)
+            )
 
         url = f"{CHATWOOT_URL_PREFIX}/conversations/{conversation_id}/messages"
         try:
