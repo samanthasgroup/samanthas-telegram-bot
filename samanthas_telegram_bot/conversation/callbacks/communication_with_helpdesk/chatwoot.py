@@ -30,7 +30,7 @@ async def forward_message_from_chatwoot_to_user(
         await logs(
             bot=context.bot,
             text=(
-                f"Chat mode after sending message to user: "
+                f"Mode of chat {chat_id} ({type(chat_id)}) after sending message to user: "
                 f"{bot_data.conversation_mode_for_chat_id[chat_id]}"
             ),
         )  # FIXME debug level
