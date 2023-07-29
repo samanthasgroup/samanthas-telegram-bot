@@ -764,25 +764,28 @@ async def _set_student_language_and_level_for_english_starters(
 async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """If chat is in 'operator' mode, forwards message to operator. Else, sends error message."""
     bot_data = context.bot_data
+    user_data = context.user_data
+    chat_id = user_data.chat_id
+
     await logs(
         bot=context.bot,
         update=update,
         text=(
             "This is message fallback. "
-            f"Chat mode: {bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]}. "
+            f"Chat mode: {bot_data.conversation_mode_for_chat_id[chat_id]}. "
             f"Effective message: {update.effective_message}"
         ),
     )  # FIXME debug level?
 
     if (
-        bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        bot_data.conversation_mode_for_chat_id[chat_id]
         == ConversationMode.COMMUNICATION_WITH_HELPDESK
     ):
         await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
         return
 
     await update.message.delete()
-    locale = context.user_data.locale
+    locale = user_data.locale
     if locale is None:
         locale = "ua"
     message = await update.effective_chat.send_message(

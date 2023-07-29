@@ -16,7 +16,7 @@ async def forward_message_from_chatwoot_to_user(
     """Forwards message sent by coordinator in Chatwoot to user, switches communication mode."""
     bot_data = context.bot_data
     if update.direction == ChatwootMessageDirection.FROM_CHATWOOT_TO_BOT:
-        chat_id = update.chat_id
+        chat_id = int(update.chat_id)  # Telegram updates will have chat IDs as integers!
 
         await logs(
             bot=context.bot,
