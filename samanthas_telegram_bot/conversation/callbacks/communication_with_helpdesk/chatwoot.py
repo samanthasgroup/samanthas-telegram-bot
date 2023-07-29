@@ -48,8 +48,4 @@ async def forward_message_from_user_to_chatwoot(
         ),
     )  # FIXME debug level
 
-    if (
-        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-        == ConversationMode.COMMUNICATION_WITH_HELPDESK
-    ):
-        await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
+    await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
