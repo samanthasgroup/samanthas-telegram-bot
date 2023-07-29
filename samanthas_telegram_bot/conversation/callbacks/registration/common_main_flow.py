@@ -749,9 +749,9 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
         ),
     )  # FIXME debug level?
 
-    if context.chat_data.mode == ConversationMode.COMMUNICATION_WITH_HELPDESK:
-        await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
-        return
+    # if context.chat_data.mode == ConversationMode.COMMUNICATION_WITH_HELPDESK:
+    await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
+    # return  # FIXME
 
     await update.message.delete()
     locale = context.user_data.locale
