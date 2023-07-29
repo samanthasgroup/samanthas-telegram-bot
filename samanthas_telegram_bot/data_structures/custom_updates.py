@@ -43,12 +43,8 @@ class ChatwootUpdate:
         #  identifier won't be unique
         self.chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
 
-        # FIXME maybe this attribute is not needed:
-        self.bot_chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
-
         self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
 
-        # self.user_id = user_id  # TODO user_data will be none, but I don't need it now
         logger.info(f"{self.chat_id=}, {self.chatwoot_conversation_id=}, {data=}")  # FIXME debug
 
         # TODO do I need to check message_type for some reason?

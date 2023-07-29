@@ -23,7 +23,7 @@ async def forward_message_from_chatwoot_to_user(
     )  # FIXME debug level
     if update.direction == ChatwootMessageDirection.FROM_CHATWOOT_TO_BOT:
         await context.bot.send_message(
-            chat_id=update.bot_chat_id, text=update.message, parse_mode=None
+            chat_id=update.chat_id, text=update.message, parse_mode=None
         )
         context.bot_data.conversation_mode_for_chat_id[
             context.user_data.chat_id
