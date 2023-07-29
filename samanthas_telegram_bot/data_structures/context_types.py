@@ -36,6 +36,13 @@ class BotData:
         self.age_ranges_for_type = get_age_ranges()
         self.assessment_for_age_range_id = get_assessments(lang_code="en")
 
+        # FIXME this will require some sort of persistence.
+        self.conversation_mode_for_chat_id: dict[int, ConversationMode] = {}
+        """Used to store conversation modes each chat is in. This data cannot be stored
+        in individual `chat_id` because `.chat_id` will be different for different contexts
+        (e.g. the one for handling Telegram updates and the one for handling Chatwoot updates)  
+        """
+
         day_and_time_slots = get_day_and_time_slots()
 
         self.day_and_time_slot_for_slot_id: dict[int, DayAndTimeSlot] = {
@@ -113,7 +120,6 @@ class ChatData:
     """IDs of all question options whose text is 'I don't know'."""
 
     # misc
-    mode: ConversationMode | None = None
     peer_help_callback_data: set[str] | None = None
     """Names of callback data for peer help types selected by the user. It is not passed
     to the backend, only used to control the buttons and check number of options selected. 

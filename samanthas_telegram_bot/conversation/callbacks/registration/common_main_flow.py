@@ -66,7 +66,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         update=update,
     )
 
-    context.chat_data.mode = ConversationMode.REGISTRATION_MAIN_FLOW
+    context.bot_data.conversation_mode_for_chat_id[
+        context.user_data.chat_id
+    ] = ConversationMode.REGISTRATION_MAIN_FLOW
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
@@ -237,7 +239,10 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
 
     context.user_data.first_name = update.message.text
 
-    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_REVIEW
+    ):
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -256,7 +261,10 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
 
     context.user_data.last_name = update.message.text
 
-    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_REVIEW
+    ):
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -368,7 +376,10 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         )
         return CommonState.ASK_EMAIL
 
-    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_REVIEW
+    ):
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -425,7 +436,10 @@ async def store_email_check_existence_ask_age(
         await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
         return ConversationHandler.END
 
-    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_REVIEW
+    ):
         await update.message.delete()
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -449,7 +463,10 @@ async def store_timezone_ask_slots_for_monday(
         int(item) for item in data.split(":")
     )
 
-    if context.chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_REVIEW
+    ):
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
@@ -473,6 +490,7 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
     # not using shortcut here because the query may need to be answered with an alert
     query = update.callback_query
 
+    bot_data = context.bot_data
     chat_data = context.chat_data
     user_data = context.user_data
 
@@ -510,7 +528,10 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
         await CQReplySender.ask_time_slot(context, query)
         return CommonState.TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE
 
-    if chat_data.mode == ConversationMode.REGISTRATION_REVIEW:
+    if (
+        bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_REVIEW
+    ):
         await query.answer()
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
@@ -556,7 +577,9 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
 
     # Switch into review mode to let other callbacks know that they should return user
     # back to the review callback instead of moving him normally along the conversation line
-    context.chat_data.mode = ConversationMode.REGISTRATION_REVIEW
+    context.bot_data.conversation_mode_for_chat_id[
+        context.user_data.chat_id
+    ] = ConversationMode.REGISTRATION_REVIEW
     await CQReplySender.ask_review_category(context, query)
     return CommonState.REVIEW_REQUESTED_ITEM
 
@@ -740,16 +763,21 @@ async def _set_student_language_and_level_for_english_starters(
 
 async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """If chat is in 'operator' mode, forwards message to operator. Else, sends error message."""
+    bot_data = context.bot_data
     await logs(
         bot=context.bot,
         update=update,
         text=(
-            f"This is message fallback. Chat mode: {context.chat_data.mode}. Effective message: "
-            f"{update.effective_message}"
+            "This is message fallback. "
+            f"Chat mode: {bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]}. "
+            f"Effective message: {update.effective_message}"
         ),
     )  # FIXME debug level?
 
-    if context.chat_data.mode == ConversationMode.COMMUNICATION_WITH_HELPDESK:
+    if (
+        bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.COMMUNICATION_WITH_HELPDESK
+    ):
         await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
         return
 
@@ -758,7 +786,7 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
     if locale is None:
         locale = "ua"
     message = await update.effective_chat.send_message(
-        context.bot_data.phrases["message_fallback"][locale]
+        bot_data.phrases["message_fallback"][locale]
     )
     await asyncio.sleep(5)
     await message.delete()

@@ -86,7 +86,8 @@ class MessageSender:
 
         if (
             data.role == Role.TEACHER
-            and context.chat_data.mode == ConversationMode.REGISTRATION_MAIN_FLOW
+            and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
         ):
             data.teacher_additional_skills_comment = update.message.text
 
