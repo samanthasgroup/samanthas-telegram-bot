@@ -6,7 +6,6 @@ from telegram.ext import (
     filters,
 )
 
-import samanthas_telegram_bot.conversation.callbacks.communication_with_helpdesk.chatwoot as chatwoot  # noqa: E501
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 import samanthas_telegram_bot.conversation.callbacks.registration.common_review as review
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
@@ -301,12 +300,6 @@ states = {
 CONVERSATION_HANDLER = ConversationHandler(
     entry_points=[
         CommandHandler("start", common_main.start),
-        # TODO the callback will check if the communication mode is correct.
-        #  Maybe there's a more elegant solution.
-        MessageHandler(
-            filters.TEXT & ~filters.COMMAND,
-            chatwoot.forward_message_from_user_to_chatwoot,
-        ),
     ],
     allow_reentry=True,
     states=states,

@@ -739,6 +739,12 @@ async def _set_student_language_and_level_for_english_starters(
 
 
 async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+    """If chat is in 'operator' mode, forwards message to operator. Else, sends error message."""
+
+    if context.chat_data.mode == ConversationMode.COMMUNICATION_WITH_HELPDESK:
+        await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
+        return
+
     await update.message.delete()
     locale = context.user_data.locale
     if locale is None:
