@@ -60,11 +60,14 @@ class ChatwootClient(BaseApiClient):
                 },
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(
-                        "Received data: it is expected to contain `id` for sending messages "
-                        "to this newly created Chatwoot conversation"
+                        f"Message sent to Chatwoot conversation {conversation_id}"
                     ),
                 },
             )
+            logger.info(
+                "Data received from Chatwoot after attempting to send a message to conversation "
+                f"{conversation_id}: {data}"
+            )  # FIXME debug level
         except BaseApiClientError as err:
             raise ChatwootRequestError(
                 f"Failed to send message to conversation with {conversation_id=}"
