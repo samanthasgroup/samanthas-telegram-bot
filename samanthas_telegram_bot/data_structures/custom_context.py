@@ -1,7 +1,6 @@
 from telegram.ext import Application, CallbackContext, ExtBot
 
 from samanthas_telegram_bot.data_structures.context_types import BotData, ChatData, UserData
-from samanthas_telegram_bot.data_structures.custom_updates import ChatwootUpdate
 
 
 class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # type:ignore[misc]
@@ -16,6 +15,6 @@ class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # ty
         update: object,
         application: Application,
     ) -> CallbackContext:
-        if isinstance(update, ChatwootUpdate):
-            return cls(application=application, chat_id=update.chat_id)  # TODO no user_id for now
+        # if isinstance(update, ChatwootUpdate):
+        #     return cls(application=application, chat_id=update.chat_id)  # TODO no user_id now
         return super().from_update(update, application)
