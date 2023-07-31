@@ -22,18 +22,20 @@ from telegram.ext import (
 )
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
-from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, BOT_OWNER_USERNAME, LOGGING_LEVEL
+from samanthas_telegram_bot.auxil.constants import (
+    ADMIN_CHAT_ID,
+    BOT_OWNER_USERNAME,
+    EXCEPTION_TRACEBACK_CLEANUP_PATTERN,
+    LOGGING_LEVEL,
+    WEBHOOK_PATH_FOR_CHATWOOT,
+    WEBHOOK_PATH_FOR_TELEGRAM,
+    WEBHOOK_URL_PREFIX,
+)
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
 from samanthas_telegram_bot.conversation.callbacks.communication_with_helpdesk.chatwoot import (
     forward_message_from_chatwoot_to_user,
     forward_message_from_user_to_chatwoot,
-)
-from samanthas_telegram_bot.data_structures.constants import (
-    BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK,
-    BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK,
-    EXCEPTION_TRACEBACK_CLEANUP_PATTERN,
-    WEBHOOK_URL_PREFIX,
 )
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
@@ -154,8 +156,8 @@ async def main() -> None:
 
     starlette_app = Starlette(
         routes=[
-            Route(f"/{BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK}", telegram, methods=["POST"]),
-            Route(f"/{BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK}", custom_updates, methods=["POST"]),
+            Route(f"/{WEBHOOK_PATH_FOR_TELEGRAM}", telegram, methods=["POST"]),
+            Route(f"/{WEBHOOK_PATH_FOR_CHATWOOT}", custom_updates, methods=["POST"]),
         ],
     )
     webserver = uvicorn.Server(
@@ -184,7 +186,10 @@ async def main() -> None:
 
     # register handlers
     application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, forward_message_from_user_to_chatwoot)
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND & filters.Chat.chat_ids,
+            forward_message_from_user_to_chatwoot,
+        )
     )
     application.add_handler(CONVERSATION_HANDLER)
     application.add_handler(CommandHandler("help", common_main.send_help))
@@ -198,7 +203,7 @@ async def main() -> None:
 
     # Pass webhook settings to telegram
     await application.bot.set_webhook(
-        url=f"{WEBHOOK_URL_PREFIX}{BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK}",
+        url=f"{WEBHOOK_URL_PREFIX}{WEBHOOK_PATH_FOR_TELEGRAM}",
         secret_token=os.environ.get("TELEGRAM_WEBHOOK_SECRET_TOKEN"),
         allowed_updates=Update.ALL_TYPES,
     )

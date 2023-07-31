@@ -18,6 +18,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
 )
 from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientError
 from samanthas_telegram_bot.api_clients.chatwoot.client import ChatwootClient
+from samanthas_telegram_bot.auxil.constants import EMAIL_PATTERN
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -35,12 +36,7 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
     notify_speaking_club_coordinator_about_high_level_student,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.data_structures.constants import (
-    EMAIL_PATTERN,
-    LEVELS_TOO_HIGH,
-    LOCALES,
-    Locale,
-)
+from samanthas_telegram_bot.data_structures.constants import LEVELS_TOO_HIGH, LOCALES, Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
 

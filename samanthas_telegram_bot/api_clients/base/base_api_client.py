@@ -14,8 +14,8 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
 from samanthas_telegram_bot.api_clients.auxil.enums import HttpMethod
 from samanthas_telegram_bot.api_clients.auxil.models import NotificationParamsForStatusCode
 from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientError
+from samanthas_telegram_bot.auxil.constants import CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.auxil.log_and_notify import logs
-from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 

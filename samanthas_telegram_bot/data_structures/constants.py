@@ -1,3 +1,4 @@
+"""Constants related to business logic and NOT imported from environment variables."""
 import re
 from typing import Literal
 
@@ -6,31 +7,6 @@ from typing import Literal
 #  are used to identify the phrases).
 #  Maybe this can be changed anyway (not necessarily in MVP).
 #  We could check ID's of phrases at the start to make sure there's no mismatch.
-
-BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK = "chatwoot-to-bot"
-BOT_URL_PATH_FOR_TELEGRAM_WEBHOOK = "registration-bot"
-
-CALLER_LOGGING_STACK_LEVEL = 2
-"""Stack level that will make the logger inside an auxiliary function display the name 
-of function/method that called this helper function."""
-
-EMAIL_PATTERN = re.compile(
-    "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
-    "(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
-    '|"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]'
-    '|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*")'
-    "@"
-    "(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9]"
-    "(?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}"
-    "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?"
-    "|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]"
-    "|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])",
-    re.IGNORECASE,
-)
-
-EXCEPTION_TRACEBACK_CLEANUP_PATTERN = re.compile(r"File .+/")  # it is intended to be greedy
-"""Pattern to remove the long 'File:/path/to/file/' portion, but leave the file name."""
-
 LOW_LEVELS = ("A0", "A1")
 # Higher levels can technically pass oral test too, but it was decided not to send students to
 # SmallTalk if their levels are too high for regular classes after "written" assessment.
@@ -72,7 +48,3 @@ TEACHER_PEER_HELP_TYPES = (
     "can_work_in_tandem",
 )
 """These types are used in `UserData`, callback data, setting boolean flags for teacher."""
-
-WEBHOOK_URL_PREFIX = "https://admin.samanthasgroup.com/webhooks/"
-
-WEEKDAYS = ("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
