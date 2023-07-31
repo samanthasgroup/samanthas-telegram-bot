@@ -39,7 +39,14 @@ async def forward_message_from_chatwoot_to_user(
 async def forward_message_from_user_to_chatwoot(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> None:
-    """Forwards message sent by coordinator in Chatwoot to user, switches communication mode."""
+    """Forwards message sent by coordinator in Chatwoot to user if communication mode is right."""
+
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        != ConversationMode.COMMUNICATION_WITH_HELPDESK
+    ):
+        return
+
     await logs(
         bot=context.bot,
         text=(
