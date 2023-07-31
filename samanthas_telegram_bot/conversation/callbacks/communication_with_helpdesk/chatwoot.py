@@ -24,6 +24,7 @@ async def forward_message_from_chatwoot_to_user(
         )  # FIXME debug level
 
         await context.bot.send_message(chat_id=chat_id, text=update.message, parse_mode=None)
+        # FIXME remove this from bot_data altogether? Remove new conversation mode?
         bot_data.conversation_mode_for_chat_id[
             chat_id
         ] = ConversationMode.COMMUNICATION_WITH_HELPDESK
@@ -40,14 +41,6 @@ async def forward_message_from_user_to_chatwoot(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> None:
     """Forwards message sent by coordinator in Chatwoot to user if communication mode is right."""
-    # TODO if this works, try and remove call to forward_message... from fallback.
-    if (
-        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-        != ConversationMode.COMMUNICATION_WITH_HELPDESK
-    ):
-        # await context.application.update_queue.put(update)
-        # TODO maybe use a custom filter instead?
-        return
 
     await logs(
         bot=context.bot,
