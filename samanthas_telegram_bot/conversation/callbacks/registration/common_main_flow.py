@@ -696,7 +696,7 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         context.bot_data.phrases["bye_cancel"][locale], reply_markup=ReplyKeyboardRemove()
     )
 
-    return ConversationHandler.END
+    return CommonState.CHAT_WITH_OPERATOR
 
 
 async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
