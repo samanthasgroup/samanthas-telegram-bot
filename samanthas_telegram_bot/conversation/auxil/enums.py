@@ -49,6 +49,7 @@ class ConversationStateCommon(IntEnum):
     ASK_ROLE_OR_BYE = state_auto()
     ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB = state_auto()
     BYE = state_auto()
+    CHAT_WITH_OPERATOR = state_auto()
     CHECK_CHAT_ID_ASK_ROLE = state_auto()
     CHECK_USERNAME = state_auto()
     IS_REGISTERED = state_auto()

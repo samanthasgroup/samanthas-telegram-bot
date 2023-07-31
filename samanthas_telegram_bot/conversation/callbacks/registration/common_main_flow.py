@@ -134,7 +134,7 @@ async def redirect_registered_user_to_coordinator(
         context.bot_data.phrases["reply_go_to_other_chat"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return ConversationHandler.END
+    return CommonState.CHAT_WITH_OPERATOR
 
 
 async def check_chat_id_ask_role_if_id_does_not_exist(
@@ -171,7 +171,7 @@ async def say_bye_if_does_not_want_to_register_another_person(
         context.bot_data.phrases["bye_wait_for_message_from_bot"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return ConversationHandler.END
+    return CommonState.CHAT_WITH_OPERATOR
 
 
 async def ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -430,7 +430,7 @@ async def store_email_check_existence_ask_age(
 
     if person_exists:
         await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
-        return ConversationHandler.END
+        return CommonState.CHAT_WITH_OPERATOR
 
     if (
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
@@ -655,7 +655,7 @@ async def store_comment_create_person_end_conversation(
         # Students with high level in SmallTalk are handled in a separate callback.
         await notify_speaking_club_coordinator_about_high_level_student(update, context)
 
-    return ConversationHandler.END
+    return CommonState.CHAT_WITH_OPERATOR
 
 
 # TERMINATORS, COMMANDS, HELPERS
@@ -674,7 +674,7 @@ async def say_bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         context.bot_data.phrases["bye"][context.user_data.locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
-    return ConversationHandler.END
+    return CommonState.CHAT_WITH_OPERATOR
 
 
 async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
