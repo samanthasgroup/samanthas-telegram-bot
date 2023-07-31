@@ -45,7 +45,7 @@ async def forward_message_from_user_to_chatwoot(
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
         != ConversationMode.COMMUNICATION_WITH_HELPDESK
     ):
-        await context.application.update_queue.put(update)
+        # await context.application.update_queue.put(update)
         # TODO maybe use a custom filter instead?
         return
 
@@ -56,5 +56,7 @@ async def forward_message_from_user_to_chatwoot(
             f"{context.chat_data=}, {context.bot_data=}"
         ),
     )  # FIXME debug level
+
+    # FIXME if user sends message after bot restart, there will be an error
 
     await ChatwootClient.send_message_to_conversation(update, context, update.message.text)
