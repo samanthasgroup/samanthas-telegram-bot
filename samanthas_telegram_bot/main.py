@@ -12,7 +12,14 @@ from starlette.responses import Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes, TypeHandler
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    TypeHandler,
+    filters,
+)
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, BOT_OWNER_USERNAME, LOGGING_LEVEL
@@ -20,6 +27,7 @@ from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
 from samanthas_telegram_bot.conversation.callbacks.communication_with_helpdesk.chatwoot import (
     forward_message_from_chatwoot_to_user,
+    forward_message_from_user_to_chatwoot,
 )
 from samanthas_telegram_bot.data_structures.constants import (
     BOT_URL_PATH_FOR_CHATWOOT_WEBHOOK,
@@ -175,6 +183,9 @@ async def main() -> None:
     )
 
     # register handlers
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, forward_message_from_user_to_chatwoot)
+    )
     application.add_handler(CONVERSATION_HANDLER)
     application.add_handler(CommandHandler("help", common_main.send_help))
     application.add_handler(
