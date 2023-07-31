@@ -178,7 +178,6 @@ async def main() -> None:
     application.add_handler(CONVERSATION_HANDLER)
     application.add_handler(CommandHandler("help", common_main.send_help))
     application.add_handler(
-        # FIXME does it work?
         # use strict=True to be able to use custom context
         TypeHandler(
             type=ChatwootUpdate, callback=forward_message_from_chatwoot_to_user, strict=True

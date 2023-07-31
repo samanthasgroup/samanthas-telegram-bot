@@ -706,6 +706,7 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """Displays help message."""
 
+    # TODO Ukrainian or phone's locale
     await update.message.reply_text(
         "Enter /start to start the conversation!", reply_markup=ReplyKeyboardRemove()
     )
