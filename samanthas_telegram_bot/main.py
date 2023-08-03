@@ -12,7 +12,14 @@ from starlette.responses import Response
 from starlette.routing import Route
 from telegram import BotCommandScopeAllPrivateChats, Update
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes, TypeHandler, filters
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    TypeHandler,
+    filters,
+)
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 from samanthas_telegram_bot.auxil.constants import (
@@ -185,7 +192,7 @@ async def main() -> None:
     )
     # FIXME add callback to check communication mode
     application.add_handler(
-        filters.TEXT & ~filters.COMMAND, MessageForwarder.from_user_to_helpdesk
+        MessageHandler(filters.TEXT & ~filters.COMMAND, MessageForwarder.from_user_to_helpdesk)
     )
     application.add_error_handler(error_handler)
 
