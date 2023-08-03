@@ -580,13 +580,13 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
     return CommonState.REVIEW_REQUESTED_ITEM
 
 
-async def store_comment_create_person_end_conversation(
+async def store_comment_create_person_start_helpdesk_chat(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Stores comment, creates a person in the backend and ends the conversation.
+    """Store comment, create a person in the backend, start conversation in helpdesk.
 
-    For a would-be teacher that is under 18, stores their comment about potential useful skills.
-    For others, stores the general comment. Ends the conversation."""
+    For a would-be teacher that is under 18, store their comment about potential useful skills.
+    For others, store the general comment."""
     user_data = context.user_data
     locale: Locale = user_data.locale
     phrases = context.bot_data.phrases
@@ -596,6 +596,7 @@ async def store_comment_create_person_end_conversation(
 
     await update.effective_chat.send_message(phrases["processing_wait"][locale])
 
+    # Initiate conversation in helpdesk
     message_text = f"New {user_data.role}: {user_data.first_name} {user_data.last_name}"
     if context.user_data.helpdesk_conversation_id is None:
         await ChatwootClient.start_new_conversation(update, context, text=message_text)

@@ -287,7 +287,7 @@ states = {
     ConversationStateCommon.BYE: [
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
-            common_main.store_comment_create_person_end_conversation,
+            common_main.store_comment_create_person_start_helpdesk_chat,
         )
     ],
     # one student-specific state of the final part of conversation (see its docstring)

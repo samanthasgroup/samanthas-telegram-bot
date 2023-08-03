@@ -234,7 +234,7 @@ class BackendClient(BaseApiClient):
         Type of person to be created is determined based on ``context``.
         """
         personal_info_id = await cls._create_personal_info_get_id(update, context)
-        # FIXME send message to Chatwoot, get chatwoot conversation ID
+
         url, data = cls._get_url_and_data_for_person_creation(
             update=update,
             context=context,
