@@ -1,6 +1,8 @@
 import logging
 from enum import Enum
 
+logger = logging.getLogger(__name__)
+
 
 class ChatwootMessageDirection(str, Enum):
     FROM_CHATWOOT_TO_BOT = "outgoing"
@@ -13,9 +15,7 @@ class ChatwootUpdate:
     Docs: https://www.chatwoot.com/docs/product/channels/api/receive-messages
     """
 
-    def __init__(self, data: dict[str, dict[str, str] | str]):  # TODO not using user_id yet
-        logger = logging.getLogger(__name__)  # FIXME remove?
-
+    def __init__(self, data: dict[str, dict[str, str] | str]):
         self.message = None
 
         if data["event"] == "message_created":
@@ -25,8 +25,7 @@ class ChatwootUpdate:
                 self.message = data["content"]
             else:
                 self.direction = ChatwootMessageDirection.FROM_BOT_TO_CHATWOOT
-                # FIXME debug level
-                logger.info(
+                logger.debug(
                     "This is a message sent to Chatwoot from Bot. No need to show it to user."
                 )
         else:
@@ -45,7 +44,7 @@ class ChatwootUpdate:
 
         self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
 
-        logger.info(f"{self.chat_id=}, {self.chatwoot_conversation_id=}, {data=}")  # FIXME debug
+        logger.debug(f"{self.chat_id=}, {self.chatwoot_conversation_id=}, {data=}")
 
         # TODO do I need to check message_type for some reason?
         #  I may also want to use data["conversation"]["status"] (open or something else)

@@ -8,6 +8,7 @@ from samanthas_telegram_bot.data_structures.custom_updates import (
     ChatwootMessageDirection,
     ChatwootUpdate,
 )
+from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
 
 async def forward_message_from_chatwoot_to_user(
@@ -20,8 +21,9 @@ async def forward_message_from_chatwoot_to_user(
 
         await logs(
             bot=context.bot,
+            level=LoggingLevel.DEBUG,
             text=f"Received message to be forwarded from Chatwoot to user in chat {chat_id}",
-        )  # FIXME debug level
+        )
 
         await context.bot.send_message(chat_id=chat_id, text=update.message, parse_mode=None)
         # FIXME remove this from bot_data altogether? Remove new conversation mode?
@@ -30,11 +32,12 @@ async def forward_message_from_chatwoot_to_user(
         ] = ConversationMode.COMMUNICATION_WITH_HELPDESK
         await logs(
             bot=context.bot,
+            level=LoggingLevel.DEBUG,
             text=(
                 f"Mode of chat {chat_id} ({type(chat_id)}) after sending message to user: "
                 f"{bot_data.conversation_mode_for_chat_id[chat_id]}"
             ),
-        )  # FIXME debug level
+        )
 
 
 async def forward_message_from_user_to_chatwoot(
@@ -44,11 +47,12 @@ async def forward_message_from_user_to_chatwoot(
 
     await logs(
         bot=context.bot,
+        level=LoggingLevel.DEBUG,
         text=(
             f"Received message to be forwarded from user to Chatwoot. {context.user_data=}, "
             f"{context.chat_data=}, {context.bot_data=}"
         ),
-    )  # FIXME debug level
+    )
 
     # FIXME if user sends message after bot restart, there will be an error
 

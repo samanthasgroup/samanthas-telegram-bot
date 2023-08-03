@@ -68,10 +68,10 @@ class ChatwootClient(BaseApiClient):
                     ),
                 },
             )
-            logger.info(
+            logger.debug(
                 "Data received from Chatwoot after attempting to send a message to conversation "
                 f"{conversation_id}: {data}"
-            )  # FIXME debug level
+            )
         except BaseApiClientError as err:
             raise ChatwootRequestError(
                 f"Failed to send message to conversation with {conversation_id=}"

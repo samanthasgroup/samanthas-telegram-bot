@@ -76,10 +76,10 @@ class BaseApiClient:
             let the API client raise its own exception and handle it accordingly
             (e.g. with an exception handler in the bot).
         """
-        # FIXME change level to DEBUG
         await logs(
             bot=context.bot,
             update=update,
+            level=LoggingLevel.DEBUG,
             text=f"Sending a POST request to {url} with {headers=}, {data=}, {json_data=}",
         )
 
@@ -280,10 +280,10 @@ class BaseApiClient:
         update: Update, context: CUSTOM_CONTEXT_TYPES, response: Response
     ) -> tuple[int, DataDict | list[DataDict]]:
         status_code = response.status_code
-        # FIXME set debug level
         await logs(
             bot=context.bot,
             update=update,
+            level=LoggingLevel.DEBUG,
             text=f"Received response {status_code}, {response.content=}",
         )
         try:
