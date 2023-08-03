@@ -190,7 +190,8 @@ async def main() -> None:
             type=ChatwootUpdate, callback=MessageForwarder.from_helpdesk_to_user, strict=True
         )
     )
-    # FIXME add callback to check communication mode
+    # TODO add callback to either check communication mode or catch Chatwoot exception
+    #  if conversation ID is not found
     application.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, MessageForwarder.from_user_to_helpdesk)
     )
