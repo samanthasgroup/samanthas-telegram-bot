@@ -9,6 +9,7 @@ from telegram import Update
 
 from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.api_clients.auxil.constants import (
+    CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT,
     CHATWOOT_HEADERS,
     CHATWOOT_INBOX_ID,
     CHATWOOT_URL_PREFIX,
@@ -140,14 +141,10 @@ class ChatwootClient(BaseApiClient):
                     "name": f"{user_data.first_name} {user_data.last_name}",
                     "email": user_data.email,
                     "phone": user_data.phone_number,
-                    # A Chatwoot conversation can only be linked to user's Telegram account,
-                    # not to their ID in the database.
-                    # This is because several users can share one Telegram account.
-                    # FIXME I think I have to put chat ID elsewhere because this "identifier"
-                    #  will not be unique in Chatwoot
-                    "identifier": user_data.chat_id,
-                    # TODO just testing attributes. TG username is probably not needed. Age? Level?
-                    "custom_attributes": {"Telegram": user_data.tg_username},
+                    "custom_attributes": {
+                        "Telegram": user_data.tg_username,
+                        CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT: user_data.chat_id,
+                    },
                 },
                 notification_params_for_status_code={
                     httpx.codes.OK: NotificationParams(

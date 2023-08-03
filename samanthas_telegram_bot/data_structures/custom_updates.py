@@ -1,6 +1,10 @@
 import logging
 from enum import Enum
 
+from samanthas_telegram_bot.api_clients.auxil.constants import (
+    CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,6 +20,8 @@ class ChatwootUpdate:
     """
 
     def __init__(self, data: dict[str, dict[str, str] | str]):
+        # Using this attribute name to conform with the `if update.message` check
+        # TODO maybe it's knowing too much and is worth refactoring
         self.message = None
 
         if data["event"] == "message_created":
@@ -35,12 +41,11 @@ class ChatwootUpdate:
 
         # TODO maybe other message-related events will be needed too
 
-        # When creating a Chatwoot contact, we stored their chat ID in the "identifier" attr.
+        # When creating a Chatwoot contact, we stored their chat ID.
         # It's time to use it now to identify which chat this update belongs to
-        # Using this attribute name to conform with the `if update.message` check
-        # FIXME maybe this data has to be moved to "custom_attributes" becuase otherwise
-        #  identifier won't be unique
-        self.chat_id = data[top_key]["meta"]["sender"]["identifier"]  # type:ignore[index]
+        self.chat_id = data[top_key]["meta"]["sender"]["custom_attributes"][  # type:ignore[index]
+            CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT  # type:ignore[index]
+        ]
 
         self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
 

@@ -44,6 +44,7 @@ MAX_ATTEMPTS_TO_GET_DATA_FROM_API = 10
 CHATWOOT_ACCOUNT_ID = os.environ.get("CHATWOOT_ACCOUNT_ID")
 """ID of Chatwoot account is the same for all inboxes. This is like a top-level ID."""
 CHATWOOT_API_TOKEN = cast(str, os.environ.get("CHATWOOT_API_TOKEN"))
+CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT = "chat_id_in_registration_bot"
 CHATWOOT_HEADERS = {"api_access_token": CHATWOOT_API_TOKEN}
 CHATWOOT_INBOX_ID = os.environ.get("CHATWOOT_INBOX_ID")
 """This ID defines the Chatwoot channel (inbox) that was created to exchange messages
