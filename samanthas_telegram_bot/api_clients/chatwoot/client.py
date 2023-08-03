@@ -23,6 +23,7 @@ from samanthas_telegram_bot.api_clients.chatwoot.exceptions import (
 )
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.custom_updates import ChatwootMessageDirection
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -60,7 +61,7 @@ class ChatwootClient(BaseApiClient):
                 headers=CHATWOOT_HEADERS,
                 json_data={
                     "content": text,
-                    "message_type": "incoming",  # FIXME create enum
+                    "message_type": ChatwootMessageDirection.FROM_BOT_TO_CHATWOOT,
                     # TODO content_type, content_attributes (not needed now, could be interesting)
                 },
                 notification_params_for_status_code={

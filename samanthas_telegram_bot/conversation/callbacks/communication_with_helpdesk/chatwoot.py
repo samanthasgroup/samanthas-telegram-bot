@@ -26,7 +26,6 @@ async def forward_message_from_chatwoot_to_user(
         )
 
         await context.bot.send_message(chat_id=chat_id, text=update.message, parse_mode=None)
-        # FIXME remove this from bot_data altogether? Remove new conversation mode?
         bot_data.conversation_mode_for_chat_id[
             chat_id
         ] = ConversationMode.COMMUNICATION_WITH_HELPDESK
