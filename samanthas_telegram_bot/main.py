@@ -26,9 +26,7 @@ from samanthas_telegram_bot.auxil.constants import (
 )
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
-from samanthas_telegram_bot.conversation.callbacks.communication_with_helpdesk.chatwoot import (
-    forward_message_from_chatwoot_to_user,
-)
+from samanthas_telegram_bot.conversation.callbacks.chat_with_helpdesk import MessageForwarder
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
@@ -182,7 +180,7 @@ async def main() -> None:
     application.add_handler(
         # use strict=True to be able to use custom context
         TypeHandler(
-            type=ChatwootUpdate, callback=forward_message_from_chatwoot_to_user, strict=True
+            type=ChatwootUpdate, callback=MessageForwarder.from_helpdesk_to_user, strict=True
         )
     )
     application.add_error_handler(error_handler)

@@ -19,9 +19,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherUnder18,
     UserDataReviewCategory,
 )
-from samanthas_telegram_bot.conversation.callbacks.communication_with_helpdesk.chatwoot import (
-    forward_message_from_user_to_chatwoot,
-)
+from samanthas_telegram_bot.conversation.callbacks.chat_with_helpdesk import MessageForwarder
 from samanthas_telegram_bot.data_structures.constants import (
     ALL_LEVELS_PATTERN,
     ENGLISH,
@@ -300,7 +298,7 @@ states = {
     ],
     # STATE FOR COMMUNICATION WITH OPERATOR
     ConversationStateCommon.CHAT_WITH_OPERATOR: [
-        MessageHandler(filters.TEXT & ~filters.COMMAND, forward_message_from_user_to_chatwoot)
+        MessageHandler(filters.TEXT & ~filters.COMMAND, MessageForwarder.from_user_to_helpdesk)
     ],
 }
 
