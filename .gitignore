@@ -131,6 +131,7 @@ dmypy.json
 # Pycharm
 .idea/
 
-temp.py
+temp_*.py
+temp_*.json
 
 .ruff_cache
