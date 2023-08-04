@@ -54,6 +54,4 @@ class MessageForwarder:
             ),
         )
 
-        # FIXME if user sends message after bot restart, there will be an error
-
         await ChatwootClient.send_message_to_conversation(update, context, update.message.text)

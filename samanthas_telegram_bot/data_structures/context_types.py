@@ -36,7 +36,10 @@ class BotData:
         self.age_ranges_for_type = get_age_ranges()
         self.assessment_for_age_range_id = get_assessments(lang_code="en")
 
-        # FIXME this will require some sort of persistence.
+        # TODO this will require some sort of persistence.
+        #  However, this mode thing may not be needed at all: the user won't be able to send
+        #  a message anyway if there is no conversation ID associated with this chat ID.
+        #  This will require a bit more thinking about business logic.
         self.conversation_mode_for_chat_id: dict[int, ConversationMode] = {}
         """Used to store conversation modes each chat is in. This data cannot be stored
         in individual `chat_id` because `.chat_id` will be different for different contexts
