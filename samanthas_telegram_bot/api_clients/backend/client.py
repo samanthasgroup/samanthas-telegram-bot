@@ -92,9 +92,9 @@ class BackendClient(BaseApiClient):
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
     ) -> int | None:
-        """Gets Chatwoot conversation ID for this user by sending chat ID to the backend.
+        """Get conversation ID in the helpdesk for this user by sending chat ID to the backend.
 
-        Returns Chatwoot conversation ID or ``None`` if this no registration has yet occurred from
+        Returns helpdesk conversation ID or ``None`` if this no registration has yet occurred from
         this Telegram account and hence chat ID is not stored in the backend yet.
         """
         chat_id = context.user_data.chat_id
