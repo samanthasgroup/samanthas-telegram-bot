@@ -1,5 +1,5 @@
 import logging
-from typing import Any, cast
+import typing
 
 import httpx
 from telegram import Update
@@ -129,7 +129,9 @@ class BackendClient(BaseApiClient):
             raise BackendClientError(f"{error_message}: data returned from backend is NOT a list")
 
         first_item = data[0]
-        chatwoot_conversation_id = cast(int | None, first_item.get("chatwoot_conversation_id"))
+        chatwoot_conversation_id = typing.cast(
+            int | None, first_item.get("chatwoot_conversation_id")
+        )
         await logs(text=f"{chatwoot_conversation_id=}", bot=context.bot, update=update)
         return chatwoot_conversation_id
 
@@ -299,7 +301,7 @@ class BackendClient(BaseApiClient):
                 f"Received data of wrong type when creating a personal info item: {data=}"
             )
 
-        personal_data_id = cast(int, data["id"])
+        personal_data_id = typing.cast(int, data["id"])
 
         await logs(
             bot=context.bot,
@@ -424,7 +426,7 @@ class BackendClient(BaseApiClient):
         return status_code == httpx.codes.CREATED
 
     @classmethod
-    def _get_value(cls, data: DataDict, key: str) -> Any:
+    def _get_value(cls, data: DataDict, key: str) -> typing.Any:
         try:
             return super()._get_value(data, key)
         except BaseApiClientError as err:
