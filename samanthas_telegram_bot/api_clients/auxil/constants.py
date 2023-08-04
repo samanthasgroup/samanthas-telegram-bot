@@ -12,9 +12,7 @@ DataDict = dict[
     int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | Any | None,
 ]
 
-DOMAIN = "samanthasgroup.com"  # TODO put in environment variable
-
-API_URL_PREFIX = f"https://admin.{DOMAIN}/api"
+API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
 
 API_URL_ENROLLMENT_TEST_GET_LEVEL = f"{API_URL_PREFIX}/enrollment_test_result/get_level/"
 API_URL_ENROLLMENT_TEST_SEND_RESULT = f"{API_URL_PREFIX}/enrollment_test_result/"
@@ -41,8 +39,6 @@ API_URL_INFIX_LANGUAGES_AND_LEVELS = "languages_and_levels"
 BASE_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS = 5
 MAX_ATTEMPTS_TO_GET_DATA_FROM_API = 10
 
-CHATWOOT_ACCOUNT_ID = os.environ.get("CHATWOOT_ACCOUNT_ID")
-"""ID of Chatwoot account is the same for all inboxes. This is like a top-level ID."""
 CHATWOOT_API_TOKEN = cast(str, os.environ.get("CHATWOOT_API_TOKEN"))
 CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT = "chat_id_in_registration_bot"
 CHATWOOT_HEADERS = {"api_access_token": CHATWOOT_API_TOKEN}
@@ -51,7 +47,7 @@ CHATWOOT_INBOX_ID = os.environ.get("CHATWOOT_INBOX_ID")
 between coordinators and users via this bot here.
 See: https://www.chatwoot.com/docs/product/channels/api/create-channel/
 """
-CHATWOOT_URL_PREFIX = f"https://cw.{DOMAIN}/api/v1/accounts/{CHATWOOT_ACCOUNT_ID}"
+CHATWOOT_URL_PREFIX = os.environ.get("CHATWOOT_API_URL_PREFIX")
 
 PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND = "Enter a valid email address"
 
