@@ -1,17 +1,16 @@
 """Functions for interaction with SmallTalk oral test service."""
 import asyncio
-import logging
-import os
 import typing
 
 import httpx
-from dotenv import load_dotenv
 from telegram import Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_clients.auxil.constants import (
     MAX_ATTEMPTS_TO_GET_DATA_FROM_API,
+    SMALLTALK_HEADERS,
     SMALLTALK_RESULTING_LEVEL_UNDEFINED,
+    SMALLTALK_TEST_ID,
     SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS,
     SMALLTALK_URL_GET_RESULTS,
     SMALLTALK_URL_GET_TEST,
@@ -34,13 +33,6 @@ from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 from samanthas_telegram_bot.data_structures.models import SmalltalkResult
 
-load_dotenv()
-logger = logging.getLogger(__name__)
-
-# TODO move to auxil/constants
-HEADERS = {"Authorization": f"Bearer {os.environ.get('SMALLTALK_TOKEN')}"}
-ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
-
 
 class SmallTalkClient(BaseApiClient):
     @classmethod
@@ -57,9 +49,9 @@ class SmallTalkClient(BaseApiClient):
                 update=update,
                 context=context,
                 url=SMALLTALK_URL_GET_TEST,
-                headers=HEADERS,
+                headers=SMALLTALK_HEADERS,
                 json_data={
-                    "test_id": ORAL_TEST_ID,
+                    "test_id": SMALLTALK_TEST_ID,
                     "first_name": user_data.first_name,
                     "last_name": user_data.last_name,
                     "email": user_data.email,
@@ -185,7 +177,7 @@ class SmallTalkClient(BaseApiClient):
                 update=update,
                 context=context,
                 url=SMALLTALK_URL_GET_RESULTS,
-                headers=HEADERS,
+                headers=SMALLTALK_HEADERS,
                 params={
                     "id": test_id,
                     "additional_fields": (
