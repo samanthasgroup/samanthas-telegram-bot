@@ -84,7 +84,11 @@ class MessageSender:
         data = context.user_data
         locale: Locale = data.locale
 
-        if data.role == Role.TEACHER and context.chat_data.mode == ConversationMode.NORMAL:
+        if (
+            data.role == Role.TEACHER
+            and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
+        ):
             data.teacher_additional_skills_comment = update.message.text
 
         buttons = [

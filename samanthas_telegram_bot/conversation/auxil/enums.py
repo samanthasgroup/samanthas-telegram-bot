@@ -15,10 +15,11 @@ class CommonCallbackData(str, Enum):
 
 
 class ConversationMode(str, Enum):
-    """Enumeration for chat modes: normal or review mode (when user reviews personal info)."""
+    """Enumeration for chat modes."""
 
-    NORMAL = "normal"
-    REVIEW = "review"
+    COMMUNICATION_WITH_HELPDESK = "operator"
+    REGISTRATION_MAIN_FLOW = "normal"
+    REGISTRATION_REVIEW = "review"
 
 
 state_index = 0
@@ -48,6 +49,7 @@ class ConversationStateCommon(IntEnum):
     ASK_ROLE_OR_BYE = state_auto()
     ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB = state_auto()
     BYE = state_auto()
+    CHAT_WITH_OPERATOR = state_auto()
     CHECK_CHAT_ID_ASK_ROLE = state_auto()
     CHECK_USERNAME = state_auto()
     IS_REGISTERED = state_auto()

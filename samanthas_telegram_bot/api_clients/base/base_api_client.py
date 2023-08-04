@@ -14,8 +14,8 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
 from samanthas_telegram_bot.api_clients.auxil.enums import HttpMethod
 from samanthas_telegram_bot.api_clients.auxil.models import NotificationParamsForStatusCode
 from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientError
+from samanthas_telegram_bot.auxil.constants import CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.auxil.log_and_notify import logs
-from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
@@ -32,7 +32,7 @@ class BaseApiClient:
         notification_params_for_status_code: NotificationParamsForStatusCode,
         headers: dict[str, str] | None = None,
         params: DataDict | None = None,
-    ) -> tuple[int, DataDict]:
+    ) -> tuple[int, DataDict | list[DataDict]]:
         """Makes a GET request, returns a tuple containing status code and JSON data.
 
         Note:
@@ -63,7 +63,7 @@ class BaseApiClient:
         data: DataDict | None = None,
         json_data: DataDict | None = None,
         params: DataDict | None = None,
-    ) -> tuple[int, DataDict]:
+    ) -> tuple[int, DataDict | list[DataDict]]:
         """Makes a POST request, returns a tuple containing status code and JSON data.
 
         The ``data`` parameter is passed as ``data``, ``json_data`` as ``json`` to
@@ -76,6 +76,13 @@ class BaseApiClient:
             let the API client raise its own exception and handle it accordingly
             (e.g. with an exception handler in the bot).
         """
+        await logs(
+            bot=context.bot,
+            update=update,
+            level=LoggingLevel.DEBUG,
+            text=f"Sending a POST request to {url} with {headers=}, {data=}, {json_data=}",
+        )
+
         if data is None and json_data is None:
             raise TypeError("Either `data` or `json_data` must be provided. You passed nothing.")
 
@@ -106,7 +113,7 @@ class BaseApiClient:
         data: DataDict | None = None,
         json_data: DataDict | None = None,
         params: DataDict | None = None,
-    ) -> tuple[int, DataDict]:
+    ) -> tuple[int, DataDict | list[DataDict]]:
         response = await cls._make_request_with_retries(
             update=update,
             context=context,
@@ -119,7 +126,7 @@ class BaseApiClient:
         )
 
         try:
-            status_code, json_data = await cls._get_status_code_and_json(
+            status_code, response_json_data = await cls._get_status_code_and_json(
                 update=update, context=context, response=response
             )
         except AttributeError as err:
@@ -130,7 +137,7 @@ class BaseApiClient:
         except KeyError as err:
             raise BaseApiClientError(
                 f"Unexpected {status_code=} after sending a {method} "
-                f"request to {url} with {data=}. JSON data received: {json_data}"
+                f"request to {url} with {data=}. JSON data received: {response_json_data}"
             ) from err
 
         await logs(
@@ -144,7 +151,7 @@ class BaseApiClient:
             update=update,
         )
 
-        return status_code, json_data
+        return status_code, response_json_data
 
     @classmethod
     async def _make_request_with_retries(
@@ -271,10 +278,16 @@ class BaseApiClient:
     @staticmethod
     async def _get_status_code_and_json(
         update: Update, context: CUSTOM_CONTEXT_TYPES, response: Response
-    ) -> tuple[int, DataDict]:
+    ) -> tuple[int, DataDict | list[DataDict]]:
         status_code = response.status_code
+        await logs(
+            bot=context.bot,
+            update=update,
+            level=LoggingLevel.DEBUG,
+            text=f"Received response {status_code}, {response.content=}",
+        )
         try:
-            response_json = response.json()
+            response_json: DataDict | list[DataDict] = response.json()
         except AttributeError as err:
             raise AttributeError(
                 f"Response contains no JSON. Response status code: {status_code}"

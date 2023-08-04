@@ -4,9 +4,8 @@ from dotenv import load_dotenv
 from telegram import Bot, Update
 from telegram.constants import ParseMode
 
-from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID
+from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
-from samanthas_telegram_bot.data_structures.constants import CALLER_LOGGING_STACK_LEVEL
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
 load_dotenv()
@@ -31,7 +30,7 @@ async def logs(
     """
     extra_info = ""
 
-    if update is not None:
+    if isinstance(update, Update):
         user = update.effective_user
         username_note = f" (@{user.username})" if user.username else ""
         extra_info = f"Chat {update.effective_chat.id}, user {user.full_name}{username_note}: "

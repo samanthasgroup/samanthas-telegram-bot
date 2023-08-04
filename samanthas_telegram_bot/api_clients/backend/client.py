@@ -87,6 +87,55 @@ class BackendClient(BaseApiClient):
         return bool(await cls._create_person(update, context))
 
     @classmethod
+    async def get_helpdesk_conversation_id(
+        cls,
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> int | None:
+        """Get conversation ID in the helpdesk for this user by sending chat ID to the backend.
+
+        Returns helpdesk conversation ID or ``None`` if this no registration has yet occurred from
+        this Telegram account and hence chat ID is not stored in the backend yet.
+        """
+        chat_id = context.user_data.chat_id
+        error_message = "Failed to get personal info by chat ID and read Chatwoot conversation ID"
+
+        await logs(bot=context.bot, update=update, text="Requesting Chatwoot conversation ID")
+
+        try:
+            _, data = await cls.get(
+                update=update,
+                context=context,
+                url=API_URL_PERSONAL_INFO_LIST_CREATE,
+                params={"registration_telegram_bot_chat_id": chat_id},
+                notification_params_for_status_code={
+                    httpx.codes.OK: NotificationParams(
+                        message=(
+                            "Received response from the backend that should contain Chatwoot "
+                            "conversation ID."
+                        ),
+                        logging_level=LoggingLevel.DEBUG,
+                    ),
+                },
+            )
+        except BaseApiClientError as err:
+            raise BackendClientError(error_message) from err
+
+        if not data:
+            raise BackendClientError(f"{error_message}: data returned from backend is empty")
+
+        # for mypy
+        if not isinstance(data, list):
+            raise BackendClientError(f"{error_message}: data returned from backend is NOT a list")
+
+        first_item = data[0]
+        chatwoot_conversation_id = typing.cast(
+            int | None, first_item.get("chatwoot_conversation_id")
+        )
+        await logs(text=f"{chatwoot_conversation_id=}", bot=context.bot, update=update)
+        return chatwoot_conversation_id
+
+    @classmethod
     async def get_level_after_assessment(
         cls,
         update: Update,
@@ -108,6 +157,8 @@ class BackendClient(BaseApiClient):
             ),
         )
 
+        error_message = "Failed to send results of written assessment and receive level"
+
         try:
             _, data = await cls.post(
                 update=update,
@@ -121,9 +172,13 @@ class BackendClient(BaseApiClient):
                 },
             )
         except BaseApiClientError as err:
+            raise BackendClientError(error_message) from err
+
+        # for mypy
+        if not isinstance(data, dict):
             raise BackendClientError(
-                "Failed to send results of written assessment and receive level"
-            ) from err
+                f"{error_message} - data returned is not a dictionary:\n{data}"
+            )
 
         level: str = cls._get_value(data, "resulting_level")
         if level not in ALL_LEVELS:
@@ -181,6 +236,7 @@ class BackendClient(BaseApiClient):
         Type of person to be created is determined based on ``context``.
         """
         personal_info_id = await cls._create_personal_info_get_id(update, context)
+
         url, data = cls._get_url_and_data_for_person_creation(
             update=update,
             context=context,
