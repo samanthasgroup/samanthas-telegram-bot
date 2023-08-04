@@ -12,7 +12,7 @@ DataDict = dict[
     int | str | list[str] | list[int] | tuple[int, ...] | tuple[str, ...] | Any | None,
 ]
 
-API_URL_PREFIX = "https://admin.samanthasgroup.com/api"
+API_URL_PREFIX = os.environ.get("BACKEND_API_URL_PREFIX")
 
 API_URL_ENROLLMENT_TEST_GET_LEVEL = f"{API_URL_PREFIX}/enrollment_test_result/get_level/"
 API_URL_ENROLLMENT_TEST_SEND_RESULT = f"{API_URL_PREFIX}/enrollment_test_result/"
@@ -52,7 +52,7 @@ CHATWOOT_URL_PREFIX = os.environ.get("CHATWOOT_API_URL_PREFIX")
 PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND = "Enter a valid email address"
 
 SMALLTALK_RESULTING_LEVEL_UNDEFINED = "undefined"
-SMALLTALK_URL_PREFIX = "https://app.smalltalk2.me/api/integration"
+SMALLTALK_URL_PREFIX = os.environ.get("SMALLTALK_URL_PREFIX")
 SMALLTALK_URL_GET_TEST = f"{SMALLTALK_URL_PREFIX}/send_test"
 SMALLTALK_URL_GET_RESULTS = f"{SMALLTALK_URL_PREFIX}/test_status"
 SMALLTALK_TIMEOUT_IN_SECS_BETWEEN_API_REQUEST_ATTEMPTS = 30
