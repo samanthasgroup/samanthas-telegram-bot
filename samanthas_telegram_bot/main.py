@@ -182,6 +182,7 @@ async def main() -> None:
     )
 
     # register handlers
+    # TODO add filter for private chats (not group chats) only
     application.add_handler(CONVERSATION_HANDLER)
     application.add_handler(CommandHandler("help", common_main.send_help))
     application.add_handler(

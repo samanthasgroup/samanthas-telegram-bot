@@ -218,7 +218,7 @@ class UserData:
         data: DataDict = {
             "personal_info": personal_info_id,
             "comment": self.comment,
-            "status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
             "status_since": self._format_status_since(update),
             "can_read_in_english": self.student_can_read_in_english,
             "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
@@ -248,7 +248,7 @@ class UserData:
         return {
             "personal_info": personal_info_id,
             "comment": self.comment,
-            "status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
             "status_since": self._format_status_since(update),
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
@@ -275,7 +275,7 @@ class UserData:
             "personal_info": personal_info_id,
             "comment": self.comment,
             "status_since": self._format_status_since(update),
-            "status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
