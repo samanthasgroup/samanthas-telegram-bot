@@ -133,8 +133,7 @@ class ChatData:
 class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
 
-    STATUS_AT_CREATION_STUDENT_TEACHER = "awaiting_offer"
-    STATUS_AT_CREATION_TEACHER_UNDER_18 = "active"
+    STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
 
     locale: Locale | None = None
     chat_id: int | None = None
@@ -276,7 +275,7 @@ class UserData:
             "personal_info": personal_info_id,
             "comment": self.comment,
             "status_since": self._format_status_since(update),
-            "status": self.STATUS_AT_CREATION_TEACHER_UNDER_18,
+            "status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
