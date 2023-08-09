@@ -23,6 +23,9 @@ from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
+from samanthas_telegram_bot.conversation.auxil.decorators import (
+    stay_in_same_state_if_update_has_no_message,
+)
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
@@ -217,21 +220,11 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return CommonState.ASK_LAST_NAME
 
 
+@stay_in_same_state_if_update_has_no_message
 async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the first name and asks the last name."""
 
     # It is better for less ambiguity to ask first name and last name in separate questions
-
-    # It is impossible to send an empty message, but if for some reason user edits their previous
-    # message, an update will be issued, but .message attribute will be none.
-    # This will trigger an exception, although the bot won't stop working.  Still we don't want it.
-    # So in this case just wait for user to type in the actual new message by returning him to the
-    # same state again.
-    # This "if" can't be easily factored out because the state returned is different in every
-    # callback.
-    # TODO an enhancement could be to store the information from the edited message
-    if update.message is None:
-        return CommonState.ASK_LAST_NAME
 
     context.user_data.first_name = update.message.text
 
