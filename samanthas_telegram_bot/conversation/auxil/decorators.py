@@ -6,7 +6,9 @@ from typing import Any
 LOGGER = logging.getLogger(__name__)
 
 
-def decorator(func: Callable[[Any], Any]) -> Callable[[Any], Any]:
+def stay_in_same_state_if_update_has_no_message(
+    func: Callable[[Any], Any]
+) -> Callable[[Any], Any]:
     """Auxiliary decorator for staying in same conversation state when user sent no new message.
 
     It is impossible to send an empty message, but if for some reason user edits their previous
