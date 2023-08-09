@@ -10,7 +10,7 @@ from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_
 LOGGER = logging.getLogger(__name__)
 
 
-async def stay_in_same_state_if_update_has_no_message(
+async def stay_in_same_state_if_message_is_empty(
     func: Callable[[Update, CUSTOM_CONTEXT_TYPES], Coroutine[Any, Any, int]]
 ) -> Any:
     """Auxiliary decorator for staying in same conversation state when user sent no new message.

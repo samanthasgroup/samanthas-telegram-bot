@@ -24,7 +24,7 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
     CallbackQueryReplySender as CQReplySender,
 )
 from samanthas_telegram_bot.conversation.auxil.decorators import (
-    stay_in_same_state_if_update_has_no_message,
+    stay_in_same_state_if_message_is_empty,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
@@ -220,7 +220,7 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return CommonState.ASK_LAST_NAME
 
 
-@stay_in_same_state_if_update_has_no_message
+@stay_in_same_state_if_message_is_empty
 async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores the first name and asks the last name."""
 
