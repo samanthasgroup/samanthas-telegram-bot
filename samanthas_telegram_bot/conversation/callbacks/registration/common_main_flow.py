@@ -217,7 +217,9 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return CommonState.ASK_LAST_NAME
 
 
-async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_first_name_ask_last_name(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int | None:
     """Stores the first name and asks the last name."""
 
     # It is better for less ambiguity to ask first name and last name in separate questions
@@ -227,11 +229,11 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
     # This will trigger an exception, although the bot won't stop working.  Still we don't want it.
     # So in this case just wait for user to type in the actual new message by returning him to the
     # same state again.
-    # This "if" can't be easily factored out because the state returned is different in every
-    # callback.
+    # This can be potentially refactored, but unless more functionality is needed, it would result
+    # in something like complex decorator, so not doing it yet.
     # TODO an enhancement could be to store the information from the edited message
     if update.message is None:
-        return CommonState.ASK_LAST_NAME
+        return None
 
     context.user_data.first_name = update.message.text
 
@@ -249,14 +251,15 @@ async def store_first_name_ask_last_name(update: Update, context: CUSTOM_CONTEXT
     return CommonState.ASK_SOURCE
 
 
-async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int | None:
     """Stores the last name and asks the user how they found out about Samantha's Group."""
 
     if update.message is None:
-        return CommonState.ASK_SOURCE
+        return None
 
     context.user_data.last_name = update.message.text
 
+    # TODO factor out
     if (
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
         == ConversationMode.REGISTRATION_REVIEW
@@ -271,13 +274,13 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
     return CommonState.CHECK_USERNAME
 
 
-async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_source_check_username(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int | None:
     """Stores the source of knowledge about SSG, checks Telegram nickname or asks for
     phone number.
     """
 
     if update.message is None:
-        return CommonState.CHECK_USERNAME
+        return None
 
     context.user_data.source = update.message.text
 
@@ -320,11 +323,11 @@ async def store_username_if_available_ask_phone_or_email(
     return CommonState.ASK_EMAIL
 
 
-async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int | None:
     """Stores the phone number and asks for email."""
 
     if update.message is None:
-        return CommonState.ASK_EMAIL
+        return None
 
     locale: Locale = context.user_data.locale
 
@@ -391,7 +394,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
 
 async def store_email_check_existence_ask_age(
     update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
+) -> int | None:
     """Stores the email, checks existence and asks whether user wants to be student or teacher.
 
     Stores the email. If the user with these contact details exists, redirects to goodbye.
@@ -399,7 +402,7 @@ async def store_email_check_existence_ask_age(
     """
 
     if update.message is None:
-        return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
+        return None
 
     user_data = context.user_data
     locale: Locale = user_data.locale
