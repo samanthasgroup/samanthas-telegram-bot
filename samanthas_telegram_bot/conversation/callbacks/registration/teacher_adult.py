@@ -266,10 +266,10 @@ async def ask_additional_skills_comment(update: Update, context: CUSTOM_CONTEXT_
 
 async def store_additional_skills_comment_ask_review(
     update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
+) -> int | None:
     """Stores teacher's comment on additional skills and asks to review main user data."""
     if update.message is None:
-        return ConversationStateTeacherAdult.ASK_REVIEW
+        return None
 
     context.user_data.teacher_additional_skills_comment = update.message.text
 

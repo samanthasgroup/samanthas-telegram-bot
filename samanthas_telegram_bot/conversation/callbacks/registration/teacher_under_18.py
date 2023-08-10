@@ -93,10 +93,10 @@ class CommonState:
 
 async def store_additional_help_comment_ask_final_comment(
     update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
+) -> int | None:
     """For young teachers: stores comment on additional help, asks for final comment."""
     if update.message is None:
-        return ConversationStateTeacherUnder18.ASK_FINAL_COMMENT
+        return None
     locale: Locale = context.user_data.locale
 
     context.user_data.teacher_additional_skills_comment = update.message.text
