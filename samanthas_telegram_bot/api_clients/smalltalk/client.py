@@ -156,9 +156,8 @@ class SmallTalkClient(BaseApiClient):
                     bot=context.bot,
                     update=update,
                     text=(
-                        # FIXME hyperlink
-                        f"Received [SmallTalk results for {user_data.first_name} "
-                        f"{user_data.last_name}]({result.url})"
+                        f'Received <a href="{result.url}">SmallTalk results for '
+                        f"{user_data.first_name} {user_data.last_name}</a>"
                     ),
                     parse_mode_for_admin_group_message=ParseMode.HTML,
                     needs_to_notify_admin_group=True,

@@ -375,10 +375,9 @@ class BackendClient(BaseApiClient):
             raise NotImplementedError(f"{user_data.role=} not supported")
 
         success_message = (
-            # FIXME hyperlink
             f"Created {teacher_age_infix}{user_data.role} "
-            f"[{user_data.first_name} {user_data.last_name}]"
-            f"({url_prefix}{personal_info_id}), ID {personal_info_id}\\."
+            f'<a href="{url_prefix}{personal_info_id}">{user_data.first_name} '
+            f"{user_data.last_name}</a>, ID {personal_info_id}\\."
         )
         if user_data.role == Role.TEACHER and user_data.teacher_can_host_speaking_club:
             success_message += (
