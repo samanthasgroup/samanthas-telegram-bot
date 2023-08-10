@@ -94,7 +94,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await update.message.reply_text(
         greeting,
-        parse_mode=None,
+        parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(text="українською", callback_data="ua")],

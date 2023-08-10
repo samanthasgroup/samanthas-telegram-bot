@@ -52,7 +52,7 @@ def make_dict_for_message_with_inline_keyboard(
     buttons_per_row: int,
     bottom_row_button: InlineKeyboardButton = None,
     top_row_button: InlineKeyboardButton = None,
-    parse_mode: ParseMode | None = None,
+    parse_mode: ParseMode | None = ParseMode.HTML,
 ) -> dict[str, str | InlineKeyboardMarkup]:
     """Makes a message with an inline keyboard, the number of rows in which depends on how many
     buttons are passed. The buttons are evenly distributed over the rows. The last row can

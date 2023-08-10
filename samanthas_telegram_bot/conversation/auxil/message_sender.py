@@ -141,7 +141,7 @@ class MessageSender:
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
         question_phrase_internal_id: str,
-        parse_mode: ParseMode | None = None,
+        parse_mode: ParseMode | None = ParseMode.HTML,
     ) -> None:
         """Asks "yes" or "no" (localized)."""
         await update.message.reply_text(

@@ -282,7 +282,6 @@ async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TY
             context,
             query,
             question_phrase_internal_id="ask_student_start_oral_test",
-            parse_mode=None,
         )
         return ConversationStateStudent.SEND_SMALLTALK_URL_OR_ASK_COMMUNICATION_LANGUAGE
     elif level in LEVELS_TOO_HIGH:
@@ -290,7 +289,6 @@ async def _process_assessment_results(update: Update, context: CUSTOM_CONTEXT_TY
             context,
             query,
             question_phrase_internal_id="student_level_too_high_ask",
-            parse_mode=None,
         )
         return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_OR_BYE
     else:

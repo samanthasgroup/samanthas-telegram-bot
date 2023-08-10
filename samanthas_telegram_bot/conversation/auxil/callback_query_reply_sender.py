@@ -735,7 +735,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
         question_phrase_internal_id: str,
-        parse_mode: ParseMode | None = None,
+        parse_mode: ParseMode | None = ParseMode.HTML,
     ) -> None:
         """Asks "yes" or "no" (localized)."""
 
@@ -802,6 +802,6 @@ class CallbackQueryReplySender:
                 message_text=context.bot_data.phrases[f"{user_data.role}_disclaimer"][locale],
                 buttons=buttons,
                 buttons_per_row=2,
-                parse_mode=None,
+                parse_mode=ParseMode.HTML,
             )
         )

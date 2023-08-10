@@ -18,7 +18,7 @@ async def logs(
     level: LoggingLevel = LoggingLevel.INFO,
     stacklevel: int = CALLER_LOGGING_STACK_LEVEL,
     needs_to_notify_admin_group: bool = False,
-    parse_mode_for_admin_group_message: ParseMode | None = None,
+    parse_mode_for_admin_group_message: ParseMode | None = ParseMode.HTML,
     update: Update | None = None,
 ) -> None:
     """Sends message to logger, notifies admins if necessary.
