@@ -13,28 +13,6 @@ CALLER_LOGGING_STACK_LEVEL = 2
 """Stack level that will make the logger inside an auxiliary function display the name 
 of function/method that called this helper function."""
 
-CHARACTERS_TO_BE_ESCAPED_IN_MARKDOWN: tuple[str, ...] = (
-    "\\",
-    "`",
-    "*",
-    "_",
-    "{",
-    "}",
-    "[",
-    "]",
-    "<",
-    ">",
-    "(",
-    ")",
-    "#",
-    "+",
-    "-",
-    ".",
-    "!",
-    "|",
-    "=",
-)
-
 EMAIL_PATTERN = re.compile(
     "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
     "(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
