@@ -337,7 +337,7 @@ class CallbackQueryReplySender:
                     ]
                 ]
             ),
-            parse_mode=ParseMode.MARKDOWN_V2,
+            parse_mode=ParseMode.HTML,
         )
 
     @classmethod
@@ -595,7 +595,7 @@ class CallbackQueryReplySender:
                 buttons=language_buttons,
                 buttons_per_row=2,
                 bottom_row_button=done_button,
-                parse_mode=ParseMode.MARKDOWN_V2,
+                parse_mode=ParseMode.HTML,
             )
         )
 
@@ -643,7 +643,7 @@ class CallbackQueryReplySender:
                     text=context.bot_data.phrases["ask_slots_next"][locale],
                     callback_data=CommonCallbackData.NEXT,
                 ),
-                parse_mode=ParseMode.MARKDOWN_V2,
+                parse_mode=ParseMode.HTML,
             )
         )
 
@@ -764,7 +764,7 @@ class CallbackQueryReplySender:
         await query.edit_message_text(
             bot_data.phrases["give_smalltalk_url"][locale]
             + f"\n\n[*{bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
-            parse_mode=ParseMode.MARKDOWN_V2,
+            parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup(
                 [
                     [

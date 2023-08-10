@@ -5,7 +5,6 @@ from telegram import Bot, Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.auxil.constants import ADMIN_CHAT_ID, CALLER_LOGGING_STACK_LEVEL
-from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
 load_dotenv()
@@ -34,9 +33,6 @@ async def logs(
         user = update.effective_user
         username_note = f" (@{user.username})" if user.username else ""
         extra_info = f"Chat {update.effective_chat.id}, user {user.full_name}{username_note}: "
-
-    if parse_mode_for_admin_group_message == ParseMode.MARKDOWN_V2:
-        extra_info = escape_for_markdown(extra_info)
 
     full_text = f"{extra_info}{text}"
 

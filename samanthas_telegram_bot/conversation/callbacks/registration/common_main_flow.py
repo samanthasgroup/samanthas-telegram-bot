@@ -118,7 +118,7 @@ async def store_locale_ask_if_already_registered(
         context,
         query,
         question_phrase_internal_id="ask_already_with_us",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        parse_mode=ParseMode.HTML,
     )
 
     return CommonState.CHECK_CHAT_ID_ASK_ROLE
