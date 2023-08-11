@@ -67,7 +67,7 @@ class MessageSender:
         await update.effective_chat.send_message(
             context.bot_data.phrases["ask_phone"][locale],
             disable_web_page_preview=True,  # the message contains link to site with country codes
-            parse_mode=ParseMode.MARKDOWN_V2,
+            parse_mode=ParseMode.HTML,
             reply_markup=reply_markup,
         )
 
@@ -141,7 +141,7 @@ class MessageSender:
         update: Update,
         context: CUSTOM_CONTEXT_TYPES,
         question_phrase_internal_id: str,
-        parse_mode: ParseMode | None = None,
+        parse_mode: ParseMode | None = ParseMode.HTML,
     ) -> None:
         """Asks "yes" or "no" (localized)."""
         await update.message.reply_text(

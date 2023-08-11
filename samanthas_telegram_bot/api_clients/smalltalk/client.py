@@ -26,7 +26,6 @@ from samanthas_telegram_bot.api_clients.smalltalk.exceptions import (
     SmallTalkLogicError,
     SmallTalkRequestError,
 )
-from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -157,11 +156,10 @@ class SmallTalkClient(BaseApiClient):
                     bot=context.bot,
                     update=update,
                     text=(
-                        f"Received [SmallTalk results for "
-                        f"{escape_for_markdown(user_data.first_name)} "
-                        f"{escape_for_markdown(user_data.last_name)}]({result.url})"
+                        f'Received <a href="{result.url}">SmallTalk results for '
+                        f"{user_data.first_name} {user_data.last_name}</a>"
                     ),
-                    parse_mode_for_admin_group_message=ParseMode.MARKDOWN_V2,
+                    parse_mode_for_admin_group_message=ParseMode.HTML,
                     needs_to_notify_admin_group=True,
                 )
                 return result

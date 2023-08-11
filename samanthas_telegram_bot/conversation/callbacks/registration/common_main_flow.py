@@ -94,7 +94,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await update.message.reply_text(
         greeting,
-        parse_mode=None,
+        parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(
             [
                 [InlineKeyboardButton(text="українською", callback_data="ua")],
@@ -118,7 +118,7 @@ async def store_locale_ask_if_already_registered(
         context,
         query,
         question_phrase_internal_id="ask_already_with_us",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        parse_mode=ParseMode.HTML,
     )
 
     return CommonState.CHECK_CHAT_ID_ASK_ROLE

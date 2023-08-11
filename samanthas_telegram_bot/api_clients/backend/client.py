@@ -25,7 +25,6 @@ from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientE
 from samanthas_telegram_bot.api_clients.base.base_api_client import BaseApiClient
 from samanthas_telegram_bot.api_clients.base.exceptions import BaseApiClientError
 from samanthas_telegram_bot.auxil.constants import SPEAKING_CLUB_COORDINATOR_USERNAME
-from samanthas_telegram_bot.auxil.escape_for_markdown import escape_for_markdown
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.data_structures.constants import ALL_LEVELS
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
@@ -255,7 +254,7 @@ class BackendClient(BaseApiClient):
                             context=context, personal_info_id=personal_info_id
                         ),
                         notify_admins=True,
-                        parse_mode_for_bot_message=ParseMode.MARKDOWN_V2,
+                        parse_mode_for_bot_message=ParseMode.HTML,
                     ),
                 },
             )
@@ -377,9 +376,8 @@ class BackendClient(BaseApiClient):
 
         success_message = (
             f"Created {teacher_age_infix}{user_data.role} "
-            f"[{escape_for_markdown(user_data.first_name)} "
-            f"{escape_for_markdown(user_data.last_name)}]"
-            f"({url_prefix}{personal_info_id}), ID {personal_info_id}\\."
+            f'<a href="{url_prefix}{personal_info_id}">{user_data.first_name} '
+            f"{user_data.last_name}</a>, ID {personal_info_id}\\."
         )
         if user_data.role == Role.TEACHER and user_data.teacher_can_host_speaking_club:
             success_message += (
