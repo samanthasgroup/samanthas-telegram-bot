@@ -652,13 +652,13 @@ files = [
 
 [[package]]
 name = "starlette"
-version = "0.28.0"
+version = "0.31.0"
 description = "The little ASGI library that shines."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "starlette-0.28.0-py3-none-any.whl", hash = "sha256:e58b9fc402c579950260fbb6d57173395c4e62804c40d3ede7e9ef1074f0c579"},
-    {file = "starlette-0.28.0.tar.gz", hash = "sha256:7bf3da5e997e796cc202cef2bd3f96a7d9b1e1943203c2fe2b42e020bc658482"},
+    {file = "starlette-0.31.0-py3-none-any.whl", hash = "sha256:1aab7e04bcbafbb1867c1ce62f6b21c60a6e3cecb5a08dcee8abac7457fbcfbf"},
+    {file = "starlette-0.31.0.tar.gz", hash = "sha256:7df0a3d8fa2c027d641506204ef69239d19bf9406ad2e77b319926e476ac3042"},
 ]
 
 [package.dependencies]
@@ -751,4 +751,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "26a36be556d867110b44c7a58f73bb4dddd549e92ec7411de52b1e861ee7dda6"
+content-hash = "d306bd89fb7499b48f04df122d213110cb54e41617328203376a942aedd4dbd4"
