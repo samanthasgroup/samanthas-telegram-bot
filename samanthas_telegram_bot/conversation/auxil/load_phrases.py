@@ -19,8 +19,11 @@ def load_phrases() -> dict[str, MultilingualBotPhrase]:
     with (Path(__file__).parent.resolve() / "phrases.csv").open(encoding="utf-8", newline="") as f:
         reader = typing.cast(Iterator[dict[str, str]], csv.DictReader(f))
         return {
-            row["internal_id"]: MultilingualBotPhrase(  # type: ignore[misc]
-                **{locale: row[locale].replace("\\n", "\n") for locale in LOCALES}
+            row["internal_id"]: MultilingualBotPhrase(
+                **{
+                    locale: row[locale].replace("\\n", "\n")  # type: ignore[typeddict-item]
+                    for locale in LOCALES
+                }
             )
             for row in reader
         }
