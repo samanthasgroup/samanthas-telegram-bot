@@ -202,11 +202,8 @@ states = {
             adult_teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
         )
     ],
-    ConversationStateTeacherAdult.ASK_TEACHING_FREQUENCY: [
-        CallbackQueryHandler(adult_teacher.store_number_of_groups_ask_frequency)
-    ],
     ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_START: [
-        CallbackQueryHandler(adult_teacher.store_frequency_ask_student_age_groups)
+        CallbackQueryHandler(adult_teacher.store_number_of_groups_ask_age_groups),
     ],
     ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [  # noqa:E501
         CallbackQueryHandler(adult_teacher.ask_non_teaching_help, pattern=CommonCallbackData.DONE),

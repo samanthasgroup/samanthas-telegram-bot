@@ -87,7 +87,6 @@ class ConversationStateTeacherAdult(IntEnum):
     ASK_REVIEW = state_auto()
     ASK_SLOTS_OR_TEACHING_LANGUAGE = state_auto()
     ASK_TEACHING_EXPERIENCE = state_auto()
-    ASK_TEACHING_FREQUENCY = state_auto()
     ASK_TEACHING_GROUP_OR_SPEAKING_CLUB = state_auto()
     NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP = state_auto()
     PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP = state_auto()
