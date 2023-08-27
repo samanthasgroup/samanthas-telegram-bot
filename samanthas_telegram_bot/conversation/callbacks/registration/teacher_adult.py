@@ -120,13 +120,13 @@ async def store_experience_ask_teaching_groups_vs_hosting_speaking_clubs(
     return ConversationStateTeacherAdult.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP
 
 
-async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
+async def store_teaching_preference_ask_student_age_or_number_of_groups(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores information about teaching preferences, next action depends on several factors:
 
     * If teacher only wants to host speaking clubs, asks about preferred student age groups
-    * If teacher can teach regular groups but has no experience, asks about frequency
+    * If teacher can teach regular groups but has no experience: same
     * If teacher can teach regular groups and has experience, asks about number of groups
     """
 

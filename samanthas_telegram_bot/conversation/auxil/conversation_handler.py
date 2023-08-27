@@ -199,7 +199,7 @@ states = {
     ],
     ConversationStateTeacherAdult.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP: [
         CallbackQueryHandler(
-            adult_teacher.store_teaching_preference_ask_groups_or_frequency_or_student_age
+            adult_teacher.store_teaching_preference_ask_student_age_or_number_of_groups
         )
     ],
     ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_START: [
