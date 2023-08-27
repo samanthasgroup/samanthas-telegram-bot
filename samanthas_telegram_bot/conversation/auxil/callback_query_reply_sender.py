@@ -532,32 +532,6 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def ask_teaching_frequency(
-        cls,
-        context: CUSTOM_CONTEXT_TYPES,
-        query: CallbackQuery,
-    ) -> None:
-        """Asks a teacher to choose the frequency of their classes."""
-
-        locale: Locale = context.user_data.locale
-
-        buttons = [
-            InlineKeyboardButton(
-                text=context.bot_data.phrases[f"option_frequency_{number}"][locale],
-                callback_data=number,
-            )
-            for number in (1, 2, 3)
-        ]
-
-        await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases["ask_teacher_frequency"][locale],
-                buttons=buttons,
-                buttons_per_row=1,
-            )
-        )
-
-    @classmethod
     async def ask_teaching_languages(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
