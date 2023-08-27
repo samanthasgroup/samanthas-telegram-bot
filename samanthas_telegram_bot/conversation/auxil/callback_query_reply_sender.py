@@ -629,9 +629,9 @@ class CallbackQueryReplySender:
 
         message_text = (
             context.bot_data.phrases["ask_timeslots"][locale]
-            + " *"
+            + " <strong>"
             + (context.bot_data.phrases["ask_slots_" + str(day_index)][locale])
-            + r"*\?"
+            + r"</strong>?"
         )
 
         await query.edit_message_text(
@@ -763,7 +763,11 @@ class CallbackQueryReplySender:
 
         await query.edit_message_text(
             bot_data.phrases["give_smalltalk_url"][locale]
-            + f"\n\n[*{bot_data.phrases['give_smalltalk_url_link'][locale]}*]({url})",
+            + (
+                f'\n\n<a href="{url}"><strong>'
+                f'{bot_data.phrases["give_smalltalk_url_link"][locale]}'
+                "</strong></a>"
+            ),
             parse_mode=ParseMode.HTML,
             reply_markup=InlineKeyboardMarkup(
                 [

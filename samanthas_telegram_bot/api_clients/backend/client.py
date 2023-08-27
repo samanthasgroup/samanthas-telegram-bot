@@ -377,11 +377,11 @@ class BackendClient(BaseApiClient):
         success_message = (
             f"Created {teacher_age_infix}{user_data.role} "
             f'<a href="{url_prefix}{personal_info_id}">{user_data.first_name} '
-            f"{user_data.last_name}</a>, ID {personal_info_id}\\."
+            f"{user_data.last_name}</a>, ID {personal_info_id}."
         )
         if user_data.role == Role.TEACHER and user_data.teacher_can_host_speaking_club:
             success_message += (
-                f" @{SPEAKING_CLUB_COORDINATOR_USERNAME} this teacher can host speaking clubs\\."
+                f" @{SPEAKING_CLUB_COORDINATOR_USERNAME} this teacher can host speaking clubs."
             )
 
         return success_message
