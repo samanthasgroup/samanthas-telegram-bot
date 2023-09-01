@@ -312,4 +312,6 @@ CONVERSATION_HANDLER = ConversationHandler(
         CommandHandler("cancel", common_main.cancel),
         MessageHandler(filters.TEXT & ~filters.COMMAND, common_main.message_fallback),
     ],
+    name="registration_and_helpdesk",
+    persistent=True,
 )

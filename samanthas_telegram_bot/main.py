@@ -17,6 +17,7 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
+    PicklePersistence,
     TypeHandler,
     filters,
 )
@@ -167,9 +168,11 @@ async def main() -> None:
     )
 
     # Create the Application and pass it the token.
+    persistence = PicklePersistence(filepath="bot_persistence.pickle")
     application = (
         Application.builder()
         .token(os.environ.get("BOT_TOKEN"))
+        .persistence(persistence)
         # Here we set updater to None because we want our custom webhook server to handle
         # the updates and hence we don't need an Updater instance
         .updater(None)
