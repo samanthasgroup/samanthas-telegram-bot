@@ -168,7 +168,10 @@ async def main() -> None:
     )
 
     # Create the Application and pass it the token.
-    persistence = PicklePersistence(filepath="bot_persistence.pickle")
+    persistence = PicklePersistence(
+        filepath="bot_persistence.pickle", context_types=CUSTOM_CONTEXT_TYPES
+    )
+
     application = (
         Application.builder()
         .token(os.environ.get("BOT_TOKEN"))
