@@ -17,6 +17,7 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
+    PersistenceInput,
     PicklePersistence,
     TypeHandler,
     filters,
@@ -170,7 +171,13 @@ async def main() -> None:
     context_types = ContextTypes(
         context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
     )
-    persistence = PicklePersistence(filepath="bot_persistence.pickle", context_types=context_types)
+    persistence = PicklePersistence(
+        filepath="bot_persistence.pickle",
+        context_types=context_types,
+        # The bot_data being persistent will prevent it from being updated when fixing bugs
+        # or changing phrases.  The rest can be persistent.
+        store_data=PersistenceInput(bot_data=False),
+    )
 
     # Create the Application and pass it the token.
     application = (
