@@ -167,10 +167,12 @@ async def main() -> None:
         )
     )
 
-    # Create the Application and pass it the token.
-    persistence = PicklePersistence(
-        filepath="bot_persistence.pickle", context_types=CUSTOM_CONTEXT_TYPES
+    context_types = ContextTypes(
+        context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
     )
+
+    # Create the Application and pass it the token.
+    persistence = PicklePersistence(filepath="bot_persistence.pickle", context_types=context_types)
 
     application = (
         Application.builder()
@@ -179,11 +181,7 @@ async def main() -> None:
         # Here we set updater to None because we want our custom webhook server to handle
         # the updates and hence we don't need an Updater instance
         .updater(None)
-        .context_types(
-            ContextTypes(
-                context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
-            )
-        )
+        .context_types(context_types)
         .build()
     )
 
