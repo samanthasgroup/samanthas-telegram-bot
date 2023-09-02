@@ -120,13 +120,13 @@ async def store_experience_ask_teaching_groups_vs_hosting_speaking_clubs(
     return ConversationStateTeacherAdult.ASK_NUMBER_OF_GROUPS_OR_FREQUENCY_OR_NON_TEACHING_HELP
 
 
-async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
+async def store_teaching_preference_ask_student_age_or_number_of_groups(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
     """Stores information about teaching preferences, next action depends on several factors:
 
     * If teacher only wants to host speaking clubs, asks about preferred student age groups
-    * If teacher can teach regular groups but has no experience, asks about frequency
+    * If teacher can teach regular groups but has no experience: same
     * If teacher can teach regular groups and has experience, asks about number of groups
     """
 
@@ -139,38 +139,30 @@ async def store_teaching_preference_ask_groups_or_frequency_or_student_age(
 
     if data == TeachingMode.SPEAKING_CLUB_ONLY:
         context.user_data.teacher_number_of_groups = 0
+        context.user_data.teacher_class_frequency = 1
         await CQReplySender.ask_teacher_age_groups_of_students(context, query)
         return (
             ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
         )
 
+    # for all regular groups, the teaching frequency is 2 times a week
+    context.user_data.teacher_class_frequency = 2
+
     if context.user_data.teacher_has_prior_experience is True:
         await CQReplySender.ask_teacher_number_of_groups(context, query)
-        return ConversationStateTeacherAdult.ASK_TEACHING_FREQUENCY
+        return ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_START
 
     # inexperienced teacher only get one group
     context.user_data.teacher_number_of_groups = 1
-    await CQReplySender.ask_teaching_frequency(context, query)
-    return ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_START
+    await CQReplySender.ask_teacher_age_groups_of_students(context, query)
+    return ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
 
 
-async def store_number_of_groups_ask_frequency(
+async def store_number_of_groups_ask_age_groups(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """For experienced teachers: stores number of groups, asks for frequency."""
+    """For experienced teachers: stores number of groups, asks about age groups of students."""
     query, context.user_data.teacher_number_of_groups = await answer_callback_query_and_get_data(
-        update
-    )
-
-    await CQReplySender.ask_teaching_frequency(context, query)
-    return ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_START
-
-
-async def store_frequency_ask_student_age_groups(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Stores frequency, asks for preferred age groups of students."""
-    query, context.user_data.teacher_class_frequency = await answer_callback_query_and_get_data(
         update
     )
 
