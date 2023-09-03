@@ -33,6 +33,7 @@ from samanthas_telegram_bot.auxil.constants import (
     WEBHOOK_URL_PREFIX,
 )
 from samanthas_telegram_bot.auxil.log_and_notify import logs
+from samanthas_telegram_bot.bot_data_loader import BotDataLoader
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
 from samanthas_telegram_bot.conversation.callbacks.chat_with_helpdesk import MessageForwarder
 from samanthas_telegram_bot.data_structures.context_types import (
@@ -102,6 +103,8 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
 
 
 async def post_init(application: Application) -> None:
+    BotDataLoader.load(application.bot_data)
+
     await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
     await application.bot.set_my_commands(
         [
