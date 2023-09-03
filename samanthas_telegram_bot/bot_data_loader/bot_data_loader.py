@@ -42,15 +42,13 @@ class BotDataLoader:
     @classmethod
     def load(cls, bot_data: BotData) -> None:
         """Load bot data from backend or external file(s)."""
-        # can't be imported at top of the module: it will lead to circular import error
 
         bot_data.age_ranges_for_type = cls._get_age_ranges()
+
         bot_data.assessment_for_age_range_id = cls._get_assessments(lang_code="en")
 
         day_and_time_slots = cls._get_day_and_time_slots()
-
         bot_data.day_and_time_slot_for_slot_id = {slot.id: slot for slot in day_and_time_slots}
-
         bot_data.day_and_time_slots_for_day_index = {
             index: tuple(slot for slot in day_and_time_slots if slot.day_of_week_index == index)
             for index in range(7)
@@ -58,12 +56,8 @@ class BotDataLoader:
 
         languages_and_levels = cls._get_languages_and_levels()
         unique_language_ids = {item.language_id for item in languages_and_levels}
-
-        # make sure English comes first as it has to be displayed first to the user
         bot_data.sorted_language_ids = ["en"] + sorted(unique_language_ids - {"en"})
-
         bot_data.language_and_level_for_id = {item.id: item for item in languages_and_levels}
-
         bot_data.language_and_level_objects_for_language_id = {
             language_id: tuple(
                 language_and_level
@@ -72,7 +66,6 @@ class BotDataLoader:
             )
             for language_id in bot_data.sorted_language_ids
         }
-
         bot_data.language_and_level_id_for_language_id_and_level = {
             (item.language_id, item.level): item.id for item in languages_and_levels
         }
