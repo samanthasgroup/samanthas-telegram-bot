@@ -31,8 +31,10 @@ class BotData:
 
     conversation_mode_for_chat_id: dict[int, ConversationMode] | None = None
     """Used to store conversation modes each chat is in. This data cannot be stored
-    in individual `chat_id` because `.chat_id` will be different for different contexts
-    (e.g. the one for handling Telegram updates and the one for handling Chatwoot updates)  
+    in individual ``chat_id`` because ``.chat_id`` will be different for different contexts
+    (e.g. the one for handling Telegram updates and the one for handling Chatwoot updates).
+    
+    Note: this attribute is **not** updated from backend and is kept in bot's persistence.  
     """
 
     day_and_time_slot_for_slot_id: dict[int, DayAndTimeSlot] | None = None
