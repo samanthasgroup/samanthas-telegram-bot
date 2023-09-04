@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 
 
 class BaseApiClient:
+    """Class for making API requests from within the conversation with the user.
+
+    All public methods require update and context to be passed.
+    """
+
     @classmethod
     async def get(
         cls,
