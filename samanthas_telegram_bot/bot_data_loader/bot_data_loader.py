@@ -37,6 +37,10 @@ class BotDataLoader:
     """Class for loading bot data from backend or external files.
 
     Should be called in Application.post_init() to refresh data that were loaded from persistence.
+
+    Note:
+        ``BackendClient`` cannot be used here to get data because all its public methods
+        require access to an update that is not yet available when bot is loading.
     """
 
     @classmethod
