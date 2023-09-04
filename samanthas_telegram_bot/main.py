@@ -23,6 +23,7 @@ from telegram.ext import (
 )
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
+from samanthas_telegram_bot.application_start import BotDataLoader
 from samanthas_telegram_bot.auxil.constants import (
     ADMIN_CHAT_ID,
     BOT_OWNER_USERNAME,
@@ -33,7 +34,6 @@ from samanthas_telegram_bot.auxil.constants import (
     WEBHOOK_URL_PREFIX,
 )
 from samanthas_telegram_bot.auxil.log_and_notify import logs
-from samanthas_telegram_bot.bot_data_loader import BotDataLoader
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
 from samanthas_telegram_bot.conversation.callbacks.chat_with_helpdesk import MessageForwarder
 from samanthas_telegram_bot.data_structures.context_types import (
