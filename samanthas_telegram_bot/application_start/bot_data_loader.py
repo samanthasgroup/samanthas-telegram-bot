@@ -31,6 +31,8 @@ class BotDataLoader:
     def loads(cls, bot_data: BotData) -> None:
         """Load bot data from backend or external file(s)."""
 
+        logger.info("Loading data for bot initialization from backend")
+
         bot_data.age_ranges_for_type = cls._get_age_ranges()
 
         bot_data.assessment_for_age_range_id = cls._get_assessments(lang_code="en")
@@ -78,6 +80,7 @@ class BotDataLoader:
         corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
         """
 
+        logger.info("Loading age ranges")
         data = Client.get_age_ranges()
 
         age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
@@ -105,6 +108,7 @@ class BotDataLoader:
         Returns a dictionary matching an age range ID to assessment.
         """
 
+        logger.info(f"Loading assessments for {lang_code=}")
         data = Client.get_assessments(lang_code=lang_code)
 
         assessments = tuple(
@@ -143,6 +147,7 @@ class BotDataLoader:
             """Takes a string like 05:00:00 and returns hours (5 in this example)."""
             return int(str_.split(":")[0])
 
+        logger.info("Loading day and time slots")
         data = Client.get_day_and_time_slots()
 
         return tuple(
@@ -159,6 +164,7 @@ class BotDataLoader:
     def _get_languages_and_levels(cls) -> tuple[LanguageAndLevel, ...]:
         """Gets languages and levels from the backend."""
 
+        logger.info("Loading languages and levels")
         data = Client.get_languages_and_levels()
 
         return tuple(
