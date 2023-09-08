@@ -94,7 +94,7 @@ class BotDataLoader:
         corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
         """
 
-        data = cls._get_json(url_infix="age_ranges")
+        data = cls._get_json(url_infix="age_ranges", type_of_data_for_logger="age ranges")
 
         age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
             type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -123,7 +123,7 @@ class BotDataLoader:
 
         data = cls._get_json(
             url_infix=API_URL_INFIX_ENROLLMENT_TESTS,
-            name_for_logger=f"assessments for {lang_code=}",
+            type_of_data_for_logger=f"assessments for {lang_code=}",
             params={"language": lang_code},
         )
 
@@ -163,7 +163,10 @@ class BotDataLoader:
             """Takes a string like 05:00:00 and returns hours (5 in this example)."""
             return int(str_.split(":")[0])
 
-        data = cls._get_json(url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS)
+        data = cls._get_json(
+            url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS,
+            type_of_data_for_logger="day and time slots",
+        )
 
         return tuple(
             DayAndTimeSlot(
@@ -181,7 +184,7 @@ class BotDataLoader:
 
         data = cls._get_json(
             url_infix=API_URL_INFIX_LANGUAGES_AND_LEVELS,
-            name_for_logger="combinations of languages and levels",
+            type_of_data_for_logger="combinations of languages and levels",
         )
 
         return tuple(
@@ -215,19 +218,16 @@ class BotDataLoader:
     @staticmethod
     def _get_json(
         url_infix: str,
-        name_for_logger: str | None = None,
+        type_of_data_for_logger: str,
         params: dict[str, str] | None = None,
     ) -> Any:
         """Function for simple synchronous GET requests with logging."""
-        if not name_for_logger:
-            name_for_logger = url_infix.replace("_", " ")
-
-        logger.info(f"Getting {name_for_logger} from the backend...")
+        logger.info(f"Getting {type_of_data_for_logger} from the backend...")
 
         # synchronous requests are only run at application startup, so no exception handling needed
         response = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
 
         data = response.json()
-        logger.info(f"...received {len(data)} {name_for_logger}.")
+        logger.info(f"...received {len(data)} {type_of_data_for_logger}.")
 
         return data
