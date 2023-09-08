@@ -404,13 +404,13 @@ files = [
 
 [[package]]
 name = "phonenumberslite"
-version = "8.13.19"
+version = "8.13.20"
 description = "Python version of Google's common library for parsing, formatting, storing and validating international phone numbers."
 optional = false
 python-versions = "*"
 files = [
-    {file = "phonenumberslite-8.13.19-py2.py3-none-any.whl", hash = "sha256:163a18e962e4a29ffd0bd523fa7aa60301bc7aa467bf0383bf3c4dac02097573"},
-    {file = "phonenumberslite-8.13.19.tar.gz", hash = "sha256:5d05d0f31f0838b1773c6093925c7c1ab3e98d98747db7c54a9385f8b6df5f71"},
+    {file = "phonenumberslite-8.13.20-py2.py3-none-any.whl", hash = "sha256:f0840de9bfe5b8f10b6883d971dd81f3a53bed8210326a53266f11e8be3428c3"},
+    {file = "phonenumberslite-8.13.20.tar.gz", hash = "sha256:09b07b32861f306dee10f17085afb3e058b4c179edf50deb94db4d4dd14235ff"},
 ]
 
 [[package]]
@@ -445,13 +445,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pre-commit"
-version = "3.3.3"
+version = "3.4.0"
 description = "A framework for managing and maintaining multi-language pre-commit hooks."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pre_commit-3.3.3-py2.py3-none-any.whl", hash = "sha256:10badb65d6a38caff29703362271d7dca483d01da88f9d7e05d0b97171c136cb"},
-    {file = "pre_commit-3.3.3.tar.gz", hash = "sha256:a2256f489cd913d575c145132ae196fe335da32d91a8294b7afe6622335dd023"},
+    {file = "pre_commit-3.4.0-py2.py3-none-any.whl", hash = "sha256:96d529a951f8b677f730a7212442027e8ba53f9b04d217c4c67dc56c393ad945"},
+    {file = "pre_commit-3.4.0.tar.gz", hash = "sha256:6bbd5129a64cad4c0dfaeeb12cd8f7ea7e15b77028d985341478c8af3c759522"},
 ]
 
 [package.dependencies]
@@ -477,13 +477,13 @@ plugins = ["importlib-metadata"]
 
 [[package]]
 name = "pytest"
-version = "7.4.0"
+version = "7.4.2"
 description = "pytest: simple powerful testing with Python"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "pytest-7.4.0-py3-none-any.whl", hash = "sha256:78bf16451a2eb8c7a2ea98e32dc119fd2aa758f1d5d66dbf0a59d69a3969df32"},
-    {file = "pytest-7.4.0.tar.gz", hash = "sha256:b4bf8c45bd59934ed84001ad51e11b4ee40d40a1229d2c79f9c592b0a3f6bd8a"},
+    {file = "pytest-7.4.2-py3-none-any.whl", hash = "sha256:1d881c6124e08ff0a1bb75ba3ec0bfd8b5354a01c194ddd5a0a870a48d99b002"},
+    {file = "pytest-7.4.2.tar.gz", hash = "sha256:a766259cfab564a2ad52cb1aae1b881a75c3eb7e34ca3779697c23ed47c47069"},
 ]
 
 [package.dependencies]
@@ -513,13 +513,13 @@ cli = ["click (>=5.0)"]
 
 [[package]]
 name = "python-telegram-bot"
-version = "20.4"
+version = "20.5"
 description = "We have made you a wrapper you can't refuse"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python-telegram-bot-20.4.tar.gz", hash = "sha256:a6ac3f9c9674aaf7d1c7e652d8b75cde969fb872f75e9521b8516eceaba82b1b"},
-    {file = "python_telegram_bot-20.4-py3-none-any.whl", hash = "sha256:e426404b0006989a5bcc05e11a7ef3ffe0c086b684a4e963db5bda1d361a049a"},
+    {file = "python-telegram-bot-20.5.tar.gz", hash = "sha256:2f45a94c861cbd40440ece2be176ef0fc69e10d84e6dfa17f9a456e32aeece13"},
+    {file = "python_telegram_bot-20.5-py3-none-any.whl", hash = "sha256:fc9605a855794231c802cc3948e6f7c319a817b5cd1827371f170bc7ca0ca279"},
 ]
 
 [package.dependencies]
@@ -527,11 +527,11 @@ httpx = ">=0.24.1,<0.25.0"
 tornado = {version = ">=6.2,<7.0", optional = true, markers = "extra == \"webhooks\""}
 
 [package.extras]
-all = ["APScheduler (>=3.10.1,<3.11.0)", "aiolimiter (>=1.1.0,<1.2.0)", "cachetools (>=5.3.1,<5.4.0)", "cryptography (>=39.0.1)", "httpx[http2]", "httpx[socks]", "pytz (>=2018.6)", "tornado (>=6.2,<7.0)"]
+all = ["APScheduler (>=3.10.4,<3.11.0)", "aiolimiter (>=1.1.0,<1.2.0)", "cachetools (>=5.3.1,<5.4.0)", "cryptography (>=39.0.1)", "httpx[http2]", "httpx[socks]", "pytz (>=2018.6)", "tornado (>=6.2,<7.0)"]
 callback-data = ["cachetools (>=5.3.1,<5.4.0)"]
-ext = ["APScheduler (>=3.10.1,<3.11.0)", "aiolimiter (>=1.1.0,<1.2.0)", "cachetools (>=5.3.1,<5.4.0)", "pytz (>=2018.6)", "tornado (>=6.2,<7.0)"]
+ext = ["APScheduler (>=3.10.4,<3.11.0)", "aiolimiter (>=1.1.0,<1.2.0)", "cachetools (>=5.3.1,<5.4.0)", "pytz (>=2018.6)", "tornado (>=6.2,<7.0)"]
 http2 = ["httpx[http2]"]
-job-queue = ["APScheduler (>=3.10.1,<3.11.0)", "pytz (>=2018.6)"]
+job-queue = ["APScheduler (>=3.10.4,<3.11.0)", "pytz (>=2018.6)"]
 passport = ["cryptography (>=39.0.1)"]
 rate-limiter = ["aiolimiter (>=1.1.0,<1.2.0)"]
 socks = ["httpx[socks]"]
@@ -761,4 +761,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8559fc6f595dda2bf37219d567ace826913d16b798fcce6d379c7caf430f98a9"
+content-hash = "97956e9dc327c6782c55ca3634139ab94d6ba1264dbb9ff2b1c44a43f2e4ceab"
