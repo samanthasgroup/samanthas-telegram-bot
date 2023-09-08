@@ -63,7 +63,7 @@ class BaseApiClient:
     def get_simple(
         url: str, headers: dict[str, str] | None = None, params: dict[str, str] | None = None
     ) -> DataDict | list[DataDict]:
-        """A simple method for a synchronous GET request, not needing ``Update`` or ``Context``."""
+        """A simple method for a synchronous GET request, not needing update or context."""
         response = httpx.get(url, headers=headers, params=params)
         return response.json()
 
