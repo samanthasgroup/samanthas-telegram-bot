@@ -23,9 +23,11 @@ logger = logging.getLogger(__name__)
 
 
 class BaseApiClient:
-    """Class for making API requests from within the conversation with the user.
+    """Base class for making API requests.
 
-    All public methods require update and context to be passed.
+    Implements GET and POST methods that take update and context and provide extended
+    functionality and require ``update`` and ``context``, as well as simple synchronous GET
+    requests.
     """
 
     @classmethod
