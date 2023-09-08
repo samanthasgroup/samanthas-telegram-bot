@@ -4,7 +4,7 @@ import logging
 import typing
 from pathlib import Path
 
-from samanthas_telegram_bot.api_clients import BackendClientWithoutUpdateAndContext as Client
+from samanthas_telegram_bot.api_clients import BackendClient
 from samanthas_telegram_bot.data_structures.constants import LOCALES
 from samanthas_telegram_bot.data_structures.context_types import BotData
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
@@ -81,7 +81,7 @@ class BotDataLoader:
         """
 
         logger.info("Loading age ranges")
-        data = Client.get_age_ranges()
+        data = BackendClient.get_age_ranges()
 
         age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
             type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -109,7 +109,7 @@ class BotDataLoader:
         """
 
         logger.info(f"Loading assessments for {lang_code=}")
-        data = Client.get_assessments(lang_code=lang_code)
+        data = BackendClient.get_assessments(lang_code=lang_code)
 
         assessments = tuple(
             Assessment(
@@ -148,7 +148,7 @@ class BotDataLoader:
             return int(str_.split(":")[0])
 
         logger.info("Loading day and time slots")
-        data = Client.get_day_and_time_slots()
+        data = BackendClient.get_day_and_time_slots()
 
         return tuple(
             DayAndTimeSlot(
@@ -165,7 +165,7 @@ class BotDataLoader:
         """Gets languages and levels from the backend."""
 
         logger.info("Loading languages and levels")
-        data = Client.get_languages_and_levels()
+        data = BackendClient.get_languages_and_levels()
 
         return tuple(
             LanguageAndLevel(
