@@ -91,6 +91,8 @@ class BackendClient(BaseApiClient):
 
     @classmethod
     def get_age_ranges(cls) -> typing.Any:
+        # TODO typing.Any should be replaced with something meaningful, but it leads to numerous
+        #  mypy issues (here and in other methods).
         return cls.get_simple(API_URL_AGE_RANGES)
 
     @classmethod
