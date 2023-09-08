@@ -1,22 +1,10 @@
 """Functions for API queries made when the bot starts."""
 import csv
-
-# All functions in this module are synchronous because they run once before the application start,
-# so speed is irrelevant.
-# Their being synchronous enables us to include them into BotData.__init__() without workarounds.
 import logging
 import typing
 from pathlib import Path
-from typing import Any
 
-import httpx
-
-from samanthas_telegram_bot.api_clients.auxil.constants import (
-    API_URL_INFIX_DAY_AND_TIME_SLOTS,
-    API_URL_INFIX_ENROLLMENT_TESTS,
-    API_URL_INFIX_LANGUAGES_AND_LEVELS,
-    API_URL_PREFIX,
-)
+from samanthas_telegram_bot.api_clients import BackendClientWithoutUpdateAndContext as Client
 from samanthas_telegram_bot.data_structures.constants import LOCALES
 from samanthas_telegram_bot.data_structures.context_types import BotData
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType
@@ -37,14 +25,10 @@ class BotDataLoader:
     """Class for loading bot data from backend or external files.
 
     Should be called in Application.post_init() to refresh data that were loaded from persistence.
-
-    Note:
-        ``BackendClient`` cannot be used here to get data because all its public methods
-        require access to an update that is not yet available when bot is loading.
     """
 
     @classmethod
-    def load(cls, bot_data: BotData) -> None:
+    def loads(cls, bot_data: BotData) -> None:
         """Load bot data from backend or external file(s)."""
 
         bot_data.age_ranges_for_type = cls._get_age_ranges()
@@ -94,7 +78,7 @@ class BotDataLoader:
         corresponding to adults has to be assigned ``bot_phrase_id: option_adults``.
         """
 
-        data = cls._get_json(url_infix="age_ranges", type_of_data_for_logger="age ranges")
+        data = Client.get_age_ranges()
 
         age_ranges: dict[AgeRangeType, tuple[AgeRange, ...]] = {
             type_: tuple(AgeRange(**item) for item in data if item["type"] == type_)
@@ -121,11 +105,7 @@ class BotDataLoader:
         Returns a dictionary matching an age range ID to assessment.
         """
 
-        data = cls._get_json(
-            url_infix=API_URL_INFIX_ENROLLMENT_TESTS,
-            type_of_data_for_logger=f"assessments for {lang_code=}",
-            params={"language": lang_code},
-        )
+        data = Client.get_assessments(lang_code=lang_code)
 
         assessments = tuple(
             Assessment(
@@ -163,10 +143,7 @@ class BotDataLoader:
             """Takes a string like 05:00:00 and returns hours (5 in this example)."""
             return int(str_.split(":")[0])
 
-        data = cls._get_json(
-            url_infix=API_URL_INFIX_DAY_AND_TIME_SLOTS,
-            type_of_data_for_logger="day and time slots",
-        )
+        data = Client.get_day_and_time_slots()
 
         return tuple(
             DayAndTimeSlot(
@@ -182,10 +159,7 @@ class BotDataLoader:
     def _get_languages_and_levels(cls) -> tuple[LanguageAndLevel, ...]:
         """Gets languages and levels from the backend."""
 
-        data = cls._get_json(
-            url_infix=API_URL_INFIX_LANGUAGES_AND_LEVELS,
-            type_of_data_for_logger="combinations of languages and levels",
-        )
+        data = Client.get_languages_and_levels()
 
         return tuple(
             LanguageAndLevel(
@@ -214,20 +188,3 @@ class BotDataLoader:
                 )
                 for row in reader
             }
-
-    @staticmethod
-    def _get_json(
-        url_infix: str,
-        type_of_data_for_logger: str,
-        params: dict[str, str] | None = None,
-    ) -> Any:
-        """Function for simple synchronous GET requests with logging."""
-        logger.info(f"Getting {type_of_data_for_logger} from the backend...")
-
-        # synchronous requests are only run at application startup, so no exception handling needed
-        response = httpx.get(f"{API_URL_PREFIX}/{url_infix}/", params=params)
-
-        data = response.json()
-        logger.info(f"...received {len(data)} {type_of_data_for_logger}.")
-
-        return data

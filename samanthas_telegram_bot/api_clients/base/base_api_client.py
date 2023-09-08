@@ -106,6 +106,14 @@ class BaseApiClient:
             notification_params_for_status_code=notification_params_for_status_code,
         )
 
+    @staticmethod
+    def get_simple(
+        url: str, headers: dict[str, str] | None = None, params: dict[str, str] | None = None
+    ) -> DataDict | list[DataDict]:
+        """A simple method for a synchronous GET request, not needing ``Update`` or ``Context``."""
+        response = httpx.get(url, headers=headers, params=params)
+        return response.json()
+
     @classmethod
     async def _make_request_and_get_data(
         cls,
