@@ -1,6 +1,6 @@
 from telegram import Update
 
-from samanthas_telegram_bot.api_clients.chatwoot.client import ChatwootClient
+from samanthas_telegram_bot.api_clients import ChatwootClient
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
