@@ -6,10 +6,14 @@ from telegram import Update
 from telegram.constants import ParseMode
 
 from samanthas_telegram_bot.api_clients.auxil.constants import (
+    API_URL_AGE_RANGES,
     API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
+    API_URL_DAY_AND_TIME_SLOTS,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
+    API_URL_ENROLLMENT_TESTS,
+    API_URL_LANGUAGES_AND_LEVELS,
     API_URL_PERSONAL_INFO_LIST_CREATE,
     API_URL_STUDENT_RETRIEVE,
     API_URL_STUDENTS_LIST_CREATE,
@@ -86,6 +90,20 @@ class BackendClient(BaseApiClient):
         return bool(await cls._create_person(update, context))
 
     @classmethod
+    def get_age_ranges(cls) -> typing.Any:
+        # TODO typing.Any should be replaced with something meaningful, but it leads to numerous
+        #  mypy issues (here and in other methods).
+        return cls.get_simple(API_URL_AGE_RANGES)
+
+    @classmethod
+    def get_assessments(cls, lang_code: str) -> typing.Any:
+        return cls.get_simple(API_URL_ENROLLMENT_TESTS, params={"language": lang_code})
+
+    @classmethod
+    def get_day_and_time_slots(cls) -> typing.Any:
+        return cls.get_simple(API_URL_DAY_AND_TIME_SLOTS)
+
+    @classmethod
     async def get_helpdesk_conversation_id(
         cls,
         update: Update,
@@ -133,6 +151,10 @@ class BackendClient(BaseApiClient):
         )
         await logs(text=f"{chatwoot_conversation_id=}", bot=context.bot, update=update)
         return chatwoot_conversation_id
+
+    @classmethod
+    def get_languages_and_levels(cls) -> typing.Any:
+        return cls.get_simple(API_URL_LANGUAGES_AND_LEVELS)
 
     @classmethod
     async def get_level_after_assessment(

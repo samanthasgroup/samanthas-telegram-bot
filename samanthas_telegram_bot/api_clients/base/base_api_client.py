@@ -23,6 +23,13 @@ logger = logging.getLogger(__name__)
 
 
 class BaseApiClient:
+    """Base class for making API requests.
+
+    Implements GET and POST methods that take update and context and provide extended
+    functionality and require ``update`` and ``context``, as well as simple synchronous GET
+    requests.
+    """
+
     @classmethod
     async def get(
         cls,
@@ -51,6 +58,14 @@ class BaseApiClient:
             params=params,
             notification_params_for_status_code=notification_params_for_status_code,
         )
+
+    @staticmethod
+    def get_simple(
+        url: str, headers: dict[str, str] | None = None, params: dict[str, str] | None = None
+    ) -> DataDict | list[DataDict]:
+        """A simple method for a synchronous GET request, not needing update or context."""
+        response = httpx.get(url, headers=headers, params=params)
+        return response.json()
 
     @classmethod
     async def post(

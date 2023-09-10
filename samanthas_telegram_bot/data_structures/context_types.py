@@ -8,103 +8,70 @@ from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
-from samanthas_telegram_bot.conversation.auxil.load_phrases import load_phrases
 from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.models import (
+    AgeRange,
     Assessment,
     AssessmentAnswer,
     DayAndTimeSlot,
     LanguageAndLevel,
+    MultilingualBotPhrase,
     SmalltalkResult,
     TeacherPeerHelp,
 )
 
 
+@dataclass
 class BotData:
-    """Class for data needed for every conversation and loaded once at application start."""
+    """Class for bot-level data needed for every conversation."""
 
-    def __init__(self) -> None:
-        # can't be imported at top of the module: it will lead to circular import error
-        from samanthas_telegram_bot.conversation.auxil.bot_init import (
-            get_age_ranges,
-            get_assessments,
-            get_day_and_time_slots,
-            get_languages_and_levels,
-        )
+    age_ranges_for_type: dict[AgeRangeType, tuple[AgeRange, ...]] | None = None
+    assessment_for_age_range_id: dict[int, Assessment] | None = None
 
-        self.age_ranges_for_type = get_age_ranges()
-        self.assessment_for_age_range_id = get_assessments(lang_code="en")
+    conversation_mode_for_chat_id: dict[int, ConversationMode] | None = None
+    """Used to store conversation modes each chat is in. This data cannot be stored
+    in individual ``chat_id`` because ``.chat_id`` will be different for different contexts
+    (e.g. the one for handling Telegram updates and the one for handling Chatwoot updates).
+    
+    Note: this attribute is **not** updated from backend and is kept in bot's persistence.  
+    """
 
-        # TODO this will require some sort of persistence.
-        #  However, this mode thing may not be needed at all: the user won't be able to send
-        #  a message anyway if there is no conversation ID associated with this chat ID.
-        #  This will require a bit more thinking about business logic.
-        self.conversation_mode_for_chat_id: dict[int, ConversationMode] = {}
-        """Used to store conversation modes each chat is in. This data cannot be stored
-        in individual `chat_id` because `.chat_id` will be different for different contexts
-        (e.g. the one for handling Telegram updates and the one for handling Chatwoot updates)  
-        """
+    day_and_time_slot_for_slot_id: dict[int, DayAndTimeSlot] | None = None
+    """Matches IDs of DayAndTimeSlot objects to DayAndTimeSLot objects themselves.
+    Needed for matching callback data to entire objects (e.g. to show the user later on
+    what they have chosen)
+     """
 
-        day_and_time_slots = get_day_and_time_slots()
+    day_and_time_slots_for_day_index: dict[int, tuple[DayAndTimeSlot, ...]] | None = None
+    """Matches indexes of days of the week to `DayAndTimeSlot` objects. We ask the user
+    time slots day by day, so for each day we have to select slots with the correct day index.
+     """
 
-        self.day_and_time_slot_for_slot_id: dict[int, DayAndTimeSlot] = {
-            slot.id: slot for slot in day_and_time_slots
-        }
-        """Matches IDs of DayAndTimeSlot objects to DayAndTimeSLot objects themselves.
-        Needed for matching callback data to entire objects (e.g. to show the user later on
-        what they have chosen)
-         """
+    sorted_language_ids: list[str] | None = None
+    """Language IDs sorted by language code (but English always comes first)."""
 
-        self.day_and_time_slots_for_day_index: dict[int, tuple[DayAndTimeSlot, ...]] = {
-            index: tuple(slot for slot in day_and_time_slots if slot.day_of_week_index == index)
-            for index in range(7)
-        }
-        """Matches indexes of days of the week to `DayAndTimeSlot` objects. We ask the user
-        time slots day by day, so for each day we have to select slots with the correct day index.
-         """
+    language_and_level_for_id: dict[int, LanguageAndLevel] | None = None
+    """Matches IDs of `LanguageAndLevel` objects to same `LanguageAndLevel` objects."""
 
-        languages_and_levels = get_languages_and_levels()
-        unique_language_ids = {item.language_id for item in languages_and_levels}
+    # naming with "_objects" to avoid ambiguity of "languages_and_levels"
+    language_and_level_objects_for_language_id: dict[
+        str, tuple[LanguageAndLevel, ...]
+    ] | None = None
+    """Matches IDs of teaching languages (strings like "en", "de" etc.) to tuples
+    of corresponding `LanguageAndLevel` objects."""
 
-        # make sure English comes first as it has to be displayed first to the user
-        self.sorted_language_ids = ["en"] + sorted(unique_language_ids - {"en"})
-        """Language IDs sorted by language code (but English always comes first)."""
+    language_and_level_id_for_language_id_and_level: dict[tuple[str, str], int] | None = None
+    """Matches a tuple of language_id and level to an ID of `LanguageAndLevel` object.
+    This ID (or these IDs) will be passed to the backend."""
 
-        self.language_and_level_for_id: dict[int, LanguageAndLevel] = {
-            item.id: item for item in languages_and_levels
-        }
-        """Matches IDs of `LanguageAndLevel` objects to same `LanguageAndLevel` objects."""
+    # self.phrase_for_id or even self.multilingual_phrase_for_id would be more accurate,
+    # but it's used so often that it's better to keep the name as short as possible.
+    phrases: dict[str, MultilingualBotPhrase] | None = None
+    """Matches internal ID of a bot phrase to localized versions of this phrase."""
 
-        # naming with "_objects" to avoid ambiguity of "languages_and_levels"
-        self.language_and_level_objects_for_language_id: dict[
-            str, tuple[LanguageAndLevel, ...]
-        ] = {
-            language_id: tuple(
-                language_and_level
-                for language_and_level in languages_and_levels
-                if language_and_level.language_id == language_id
-            )
-            for language_id in self.sorted_language_ids
-        }
-        """Matches IDs of teaching languages (strings like "en", "de" etc.) to tuples
-        of corresponding `LanguageAndLevel` objects."""
-
-        self.language_and_level_id_for_language_id_and_level: dict[tuple[str, str], int] = {
-            (item.language_id, item.level): item.id for item in languages_and_levels
-        }
-        """Matches a tuple of language_id and level to an ID of `LanguageAndLevel` object.
-        This ID (or these IDs) will be passed to the backend."""
-
-        # self.phrase_for_id or even self.multilingual_phrase_for_id would be more accurate,
-        # but it's used so often that it's better to keep the name as short as possible.
-        self.phrases = load_phrases()
-        """Matches internal ID of a bot phrase to localized versions of this phrase."""
-
-        self.student_ages_for_age_range_id = {
-            age_range.id: age_range for age_range in self.age_ranges_for_type[AgeRangeType.STUDENT]
-        }
-        """Matches IDs of students' age ranges to the same `AgeRange` objects."""
+    student_ages_for_age_range_id: dict[int, AgeRange] | None = None
+    """Matches IDs of students' age ranges to the same `AgeRange` objects."""
 
 
 @dataclass

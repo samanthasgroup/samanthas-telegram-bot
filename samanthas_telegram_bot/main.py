@@ -17,11 +17,13 @@ from telegram.ext import (
     CommandHandler,
     ContextTypes,
     MessageHandler,
+    PicklePersistence,
     TypeHandler,
     filters,
 )
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
+from samanthas_telegram_bot.application_start import BotDataLoader
 from samanthas_telegram_bot.auxil.constants import (
     ADMIN_CHAT_ID,
     BOT_OWNER_USERNAME,
@@ -101,6 +103,8 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
 
 
 async def post_init(application: Application) -> None:
+    BotDataLoader.load(application.bot_data)
+
     await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
     await application.bot.set_my_commands(
         [
@@ -166,18 +170,20 @@ async def main() -> None:
         )
     )
 
+    context_types = ContextTypes(
+        context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
+    )
+    persistence = PicklePersistence(filepath="bot_persistence.pickle", context_types=context_types)
+
     # Create the Application and pass it the token.
     application = (
         Application.builder()
         .token(os.environ.get("BOT_TOKEN"))
+        .persistence(persistence)
         # Here we set updater to None because we want our custom webhook server to handle
         # the updates and hence we don't need an Updater instance
         .updater(None)
-        .context_types(
-            ContextTypes(
-                context=CustomContext, user_data=UserData, chat_data=ChatData, bot_data=BotData
-            )
-        )
+        .context_types(context_types)
         .build()
     )
 
