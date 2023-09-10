@@ -28,7 +28,7 @@ class BotDataLoader:
     """
 
     @classmethod
-    def loads(cls, bot_data: BotData) -> None:
+    def load(cls, bot_data: BotData) -> None:
         """Load bot data from backend or external file(s)."""
 
         logger.info("Loading data for bot initialization from backend")

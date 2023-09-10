@@ -103,7 +103,7 @@ async def error_handler(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
 
 
 async def post_init(application: Application) -> None:
-    BotDataLoader.loads(application.bot_data)
+    BotDataLoader.load(application.bot_data)
 
     await application.bot.delete_my_commands(scope=BotCommandScopeAllPrivateChats())
     await application.bot.set_my_commands(
