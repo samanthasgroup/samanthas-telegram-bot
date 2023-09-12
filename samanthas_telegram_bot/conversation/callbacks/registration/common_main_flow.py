@@ -709,11 +709,12 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
 
 async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-    """Displays help message."""
+    """Display help message."""
 
-    # TODO Ukrainian or phone's locale
+    locale: Locale = context.user_data.locale or "ua"
     await update.message.reply_text(
-        "Enter /start to start the conversation!", reply_markup=ReplyKeyboardRemove()
+        f"{context.bot_data.phrases['help'][locale]} {BOT_TECH_SUPPORT_USERNAME}",
+        reply_markup=ReplyKeyboardRemove(),
     )
 
 
@@ -785,9 +786,7 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
     )
 
     await update.message.delete()
-    locale: Locale = user_data.locale
-    if locale is None:
-        locale = "ua"
+    locale: Locale = user_data.locale or "ua"
     message = await update.effective_chat.send_message(
         f"{bot_data.phrases['message_fallback'][locale]} {BOT_TECH_SUPPORT_USERNAME}"
     )

@@ -10,6 +10,7 @@ se,Swedish,шведский,шведську
 gr,Greek,греческий,грецьку
 fi,Finnish,финский,фiньску
 jp,Japanese,японский,японську
+help,Enter /start to start registration or /cancel to cancel the registration.\n\nFor technical support please contact,"Чтобы начать регистрацию, введите /start. Чтобы прервать регистрацию, введите /cancel.\n\nТехническая поддержка:",Почати реєстрацію: /start\nПерервати реєстрацію: /cancel\nТехнічна підтримка:
 option_yes,Yes,Да,Так
 option_no,No,Нет,Нi
 hello,Hello,Привет,Привіт
