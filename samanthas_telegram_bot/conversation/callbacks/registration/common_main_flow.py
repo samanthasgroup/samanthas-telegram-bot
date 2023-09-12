@@ -227,7 +227,7 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     if (
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-        != ConversationMode.REGISTRATION_REVIEW
+        == ConversationMode.REGISTRATION_MAIN_FLOW
     ):
         await update.effective_chat.send_message(
             context.bot_data.phrases["note_editable_fields"][locale],
