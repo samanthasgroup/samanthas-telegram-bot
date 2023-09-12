@@ -17,7 +17,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND,
 )
 from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientError
-from samanthas_telegram_bot.auxil.constants import EMAIL_PATTERN
+from samanthas_telegram_bot.auxil.constants import BOT_TECH_SUPPORT_USERNAME, EMAIL_PATTERN
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -789,7 +789,7 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
     if locale is None:
         locale = "ua"
     message = await update.effective_chat.send_message(
-        bot_data.phrases["message_fallback"][locale]
+        f"{bot_data.phrases['message_fallback'][locale]} {BOT_TECH_SUPPORT_USERNAME}"
     )
     await asyncio.sleep(5)
     await message.delete()

@@ -8,6 +8,7 @@ load_dotenv()
 
 ADMIN_CHAT_ID = os.environ.get("ADMIN_CHAT_ID")
 BOT_OWNER_USERNAME = os.environ.get("BOT_OWNER_USERNAME")
+BOT_TECH_SUPPORT_USERNAME = os.environ.get("BOT_TECH_SUPPORT_USERNAME")
 
 CALLER_LOGGING_STACK_LEVEL = 2
 """Stack level that will make the logger inside an auxiliary function display the name 
