@@ -111,6 +111,7 @@ async def post_init(application: Application) -> None:
         [
             ("start", "Start registration"),
             ("cancel", "Cancel registration"),
+            ("help", "Help"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
         language_code=ENGLISH,
@@ -119,6 +120,7 @@ async def post_init(application: Application) -> None:
         [
             ("start", "Начать регистрацию"),
             ("cancel", "Отменить регистрацию"),
+            ("help", "Помощь"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
         language_code=RUSSIAN,
@@ -127,6 +129,7 @@ async def post_init(application: Application) -> None:
         [
             ("start", "Почати реєстрацію"),
             ("cancel", "Перервати реєстрацію"),
+            ("help", "Допомога"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
         language_code=UKRAINIAN,
