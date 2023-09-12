@@ -129,8 +129,9 @@ async def redirect_registered_user_to_coordinator(
     """If user is already registered (as per their answer), redirects to coordinator."""
     query, _ = await answer_callback_query_and_get_data(update)
 
+    locale: Locale = context.user_data.locale
     await query.edit_message_text(
-        context.bot_data.phrases["reply_go_to_other_chat"][context.user_data.locale],
+        context.bot_data.phrases["reply_go_to_other_chat"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.CHAT_WITH_OPERATOR
@@ -166,8 +167,9 @@ async def say_bye_if_does_not_want_to_register_another_person(
     """If user does not want to register another person, says bye."""
     query, _ = await answer_callback_query_and_get_data(update)
 
+    locale: Locale = context.user_data.locale
     await query.edit_message_text(
-        context.bot_data.phrases["bye_wait_for_message_from_bot"][context.user_data.locale],
+        context.bot_data.phrases["bye_wait_for_message_from_bot"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.CHAT_WITH_OPERATOR
@@ -198,8 +200,9 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
         text="User didn't accept the disclaimer. Cancelling registration.",
         update=update,
     )
+    locale: Locale = context.user_data.locale
     await query.edit_message_text(
-        context.bot_data.phrases["bye_cancel"][context.user_data.locale],
+        context.bot_data.phrases["bye_cancel"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return ConversationHandler.END
@@ -209,8 +212,9 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Asks first name. No data is stored here"""
     query, _ = await answer_callback_query_and_get_data(update)
 
+    locale: Locale = context.user_data.locale
     await query.edit_message_text(
-        context.bot_data.phrases["ask_first_name"][context.user_data.locale],
+        context.bot_data.phrases["ask_first_name"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.ASK_LAST_NAME
@@ -244,9 +248,8 @@ async def store_first_name_ask_last_name(
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-    await update.message.reply_text(
-        context.bot_data.phrases["ask_last_name"][context.user_data.locale]
-    )
+    locale: Locale = context.user_data.locale
+    await update.message.reply_text(context.bot_data.phrases["ask_last_name"][locale])
     return CommonState.ASK_SOURCE
 
 
@@ -267,9 +270,8 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
         await MessageSender.ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-    await update.effective_chat.send_message(
-        context.bot_data.phrases["ask_source"][context.user_data.locale]
-    )
+    locale: Locale = context.user_data.locale
+    await update.effective_chat.send_message(context.bot_data.phrases["ask_source"][locale])
     return CommonState.CHECK_USERNAME
 
 
@@ -309,8 +311,9 @@ async def store_username_if_available_ask_phone_or_email(
             text=f"{username=} will be stored in the database.",
             update=update,
         )
+        locale: Locale = context.user_data.locale
         await query.edit_message_text(
-            context.bot_data.phrases["ask_email"][context.user_data.locale],
+            context.bot_data.phrases["ask_email"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
         return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
@@ -514,8 +517,9 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
     chat_data.day_index = 0
 
     if not any(user_data.day_and_time_slot_ids):
+        locale: Locale = user_data.locale
         await query.answer(
-            context.bot_data.phrases["no_slots_selected"][user_data.locale],
+            context.bot_data.phrases["no_slots_selected"][locale],
             show_alert=True,
         )
         await logs(
@@ -562,8 +566,9 @@ async def ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
     # We don't call edit_message_text(): let user info remain in the chat for user to see,
     # but remove the buttons.
     await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
+    locale: Locale = context.user_data.locale
     await update.effective_chat.send_message(
-        context.bot_data.phrases["ask_final_comment"][context.user_data.locale],
+        context.bot_data.phrases["ask_final_comment"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.BYE
@@ -672,9 +677,10 @@ async def say_bye(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """
     query, _ = await answer_callback_query_and_get_data(update)
 
+    locale: Locale = context.user_data.locale
     await logs(bot=context.bot, text="Cancelling registration.", update=update)
     await query.edit_message_text(
-        context.bot_data.phrases["bye"][context.user_data.locale],
+        context.bot_data.phrases["bye"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.CHAT_WITH_OPERATOR
@@ -779,7 +785,7 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
     )
 
     await update.message.delete()
-    locale = user_data.locale
+    locale: Locale = user_data.locale
     if locale is None:
         locale = "ua"
     message = await update.effective_chat.send_message(
