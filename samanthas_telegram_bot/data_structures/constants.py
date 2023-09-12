@@ -1,6 +1,7 @@
 """Constants related to business logic and NOT imported from environment variables."""
 import re
-from typing import Literal
+
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 # TODO Most of these could come from the backend to avoid duplicate changes, but that would mean
 #  the bot phrases will have to be stored in the backend too (since e.g. non-teaching help types
@@ -18,9 +19,11 @@ ALL_LEVELS = LOW_LEVELS + LEVELS_ELIGIBLE_FOR_ORAL_TEST + LEVELS_TOO_HIGH
 # in reality, not all of these levels will be taught at the school but it's OK for the pattern
 ALL_LEVELS_PATTERN = re.compile(r"^(A[012])|([BC][12])$")
 
-ENGLISH = "en"
-Locale = Literal["ua", "en", "ru"]
-LOCALES: tuple[Locale, ...] = ("ua", "en", "ru")
+ENGLISH: Locale = "en"
+RUSSIAN: Locale = "ru"
+UKRAINIAN: Locale = "ua"
+LOCALES: tuple[Locale, ...] = (UKRAINIAN, ENGLISH, RUSSIAN)
+
 LEARNED_FOR_YEAR_OR_MORE = "year_or_more"
 
 NON_TEACHING_HELP_TYPES = (

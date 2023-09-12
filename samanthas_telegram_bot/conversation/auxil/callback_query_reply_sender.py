@@ -17,10 +17,10 @@ from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     TEACHER_PEER_HELP_TYPES,
-    Locale,
 )
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, LoggingLevel, Role
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 from samanthas_telegram_bot.data_structures.models import AssessmentQuestion
 
 

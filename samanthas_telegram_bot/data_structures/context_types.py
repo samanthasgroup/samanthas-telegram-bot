@@ -1,15 +1,14 @@
 """Module with context types to be used with python-telegram-bot instead of plain dictionaries."""
 import json
 from dataclasses import dataclass
-from typing import Literal
 
 from telegram import Update
 from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
-from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
+from samanthas_telegram_bot.data_structures.literal_types import CommunicationModeInClass, Locale
 from samanthas_telegram_bot.data_structures.models import (
     AgeRange,
     Assessment,
@@ -119,7 +118,7 @@ class UserData:
     """A dictionary for languages and levels, used for building messages and keyboards."""
     language_and_level_ids: list[int] | None = None
     """A list of `LanguageAndLevel` IDs to be passed to backend."""
-    communication_language_in_class: Literal["en", "ru", "ua"] | None = None
+    communication_language_in_class: CommunicationModeInClass | None = None
     # This will be a list as opposed to peer help that is a bunch of boolean flags, because IDs of
     # help types are fixed between back-end and bot anyway (they are used for bot phrases).
     non_teaching_help_types: list[str] | None = None

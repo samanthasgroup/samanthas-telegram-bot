@@ -35,9 +35,16 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
     notify_speaking_club_coordinator_about_high_level_student,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
-from samanthas_telegram_bot.data_structures.constants import LEVELS_TOO_HIGH, LOCALES, Locale
+from samanthas_telegram_bot.data_structures.constants import (
+    ENGLISH,
+    LEVELS_TOO_HIGH,
+    LOCALES,
+    RUSSIAN,
+    UKRAINIAN,
+)
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -96,9 +103,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         parse_mode=ParseMode.HTML,
         reply_markup=InlineKeyboardMarkup(
             [
-                [InlineKeyboardButton(text="українською", callback_data="ua")],
-                [InlineKeyboardButton(text="in English", callback_data="en")],
-                [InlineKeyboardButton(text="по-русски", callback_data="ru")],
+                [InlineKeyboardButton(text="українською", callback_data=UKRAINIAN)],
+                [InlineKeyboardButton(text="in English", callback_data=ENGLISH)],
+                [InlineKeyboardButton(text="по-русски", callback_data=RUSSIAN)],
             ]
         ),
     )
@@ -711,7 +718,7 @@ async def cancel(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
     """Display help message."""
 
-    locale: Locale = context.user_data.locale or "ua"
+    locale: Locale = context.user_data.locale or UKRAINIAN
     await update.message.reply_text(
         f"{context.bot_data.phrases['help'][locale]} {BOT_TECH_SUPPORT_USERNAME}",
         reply_markup=ReplyKeyboardRemove(),
@@ -786,7 +793,7 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
     )
 
     await update.message.delete()
-    locale: Locale = user_data.locale or "ua"
+    locale: Locale = user_data.locale or UKRAINIAN
     message = await update.effective_chat.send_message(
         f"{bot_data.phrases['message_fallback'][locale]} {BOT_TECH_SUPPORT_USERNAME}"
     )

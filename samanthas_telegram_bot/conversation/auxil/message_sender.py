@@ -20,9 +20,9 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
     make_dict_for_message_to_ask_age_student,
     make_dict_for_message_with_inline_keyboard,
 )
-from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
 class MessageSender:
