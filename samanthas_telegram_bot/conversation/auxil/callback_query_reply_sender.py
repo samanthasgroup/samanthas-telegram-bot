@@ -607,7 +607,7 @@ class CallbackQueryReplySender:
             context.bot_data.phrases["ask_timeslots"][locale]
             + " <strong>"
             + (context.bot_data.phrases["ask_slots_" + str(day_index)][locale])
-            + r"</strong>?"
+            + r"</strong>? ✎"
         )
 
         await query.edit_message_text(
