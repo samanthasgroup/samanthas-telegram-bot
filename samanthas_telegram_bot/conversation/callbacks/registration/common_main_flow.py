@@ -224,6 +224,16 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         context.bot_data.phrases["ask_first_name"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
+
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        != ConversationMode.REGISTRATION_REVIEW
+    ):
+        await update.effective_chat.send_message(
+            context.bot_data.phrases["note_editable_fields"][locale],
+            parse_mode=ParseMode.HTML,
+        )
+
     return CommonState.ASK_LAST_NAME
 
 
