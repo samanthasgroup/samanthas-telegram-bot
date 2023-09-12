@@ -720,7 +720,7 @@ async def send_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
 
     locale: Locale = context.user_data.locale or UKRAINIAN
     await update.message.reply_text(
-        f"{context.bot_data.phrases['help'][locale]} {BOT_TECH_SUPPORT_USERNAME}",
+        f"{context.bot_data.phrases['help'][locale]} @{BOT_TECH_SUPPORT_USERNAME}",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -795,7 +795,7 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
     await update.message.delete()
     locale: Locale = user_data.locale or UKRAINIAN
     message = await update.effective_chat.send_message(
-        f"{bot_data.phrases['message_fallback'][locale]} {BOT_TECH_SUPPORT_USERNAME}"
+        f"{bot_data.phrases['message_fallback'][locale]} @{BOT_TECH_SUPPORT_USERNAME}"
     )
     await asyncio.sleep(5)
     await message.delete()
