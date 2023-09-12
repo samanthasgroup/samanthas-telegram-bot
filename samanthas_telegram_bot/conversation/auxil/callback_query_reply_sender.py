@@ -17,10 +17,10 @@ from samanthas_telegram_bot.data_structures.constants import (
     NON_TEACHING_HELP_TYPES,
     STUDENT_COMMUNICATION_LANGUAGE_CODES,
     TEACHER_PEER_HELP_TYPES,
-    Locale,
 )
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, LoggingLevel, Role
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 from samanthas_telegram_bot.data_structures.models import AssessmentQuestion
 
 
@@ -180,8 +180,9 @@ class CallbackQueryReplySender:
             InlineKeyboardButton(text=option.text, callback_data=option.id)
             for option in current_question.options
         ]
+        locale: Locale = context.user_data.locale
         abort_button = InlineKeyboardButton(
-            text=context.bot_data.phrases["assessment_option_abort"][context.user_data.locale],
+            text=context.bot_data.phrases["assessment_option_abort"][locale],
             callback_data=CommonCallbackData.ABORT,
         )
 
@@ -357,8 +358,9 @@ class CallbackQueryReplySender:
     ) -> None:
         """Asks about additional help the teacher can provide (in free text)."""
 
+        locale: Locale = context.user_data.locale
         await query.edit_message_text(
-            context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale],
+            context.bot_data.phrases["ask_teacher_any_additional_help"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
 
@@ -732,7 +734,7 @@ class CallbackQueryReplySender:
     ) -> None:
         """Sends message with SmallTalk URL to the user."""
         bot_data = context.bot_data
-        locale = context.user_data.locale
+        locale: Locale = context.user_data.locale
         url = context.user_data.student_smalltalk_interview_url
 
         await query.edit_message_text(
@@ -763,7 +765,7 @@ class CallbackQueryReplySender:
     ) -> None:
         """Shows disclaimer (message text depends on role)."""
         user_data = context.user_data
-        locale = user_data.locale
+        locale: Locale = user_data.locale
 
         phrase_for_callback_data = {
             option: context.bot_data.phrases[f"disclaimer_option_{option}"][locale]

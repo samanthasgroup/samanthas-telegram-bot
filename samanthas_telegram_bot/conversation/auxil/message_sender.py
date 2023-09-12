@@ -20,9 +20,9 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
     make_dict_for_message_to_ask_age_student,
     make_dict_for_message_with_inline_keyboard,
 )
-from samanthas_telegram_bot.data_structures.constants import Locale
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
 class MessageSender:
@@ -143,12 +143,11 @@ class MessageSender:
         question_phrase_internal_id: str,
         parse_mode: ParseMode | None = ParseMode.HTML,
     ) -> None:
-        """Asks "yes" or "no" (localized)."""
+        """Ask "yes" or "no" (localized)."""
+        locale: Locale = context.user_data.locale
         await update.message.reply_text(
             **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases[question_phrase_internal_id][
-                    context.user_data.locale
-                ],
+                message_text=context.bot_data.phrases[question_phrase_internal_id][locale],
                 buttons=make_buttons_yes_no(context),
                 buttons_per_row=2,
                 parse_mode=parse_mode,
