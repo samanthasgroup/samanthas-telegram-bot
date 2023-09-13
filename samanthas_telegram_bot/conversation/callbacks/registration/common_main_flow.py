@@ -409,7 +409,7 @@ async def store_email_check_existence_ask_age(
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
         await update.message.reply_text(context.bot_data.phrases["invalid_email"][locale])
-        return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
+        return None
 
     user_data.email = email
 
