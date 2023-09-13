@@ -36,6 +36,7 @@ from samanthas_telegram_bot.auxil.constants import (
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.conversation_handler import CONVERSATION_HANDLER
 from samanthas_telegram_bot.conversation.callbacks.chat_with_helpdesk import MessageForwarder
+from samanthas_telegram_bot.data_structures.constants import ENGLISH, RUSSIAN, UKRAINIAN
 from samanthas_telegram_bot.data_structures.context_types import (
     CUSTOM_CONTEXT_TYPES,
     BotData,
@@ -110,25 +111,28 @@ async def post_init(application: Application) -> None:
         [
             ("start", "Start registration"),
             ("cancel", "Cancel registration"),
+            ("help", "Help"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
-        language_code="en",
+        language_code=ENGLISH,
     )
     await application.bot.set_my_commands(
         [
             ("start", "Начать регистрацию"),
             ("cancel", "Отменить регистрацию"),
+            ("help", "Помощь"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
-        language_code="ru",
+        language_code=RUSSIAN,
     )
     await application.bot.set_my_commands(
         [
             ("start", "Почати реєстрацію"),
             ("cancel", "Перервати реєстрацію"),
+            ("help", "Допомога"),
         ],
         scope=BotCommandScopeAllPrivateChats(),
-        language_code="ua",
+        language_code=UKRAINIAN,
     )
 
     await application.bot.send_message(
