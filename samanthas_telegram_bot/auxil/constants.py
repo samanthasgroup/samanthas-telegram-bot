@@ -32,6 +32,8 @@ EXCEPTION_TRACEBACK_CLEANUP_PATTERN = re.compile(r"File .+/")  # it is intended 
 
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL")
 
+RUSSIAN_DOMAINS = (".ru", ".su", ".рф")
+
 SPEAKING_CLUB_COORDINATOR_USERNAME = os.environ.get("SPEAKING_CLUB_COORDINATOR_USERNAME")
 
 WEBHOOK_URL_PREFIX = os.environ.get("WEBHOOK_URL_PREFIX")

@@ -17,7 +17,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     PERSON_EXISTENCE_CHECK_INVALID_EMAIL_MESSAGE_FROM_BACKEND,
 )
 from samanthas_telegram_bot.api_clients.backend.exceptions import BackendClientError
-from samanthas_telegram_bot.auxil.constants import EMAIL_PATTERN
+from samanthas_telegram_bot.auxil.constants import EMAIL_PATTERN, RUSSIAN_DOMAINS
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
@@ -403,12 +403,19 @@ async def store_email_check_existence_ask_age(
     if update.message is None:
         return None
 
+    bot_data = context.bot_data
+    phrases = bot_data.phrases
+
     user_data = context.user_data
     locale: Locale = user_data.locale
 
     email = update.message.text.strip()
     if not EMAIL_PATTERN.match(email):
-        await update.message.reply_text(context.bot_data.phrases["invalid_email"][locale])
+        await update.message.reply_text(phrases["invalid_email"][locale])
+        return None
+
+    if any(email.endswith(domain) for domain in RUSSIAN_DOMAINS):
+        await update.message.reply_text(phrases["russian_email"][locale])
         return None
 
     user_data.email = email
@@ -425,17 +432,17 @@ async def store_email_check_existence_ask_age(
             # Backend's rules for email validity can be different, and regex check (done above)
             # may not guarantee that the backend will accept the email.
             await logs(bot=context.bot, update=update, text=f"Backend is not happy with {email=}")
-            await update.message.reply_text(context.bot_data.phrases["invalid_email"][locale])
+            await update.message.reply_text(phrases["invalid_email"][locale])
             return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
         else:
             raise BackendClientError("An error occurred not related to email validation") from err
 
     if person_exists:
-        await update.message.reply_text(context.bot_data.phrases["user_already_exists"][locale])
+        await update.message.reply_text(phrases["user_already_exists"][locale])
         return CommonState.CHAT_WITH_OPERATOR
 
     if (
-        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await update.message.delete()
