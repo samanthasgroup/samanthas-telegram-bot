@@ -220,7 +220,10 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
 
 
 async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Asks first name. No data is stored here"""
+    """Ask first name. No data is stored here.
+
+    If this is main registration flow, show a note on some answers being editable during review.
+    """
     query, _ = await answer_callback_query_and_get_data(update)
 
     locale: Locale = context.user_data.locale
@@ -228,6 +231,16 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         context.bot_data.phrases["ask_first_name"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
+
+    if (
+        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        == ConversationMode.REGISTRATION_MAIN_FLOW
+    ):
+        await update.effective_chat.send_message(
+            context.bot_data.phrases["note_editable_fields"][locale],
+            parse_mode=ParseMode.HTML,
+        )
+
     return CommonState.ASK_LAST_NAME
 
 
