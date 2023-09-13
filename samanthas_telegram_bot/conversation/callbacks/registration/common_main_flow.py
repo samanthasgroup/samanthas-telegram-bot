@@ -469,7 +469,7 @@ async def store_email_check_existence_ask_age(
         return CommonState.CHAT_WITH_OPERATOR
 
     if (
-        bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+        bot_data.conversation_mode_for_chat_id[user_data.chat_id]
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await update.message.delete()
