@@ -758,32 +758,53 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def show_gdpr_disclaimer(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Show disclaimer on data processing according to GDPR."""
+        locale: Locale = context.user_data.locale
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases["gdpr_disclaimer"][locale],
+                buttons=cls._create_disclaimer_buttons(context),
+                buttons_per_row=2,
+                parse_mode=ParseMode.HTML,
+            )
+        )
+
+    @classmethod
     async def show_general_disclaimer(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Shows disclaimer (message text depends on role)."""
+        """Show general disclaimer on volunteering with SSG (message text depends on role)."""
         user_data = context.user_data
         locale: Locale = user_data.locale
+        role: Role = user_data.role
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases[f"general_disclaimer_{role}"][locale],
+                buttons=cls._create_disclaimer_buttons(context),
+                buttons_per_row=2,
+                parse_mode=ParseMode.HTML,
+            )
+        )
+
+    @staticmethod
+    def _create_disclaimer_buttons(context: CUSTOM_CONTEXT_TYPES) -> list[InlineKeyboardButton]:
+        locale: Locale = context.user_data.locale
 
         phrase_for_callback_data = {
             option: context.bot_data.phrases[f"disclaimer_option_{option}"][locale]
             for option in (CommonCallbackData.OK, CommonCallbackData.ABORT)
         }
 
-        buttons = [
+        return [
             InlineKeyboardButton(text=value, callback_data=key)
             for key, value in phrase_for_callback_data.items()
         ]
-
-        await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases[f"general_disclaimer_{user_data.role}"][
-                    locale
-                ],
-                buttons=buttons,
-                buttons_per_row=2,
-                parse_mode=ParseMode.HTML,
-            )
-        )
