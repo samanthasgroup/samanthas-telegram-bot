@@ -139,12 +139,7 @@ async def show_gdpr_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) ->
 
     query, _ = await answer_callback_query_and_get_data(update)
 
-    await CQReplySender.ask_yes_no(
-        context,
-        query,
-        question_phrase_internal_id="gdpr_disclaimer",
-        parse_mode=ParseMode.HTML,
-    )
+    await CQReplySender.show_gdpr_disclaimer(context, query)
 
     return CommonState.CHECK_CHAT_ID_ASK_ROLE
 
