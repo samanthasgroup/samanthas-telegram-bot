@@ -31,10 +31,17 @@ states = {
     ConversationStateCommon.IS_REGISTERED: [
         CallbackQueryHandler(common_main.store_locale_ask_if_already_registered)
     ],
-    ConversationStateCommon.CHECK_CHAT_ID_ASK_ROLE: [
+    ConversationStateCommon.SHOW_GDPR_DISCLAIMER: [
         CallbackQueryHandler(
             common_main.redirect_registered_user_to_coordinator,
             pattern=CommonCallbackData.YES,  # "Yes, I am already registered here"
+        ),
+        CallbackQueryHandler(common_main.show_gdpr_disclaimer),
+    ],
+    ConversationStateCommon.CHECK_CHAT_ID_ASK_ROLE: [
+        CallbackQueryHandler(
+            common_main.say_bye_if_disclaimer_not_accepted,
+            pattern=CommonCallbackData.ABORT,
         ),
         CallbackQueryHandler(common_main.check_chat_id_ask_role_if_id_does_not_exist),
     ],
