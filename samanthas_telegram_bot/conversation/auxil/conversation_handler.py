@@ -55,6 +55,13 @@ states = {
     ConversationStateCommon.SHOW_GENERAL_DISCLAIMER: [
         CallbackQueryHandler(common_main.store_role_show_general_disclaimer)
     ],
+    ConversationStateCommon.SHOW_LEGAL_DISCLAIMER_OR_ASK_FIRST_NAME_OR_BYE: [
+        CallbackQueryHandler(
+            common_main.say_bye_if_disclaimer_not_accepted,
+            pattern=CommonCallbackData.ABORT,
+        ),
+        CallbackQueryHandler(common_main.show_legal_disclaimer_or_ask_first_name),
+    ],
     ConversationStateCommon.ASK_FIRST_NAME_OR_BYE: [
         CallbackQueryHandler(
             common_main.say_bye_if_disclaimer_not_accepted,

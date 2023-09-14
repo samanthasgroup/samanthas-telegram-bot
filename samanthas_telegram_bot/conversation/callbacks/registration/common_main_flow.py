@@ -212,6 +212,37 @@ async def store_role_show_general_disclaimer(update: Update, context: CUSTOM_CON
     return CommonState.ASK_FIRST_NAME_OR_BYE
 
 
+async def show_legal_disclaimer_or_ask_first_name(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Show legal disclaimer to users with locales other than ``ua``. For ``ua``, ask first name.
+
+    No data is stored here.
+    """
+    query, _ = await answer_callback_query_and_get_data(update)
+    locale: Locale = context.user_data.locale
+    if locale == "ua":
+        # FIXME factor out
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_first_name"][locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+
+        # FIXME factor out
+        if (
+            context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
+        ):
+            await update.effective_chat.send_message(
+                context.bot_data.phrases["note_editable_fields"][locale],
+                parse_mode=ParseMode.HTML,
+            )
+        return CommonState.ASK_LAST_NAME
+
+    await CQReplySender.show_legal_disclaimer(context, query)
+    return CommonState.ASK_FIRST_NAME_OR_BYE
+
+
 async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Says goodbye to user that did not accept disclaimer."""
     query, _ = await answer_callback_query_and_get_data(update)

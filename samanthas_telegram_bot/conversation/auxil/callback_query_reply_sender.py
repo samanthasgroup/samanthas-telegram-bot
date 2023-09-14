@@ -795,6 +795,24 @@ class CallbackQueryReplySender:
             )
         )
 
+    @classmethod
+    async def show_legal_disclaimer(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Show disclaimer on legal risks of volunteering for an NGO."""
+        locale: Locale = context.user_data.locale
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases["legal_disclaimer"][locale],
+                buttons=cls._create_disclaimer_buttons(context),
+                buttons_per_row=2,
+                parse_mode=ParseMode.HTML,
+            )
+        )
+
     @staticmethod
     def _create_disclaimer_buttons(context: CUSTOM_CONTEXT_TYPES) -> list[InlineKeyboardButton]:
         locale: Locale = context.user_data.locale
