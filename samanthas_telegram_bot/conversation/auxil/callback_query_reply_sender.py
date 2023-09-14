@@ -758,7 +758,7 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def show_disclaimer(
+    async def show_general_disclaimer(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,

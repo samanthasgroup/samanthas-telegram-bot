@@ -213,7 +213,7 @@ async def store_role_show_general_disclaimer(update: Update, context: CUSTOM_CON
     """Store role, show general disclaimer."""
     query, context.user_data.role = await answer_callback_query_and_get_data(update)
 
-    await CQReplySender.show_disclaimer(context, query)
+    await CQReplySender.show_general_disclaimer(context, query)
     return CommonState.ASK_FIRST_NAME_OR_BYE
 
 
