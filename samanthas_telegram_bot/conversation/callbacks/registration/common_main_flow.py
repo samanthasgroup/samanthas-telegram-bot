@@ -169,7 +169,7 @@ async def check_chat_id_ask_role_if_id_does_not_exist(
         return CommonState.ASK_ROLE_OR_BYE
 
     await CQReplySender.ask_role(context, query)
-    return CommonState.SHOW_DISCLAIMER
+    return CommonState.SHOW_GENERAL_DISCLAIMER
 
 
 async def say_bye_if_does_not_want_to_register_another_person(
@@ -191,11 +191,11 @@ async def ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
 
     await CQReplySender.ask_role(context, query)
-    return CommonState.SHOW_DISCLAIMER
+    return CommonState.SHOW_GENERAL_DISCLAIMER
 
 
-async def store_role_show_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores role, shows disclaimer."""
+async def store_role_show_general_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Store role, show general disclaimer."""
     query, context.user_data.role = await answer_callback_query_and_get_data(update)
 
     await CQReplySender.show_disclaimer(context, query)
@@ -208,7 +208,7 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
 
     await logs(
         bot=context.bot,
-        text="User didn't accept the disclaimer. Cancelling registration.",
+        text="User didn't accept one of disclaimers. Cancelling registration.",
         update=update,
     )
     locale: Locale = context.user_data.locale

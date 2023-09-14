@@ -779,7 +779,9 @@ class CallbackQueryReplySender:
 
         await query.edit_message_text(
             **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases[f"{user_data.role}_disclaimer"][locale],
+                message_text=context.bot_data.phrases[f"general_disclaimer_{user_data.role}"][
+                    locale
+                ],
                 buttons=buttons,
                 buttons_per_row=2,
                 parse_mode=ParseMode.HTML,

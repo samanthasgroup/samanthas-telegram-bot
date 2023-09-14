@@ -45,8 +45,8 @@ states = {
         ),
         CallbackQueryHandler(common_main.ask_role),
     ],
-    ConversationStateCommon.SHOW_DISCLAIMER: [
-        CallbackQueryHandler(common_main.store_role_show_disclaimer)
+    ConversationStateCommon.SHOW_GENERAL_DISCLAIMER: [
+        CallbackQueryHandler(common_main.store_role_show_general_disclaimer)
     ],
     ConversationStateCommon.ASK_FIRST_NAME_OR_BYE: [
         CallbackQueryHandler(
