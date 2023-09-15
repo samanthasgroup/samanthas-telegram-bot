@@ -67,6 +67,9 @@ class BotDataLoader:
             for age_range in bot_data.age_ranges_for_type[AgeRangeType.STUDENT]
         }
 
+        # if nothing was loaded from persistence
+        bot_data.conversation_mode_for_chat_id = {}
+
     @classmethod
     def _get_age_ranges(cls) -> dict[AgeRangeType, tuple[AgeRange, ...]]:
         """Get age ranges from the backend, assign IDs (for bot phrases) to age ranges for teacher.
