@@ -816,7 +816,9 @@ async def message_fallback(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Non
         ),
     )
 
-    await update.message.delete()
+    if update.message is not None:
+        await update.message.delete()
+
     locale: Locale = user_data.locale or UKRAINIAN
     message = await update.effective_chat.send_message(
         f"{bot_data.phrases['message_fallback'][locale]} @{BOT_TECH_SUPPORT_USERNAME}",
