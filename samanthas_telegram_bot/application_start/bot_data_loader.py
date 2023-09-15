@@ -67,8 +67,9 @@ class BotDataLoader:
             for age_range in bot_data.age_ranges_for_type[AgeRangeType.STUDENT]
         }
 
-        # if nothing was loaded from persistence
-        bot_data.conversation_mode_for_chat_id = {}
+        # initialize dictionary if nothing was loaded from persistence
+        if bot_data.conversation_mode_for_chat_id is None:
+            bot_data.conversation_mode_for_chat_id = {}
 
     @classmethod
     def _get_age_ranges(cls) -> dict[AgeRangeType, tuple[AgeRange, ...]]:
