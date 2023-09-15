@@ -85,7 +85,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks a student how long they have been learning English."""
+        """Ask first name."""
 
         locale: Locale = context.user_data.locale
         await query.edit_message_text(
