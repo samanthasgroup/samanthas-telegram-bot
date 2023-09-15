@@ -815,7 +815,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Show disclaimer on legal risks of volunteering for an NGO."""
+        """Show disclaimer on legal risks of volunteering for an NGO for Russian citizens."""
         locale: Locale = context.user_data.locale
 
         await query.edit_message_text(

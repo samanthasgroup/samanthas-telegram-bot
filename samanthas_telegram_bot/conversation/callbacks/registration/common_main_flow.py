@@ -222,14 +222,14 @@ async def show_legal_disclaimer_or_ask_first_name(
     query, _ = await answer_callback_query_and_get_data(update)
     user_data = context.user_data
 
-    # legal disclaimer is for non-Ukrainian coordinators and teachers only
-    if user_data.locale == "ua" or user_data.role == Role.STUDENT:
-        await CQReplySender.ask_first_name(context, query)
-        await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
-        return CommonState.ASK_LAST_NAME
+    # Legal disclaimer is for non-Ukrainian coordinators and teachers only. Others skip to name.
+    if user_data.role != Role.STUDENT and user_data.locale != "ua":
+        await CQReplySender.show_legal_disclaimer(context, query)
+        return CommonState.ASK_FIRST_NAME_OR_BYE
 
-    await CQReplySender.show_legal_disclaimer(context, query)
-    return CommonState.ASK_FIRST_NAME_OR_BYE
+    await CQReplySender.ask_first_name(context, query)
+    await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
+    return CommonState.ASK_LAST_NAME
 
 
 async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
