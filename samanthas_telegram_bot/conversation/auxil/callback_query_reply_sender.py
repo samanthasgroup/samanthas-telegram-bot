@@ -80,6 +80,20 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_first_name(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Asks a student how long they have been learning English."""
+
+        locale: Locale = context.user_data.locale
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_first_name"][locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+
+    @classmethod
     async def ask_how_long_been_learning_english(
         cls,
         context: CUSTOM_CONTEXT_TYPES,

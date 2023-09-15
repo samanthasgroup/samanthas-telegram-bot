@@ -221,22 +221,11 @@ async def show_legal_disclaimer_or_ask_first_name(
     """
     query, _ = await answer_callback_query_and_get_data(update)
     locale: Locale = context.user_data.locale
-    if locale == "ua":
-        # FIXME factor out
-        await query.edit_message_text(
-            context.bot_data.phrases["ask_first_name"][locale],
-            reply_markup=InlineKeyboardMarkup([]),
-        )
+    # FIXME students shouldn't get here
 
-        # FIXME factor out
-        if (
-            context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-            == ConversationMode.REGISTRATION_MAIN_FLOW
-        ):
-            await update.effective_chat.send_message(
-                context.bot_data.phrases["note_editable_fields"][locale],
-                parse_mode=ParseMode.HTML,
-            )
+    if locale == "ua":
+        await CQReplySender.ask_first_name(context, query)
+        await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
         return CommonState.ASK_LAST_NAME
 
     await CQReplySender.show_legal_disclaimer(context, query)
@@ -267,20 +256,8 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """
     query, _ = await answer_callback_query_and_get_data(update)
 
-    locale: Locale = context.user_data.locale
-    await query.edit_message_text(
-        context.bot_data.phrases["ask_first_name"][locale],
-        reply_markup=InlineKeyboardMarkup([]),
-    )
-
-    if (
-        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-        == ConversationMode.REGISTRATION_MAIN_FLOW
-    ):
-        await update.effective_chat.send_message(
-            context.bot_data.phrases["note_editable_fields"][locale],
-            parse_mode=ParseMode.HTML,
-        )
+    await CQReplySender.ask_first_name(context, query)
+    await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
 
     return CommonState.ASK_LAST_NAME
 
