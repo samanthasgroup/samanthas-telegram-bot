@@ -19,13 +19,15 @@ from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_qu
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import Role
+from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
 async def first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
+    locale: Locale = context.user_data.locale
 
     await query.edit_message_text(
-        context.bot_data.phrases["ask_first_name"][context.user_data.locale],
+        context.bot_data.phrases["ask_first_name"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.ASK_LAST_NAME
@@ -33,9 +35,10 @@ async def first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
 async def last_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
+    locale: Locale = context.user_data.locale
 
     await query.edit_message_text(
-        context.bot_data.phrases["ask_last_name"][context.user_data.locale],
+        context.bot_data.phrases["ask_last_name"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.ASK_SOURCE
@@ -49,9 +52,10 @@ async def phone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
 async def email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
+    locale: Locale = context.user_data.locale
 
     await query.edit_message_text(
-        context.bot_data.phrases["ask_email"][context.user_data.locale],
+        context.bot_data.phrases["ask_email"][locale],
         reply_markup=InlineKeyboardMarkup([]),
     )
     return CommonState.ASK_AGE_OR_BYE_IF_PERSON_EXISTS
