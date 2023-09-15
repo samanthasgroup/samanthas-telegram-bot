@@ -9,6 +9,7 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
+    Message,
     ReplyKeyboardMarkup,
     Update,
 )
@@ -48,8 +49,10 @@ class MessageSender:
         await cls.ask_yes_no(update, context, question_phrase_internal_id="ask_if_18")
 
     @staticmethod
-    async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Sends a message to ask for phone number."""
+    async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Message:
+        """Send a message to ask for phone number.  Return this message."""
+        # We could return Message from every method, which would be in line with PTB behavior,
+        # but it's currently not needed in practice. But this one will come in handy during review.
         locale: Locale = context.user_data.locale
 
         reply_markup = ReplyKeyboardMarkup(
@@ -64,12 +67,13 @@ class MessageSender:
             one_time_keyboard=True,
         )
 
-        await update.effective_chat.send_message(
+        message = await update.effective_chat.send_message(
             context.bot_data.phrases["ask_phone"][locale],
             disable_web_page_preview=True,  # the message contains link to site with country codes
             parse_mode=ParseMode.HTML,
             reply_markup=reply_markup,
         )
+        return message
 
     @classmethod
     async def ask_review(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
