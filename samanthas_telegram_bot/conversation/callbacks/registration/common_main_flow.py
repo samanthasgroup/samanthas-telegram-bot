@@ -215,15 +215,15 @@ async def store_role_show_general_disclaimer(update: Update, context: CUSTOM_CON
 async def show_legal_disclaimer_or_ask_first_name(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Show legal disclaimer to users with locales other than ``ua``. For ``ua``, ask first name.
+    """Show legal disclaimer to volunteers with locales other than ``ua``. Else, ask first name.
 
     No data is stored here.
     """
     query, _ = await answer_callback_query_and_get_data(update)
-    locale: Locale = context.user_data.locale
-    # FIXME students shouldn't get here
+    user_data = context.user_data
 
-    if locale == "ua":
+    # legal disclaimer is for non-Ukrainian coordinators and teachers only
+    if user_data.locale == "ua" or user_data.role == Role.STUDENT:
         await CQReplySender.ask_first_name(context, query)
         await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
         return CommonState.ASK_LAST_NAME
