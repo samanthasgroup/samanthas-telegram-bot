@@ -131,6 +131,16 @@ async def store_locale_ask_if_already_registered(
         parse_mode=ParseMode.HTML,
     )
 
+    return CommonState.SHOW_GDPR_DISCLAIMER
+
+
+async def show_gdpr_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Show GDPR disclaimer to user. No data is stored here."""
+
+    query, _ = await answer_callback_query_and_get_data(update)
+
+    await CQReplySender.show_gdpr_disclaimer(context, query)
+
     return CommonState.CHECK_CHAT_ID_ASK_ROLE
 
 
@@ -169,7 +179,7 @@ async def check_chat_id_ask_role_if_id_does_not_exist(
         return CommonState.ASK_ROLE_OR_BYE
 
     await CQReplySender.ask_role(context, query)
-    return CommonState.SHOW_DISCLAIMER
+    return CommonState.SHOW_GENERAL_DISCLAIMER
 
 
 async def say_bye_if_does_not_want_to_register_another_person(
@@ -191,15 +201,35 @@ async def ask_role(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
 
     await CQReplySender.ask_role(context, query)
-    return CommonState.SHOW_DISCLAIMER
+    return CommonState.SHOW_GENERAL_DISCLAIMER
 
 
-async def store_role_show_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Stores role, shows disclaimer."""
+async def store_role_show_general_disclaimer(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Store role, show general disclaimer."""
     query, context.user_data.role = await answer_callback_query_and_get_data(update)
 
-    await CQReplySender.show_disclaimer(context, query)
-    return CommonState.ASK_FIRST_NAME_OR_BYE
+    await CQReplySender.show_general_disclaimer(context, query)
+    return CommonState.SHOW_LEGAL_DISCLAIMER_OR_ASK_FIRST_NAME_OR_BYE
+
+
+async def show_legal_disclaimer_or_ask_first_name(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Show legal disclaimer to volunteers with locales other than ``ua``. Else, ask first name.
+
+    No data is stored here.
+    """
+    query, _ = await answer_callback_query_and_get_data(update)
+    user_data = context.user_data
+
+    # Legal disclaimer is for non-Ukrainian coordinators and teachers only. Others skip to name.
+    if user_data.role != Role.STUDENT and user_data.locale != "ua":
+        await CQReplySender.show_legal_disclaimer(context, query)
+        return CommonState.ASK_FIRST_NAME_OR_BYE
+
+    await CQReplySender.ask_first_name(context, query)
+    await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
+    return CommonState.ASK_LAST_NAME
 
 
 async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -208,7 +238,7 @@ async def say_bye_if_disclaimer_not_accepted(update: Update, context: CUSTOM_CON
 
     await logs(
         bot=context.bot,
-        text="User didn't accept the disclaimer. Cancelling registration.",
+        text="User didn't accept one of disclaimers. Cancelling registration.",
         update=update,
     )
     locale: Locale = context.user_data.locale
@@ -226,20 +256,8 @@ async def ask_first_name(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """
     query, _ = await answer_callback_query_and_get_data(update)
 
-    locale: Locale = context.user_data.locale
-    await query.edit_message_text(
-        context.bot_data.phrases["ask_first_name"][locale],
-        reply_markup=InlineKeyboardMarkup([]),
-    )
-
-    if (
-        context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-        == ConversationMode.REGISTRATION_MAIN_FLOW
-    ):
-        await update.effective_chat.send_message(
-            context.bot_data.phrases["note_editable_fields"][locale],
-            parse_mode=ParseMode.HTML,
-        )
+    await CQReplySender.ask_first_name(context, query)
+    await MessageSender.send_info_on_reviewable_fields_if_applicable(update, context)
 
     return CommonState.ASK_LAST_NAME
 

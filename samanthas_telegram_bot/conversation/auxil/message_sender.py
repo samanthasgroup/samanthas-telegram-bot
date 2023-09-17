@@ -172,6 +172,23 @@ class MessageSender:
         )
 
     @staticmethod
+    async def send_info_on_reviewable_fields_if_applicable(
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> None:
+        """If user is in registration conversation mode, send a message about reviewable fields."""
+        locale: Locale = context.user_data.locale
+
+        if (
+            context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
+        ):
+            await update.effective_chat.send_message(
+                context.bot_data.phrases["note_editable_fields"][locale],
+                parse_mode=ParseMode.HTML,
+            )
+
+    @staticmethod
     def _prepare_message_for_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
         """Prepares text message with user info for review, depending on role and other factors."""
         data = context.user_data

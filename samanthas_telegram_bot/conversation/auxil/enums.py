@@ -54,7 +54,9 @@ class ConversationStateCommon(IntEnum):
     CHECK_USERNAME = state_auto()
     IS_REGISTERED = state_auto()
     REVIEW_REQUESTED_ITEM = state_auto()
-    SHOW_DISCLAIMER = state_auto()
+    SHOW_GENERAL_DISCLAIMER = state_auto()
+    SHOW_GDPR_DISCLAIMER = state_auto()
+    SHOW_LEGAL_DISCLAIMER_OR_ASK_FIRST_NAME_OR_BYE = state_auto()
     TIME_SLOTS_START = state_auto()
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = state_auto()
 
