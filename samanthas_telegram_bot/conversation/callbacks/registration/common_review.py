@@ -74,7 +74,6 @@ async def email(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 async def timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     query, _ = await answer_callback_query_and_get_data(update)
 
-    # FIXME check if I need to return/delete message
     await CQReplySender.ask_timezone(context, query)
     return CommonState.TIME_SLOTS_START
 
