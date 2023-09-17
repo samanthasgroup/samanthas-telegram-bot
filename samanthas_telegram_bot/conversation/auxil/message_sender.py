@@ -92,8 +92,9 @@ class MessageSender:
             await update.effective_message.delete()  # remove whatever was before the review
 
         earlier_messages_to_delete = context.chat_data.messages_to_delete_at_review
-        for _ in range(len(earlier_messages_to_delete)):
-            await earlier_messages_to_delete.pop().delete()
+        if isinstance(earlier_messages_to_delete, list):
+            for _ in range(len(earlier_messages_to_delete)):
+                await earlier_messages_to_delete.pop().delete()
 
         data = context.user_data
         locale: Locale = data.locale
