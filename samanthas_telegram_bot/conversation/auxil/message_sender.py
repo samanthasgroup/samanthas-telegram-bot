@@ -76,14 +76,24 @@ class MessageSender:
         return message
 
     @classmethod
-    async def ask_review(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Sends a message to the user for them to review their basic info."""
+    async def delete_message_and_ask_review(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
+    ) -> None:
+        """Send a message to the user for them to review their basic info.
+
+        Remove messages that were before the review: the ``effective_message``
+        and potentially message(s) before (e.g. with bot's question).
+        """
 
         # If there was no message immediately before the review message is sent to user,
         # attempt to delete it will cause BadRequest.
         # This is fine: we want to delete a message if it exists.
         with suppress(telegram.error.BadRequest):
             await update.effective_message.delete()  # remove whatever was before the review
+
+        earlier_messages_to_delete = context.chat_data.messages_to_delete_at_review
+        for _ in range(len(earlier_messages_to_delete)):
+            await earlier_messages_to_delete.pop().delete()
 
         data = context.user_data
         locale: Locale = data.locale
