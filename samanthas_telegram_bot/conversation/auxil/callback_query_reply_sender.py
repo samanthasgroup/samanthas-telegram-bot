@@ -80,6 +80,20 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
+    async def ask_first_name(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Ask first name."""
+
+        locale: Locale = context.user_data.locale
+        await query.edit_message_text(
+            context.bot_data.phrases["ask_first_name"][locale],
+            reply_markup=InlineKeyboardMarkup([]),
+        )
+
+    @classmethod
     async def ask_how_long_been_learning_english(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
@@ -758,30 +772,71 @@ class CallbackQueryReplySender:
         )
 
     @classmethod
-    async def show_disclaimer(
+    async def show_gdpr_disclaimer(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Shows disclaimer (message text depends on role)."""
+        """Show disclaimer on data processing according to GDPR."""
+        locale: Locale = context.user_data.locale
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases["gdpr_disclaimer"][locale],
+                buttons=cls._create_disclaimer_buttons(context),
+                buttons_per_row=2,
+                parse_mode=ParseMode.HTML,
+            )
+        )
+
+    @classmethod
+    async def show_general_disclaimer(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Show general disclaimer on volunteering with SSG (message text depends on role)."""
         user_data = context.user_data
         locale: Locale = user_data.locale
+        role: Role = user_data.role
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases[f"general_disclaimer_{role}"][locale],
+                buttons=cls._create_disclaimer_buttons(context),
+                buttons_per_row=2,
+                parse_mode=ParseMode.HTML,
+            )
+        )
+
+    @classmethod
+    async def show_legal_disclaimer(
+        cls,
+        context: CUSTOM_CONTEXT_TYPES,
+        query: CallbackQuery,
+    ) -> None:
+        """Show disclaimer on legal risks of volunteering for an NGO for Russian citizens."""
+        locale: Locale = context.user_data.locale
+
+        await query.edit_message_text(
+            **make_dict_for_message_with_inline_keyboard(
+                message_text=context.bot_data.phrases["legal_disclaimer"][locale],
+                buttons=cls._create_disclaimer_buttons(context),
+                buttons_per_row=2,
+                parse_mode=ParseMode.HTML,
+            )
+        )
+
+    @staticmethod
+    def _create_disclaimer_buttons(context: CUSTOM_CONTEXT_TYPES) -> list[InlineKeyboardButton]:
+        locale: Locale = context.user_data.locale
 
         phrase_for_callback_data = {
             option: context.bot_data.phrases[f"disclaimer_option_{option}"][locale]
             for option in (CommonCallbackData.OK, CommonCallbackData.ABORT)
         }
 
-        buttons = [
+        return [
             InlineKeyboardButton(text=value, callback_data=key)
             for key, value in phrase_for_callback_data.items()
         ]
-
-        await query.edit_message_text(
-            **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases[f"{user_data.role}_disclaimer"][locale],
-                buttons=buttons,
-                buttons_per_row=2,
-                parse_mode=ParseMode.HTML,
-            )
-        )
