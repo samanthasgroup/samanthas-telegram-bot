@@ -85,29 +85,28 @@ class MessageSender:
         and potentially message(s) before (e.g. with bot's question).
         """
 
+        chat_data = context.chat_data
+        user_data = context.user_data
+        locale: Locale = user_data.locale
+
         # If there was no message immediately before the review message is sent to user,
         # attempt to delete it will cause BadRequest.
         # This is fine: we want to delete a message if it exists.
         with suppress(telegram.error.BadRequest):
             await update.effective_message.delete()  # remove whatever was before the review
 
-        earlier_messages_to_delete = context.chat_data.messages_to_delete_at_review
+        if chat_data.messages_to_delete_at_review is None:
+            chat_data.messages_to_delete_at_review = []
 
-        if earlier_messages_to_delete is None:
-            earlier_messages_to_delete = []
-
-        for _ in range(len(earlier_messages_to_delete)):
-            await earlier_messages_to_delete.pop().delete()
-
-        data = context.user_data
-        locale: Locale = data.locale
+        for _ in range(len(chat_data.messages_to_delete_at_review)):
+            await chat_data.messages_to_delete_at_review.pop().delete()
 
         if (
-            data.role == Role.TEACHER
+            user_data.role == Role.TEACHER
             and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
             == ConversationMode.REGISTRATION_MAIN_FLOW
         ):
-            data.teacher_additional_skills_comment = update.message.text
+            user_data.teacher_additional_skills_comment = update.message.text
 
         buttons = [
             InlineKeyboardButton(
