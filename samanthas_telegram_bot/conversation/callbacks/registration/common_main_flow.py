@@ -287,7 +287,7 @@ async def store_first_name_ask_last_name(
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await update.message.delete()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     locale: Locale = context.user_data.locale
@@ -309,7 +309,7 @@ async def store_last_name_ask_source(update: Update, context: CUSTOM_CONTEXT_TYP
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await update.message.delete()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     locale: Locale = context.user_data.locale
@@ -424,7 +424,7 @@ async def store_phone_ask_email(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await update.message.delete()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await update.message.reply_text(context.bot_data.phrases["ask_email"][locale])
@@ -491,7 +491,7 @@ async def store_email_check_existence_ask_age(
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await update.message.delete()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await getattr(MessageSender, f"ask_age_{user_data.role}")(update, context)
@@ -517,7 +517,7 @@ async def store_timezone_ask_slots_for_monday(
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
         == ConversationMode.REGISTRATION_REVIEW
     ):
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_time_slot(context, query)
@@ -584,7 +584,7 @@ async def store_last_time_slot_ask_slots_for_next_day_or_teaching_language(
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await query.answer()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     # If we've reached this part of function, it means that we have reached Sunday,

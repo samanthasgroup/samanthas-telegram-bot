@@ -139,7 +139,7 @@ review_reaction_yes,Everything is correct 👍,Всё верно 👍,Усе п�
 review_reaction_no,I need to make corrections,Нужно кое-что поправить,Потрібно дещо виправити
 review_ask_category,What information do you wish to change?,Какую информацию нужно исправить?,Яку інформацію потрібно виправити?
 review_option_first_name,First name,Имя,Ім'я
-review_option_last_name,Last name,Фамилию,Фамілія
+review_option_last_name,Last name,Псевдоним,Псевдонім
 review_option_email,Email address,Адрес электронной почты,Адреса електронної пошти
 review_option_phone_number,Phone number,Номер телефона,Номер телефону
 review_option_student_age_group,Age group,Возрастную группу,Вікову групу

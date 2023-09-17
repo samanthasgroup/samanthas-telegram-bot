@@ -77,7 +77,9 @@ async def ask_class_communication_language(update: Update, context: CUSTOM_CONTE
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await query.delete_message()
-        await MessageSender.ask_review(update, context)  # TODO do the same thing in CQReplySender?
+        await MessageSender.delete_message_and_ask_review(
+            update, context
+        )  # TODO do the same thing in CQReplySender?
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_class_communication_languages(context, query)
@@ -99,7 +101,7 @@ async def store_communication_language_ask_teaching_experience(
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await query.delete_message()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_yes_no(
@@ -195,7 +197,7 @@ async def ask_non_teaching_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -
         == ConversationMode.REGISTRATION_REVIEW
     ):
         await query.delete_message()
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     await CQReplySender.ask_non_teaching_help(context, query)
@@ -265,5 +267,5 @@ async def store_additional_skills_comment_ask_review(
 
     context.user_data.teacher_additional_skills_comment = update.message.text
 
-    await MessageSender.ask_review(update, context)
+    await MessageSender.delete_message_and_ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
