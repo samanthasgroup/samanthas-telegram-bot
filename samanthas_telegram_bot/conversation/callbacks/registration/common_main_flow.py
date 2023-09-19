@@ -705,7 +705,7 @@ async def store_comment_create_person_start_helpdesk_chat(
         text = phrases["bye_wait_for_message_from_bot"][locale]
 
     if person_was_created is True:
-        await update.effective_chat.send_message(text, reply_markup=InlineKeyboardMarkup([]))
+        await update.effective_chat.send_message(text)
     else:
         await logs(
             bot=context.bot,
