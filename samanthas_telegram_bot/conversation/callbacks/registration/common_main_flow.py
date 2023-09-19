@@ -659,6 +659,7 @@ async def store_comment_create_person_start_helpdesk_chat(
     wait_phrase = phrases["processing_wait"][locale]
     if update.message:
         user_data.comment = update.message.text
+        # saving returned Message to edit its text later on
         wait_message = await update.message.reply_text(wait_phrase)
     else:
         query, _ = await answer_callback_query_and_get_data(update)
