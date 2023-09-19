@@ -658,7 +658,10 @@ async def store_comment_create_person_start_helpdesk_chat(
 
     user_data.comment = update.message.text if update.message else ""
 
-    await update.effective_chat.send_message(phrases["processing_wait"][locale])
+    await update.effective_chat.send_message(
+        phrases["processing_wait"][locale],
+        reply_markup=ReplyKeyboardRemove(),
+    )
 
     # Initiate conversation in helpdesk
     message_text = f"New {user_data.role}: {user_data.first_name} {user_data.last_name}"
