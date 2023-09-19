@@ -662,7 +662,9 @@ async def store_comment_create_person_start_helpdesk_chat(
         # saving returned Message to edit its text later on
         wait_message = await update.message.reply_text(wait_phrase)
     else:
+        # user got here by pressing a button and hence didn't leave any text comment
         query, _ = await answer_callback_query_and_get_data(update)
+        user_data.comment = ""
         wait_message = await query.edit_message_text(
             wait_phrase, reply_markup=InlineKeyboardMarkup([])
         )
