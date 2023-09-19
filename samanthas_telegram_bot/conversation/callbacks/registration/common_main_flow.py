@@ -659,10 +659,12 @@ async def store_comment_create_person_start_helpdesk_chat(
     wait_phrase = phrases["processing_wait"][locale]
     if update.message:
         user_data.comment = update.message.text
-        await update.message.reply_text(wait_phrase)
+        wait_message = await update.message.reply_text(wait_phrase)
     else:
         query, _ = await answer_callback_query_and_get_data(update)
-        await query.edit_message_text(wait_phrase, reply_markup=InlineKeyboardMarkup([]))
+        wait_message = await query.edit_message_text(
+            wait_phrase, reply_markup=InlineKeyboardMarkup([])
+        )
 
     # Initiate conversation in helpdesk
     message_text = f"New {user_data.role}: {user_data.first_name} {user_data.last_name}"
@@ -709,7 +711,7 @@ async def store_comment_create_person_start_helpdesk_chat(
         text = phrases["bye_wait_for_message_from_bot"][locale]
 
     if person_was_created is True:
-        await update.effective_message.edit_text(text)
+        await wait_message.edit_text(text)
     else:
         await logs(
             bot=context.bot,
