@@ -583,6 +583,7 @@ class CallbackQueryReplySender:
     ) -> None:
         """Asks a user to choose a time slot on one particular day."""
 
+        bot_data = context.bot_data
         user_data = context.user_data
         locale: Locale = user_data.locale
 
@@ -598,17 +599,23 @@ class CallbackQueryReplySender:
                 f"{(slot.to_utc_hour + offset_hour) % 24}:{offset_minute}",
                 callback_data=slot.id,
             )
-            for slot in context.bot_data.day_and_time_slots_for_day_index[day_index]
+            for slot in bot_data.day_and_time_slots_for_day_index[day_index]
             # exclude slots that user already selected
             if slot.id not in user_data.day_and_time_slot_ids
         ]
 
+        phrases = bot_data.phrases
         message_text = (
-            context.bot_data.phrases["ask_timeslots"][locale]
+            phrases["ask_timeslots"][locale]
             + " <strong>"
-            + (context.bot_data.phrases["ask_slots_" + str(day_index)][locale])
+            + (phrases["ask_slots_" + str(day_index)][locale])
             + r"</strong>? ✎"
         )
+
+        # The message explaining how multiselect works is pretty long,
+        # so better to only show it once, at the beginning
+        if day_index == 0:
+            message_text += f"\n\n{phrases['note_multiselect'][locale]}"
 
         await query.edit_message_text(
             **make_dict_for_message_with_inline_keyboard(
@@ -616,7 +623,7 @@ class CallbackQueryReplySender:
                 buttons=buttons,
                 buttons_per_row=3,
                 bottom_row_button=InlineKeyboardButton(
-                    text=context.bot_data.phrases["ask_slots_next"][locale],
+                    text=phrases["ask_slots_next"][locale],
                     callback_data=CommonCallbackData.NEXT,
                 ),
                 parse_mode=ParseMode.HTML,
