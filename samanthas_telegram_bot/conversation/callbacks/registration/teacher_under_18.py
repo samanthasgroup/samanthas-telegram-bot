@@ -108,4 +108,4 @@ async def store_additional_help_comment_ask_final_comment(
         f"{context.user_data.email}\n\n"
         f"{context.bot_data.phrases['ask_final_comment'][locale]}"
     )
-    return ConversationStateCommon.BYE
+    return ConversationStateCommon.FINISH_REGISTRATION

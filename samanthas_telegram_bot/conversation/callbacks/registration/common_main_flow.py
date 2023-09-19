@@ -615,12 +615,11 @@ async def ask_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> in
     # We don't call edit_message_text(): let user info remain in the chat for user to see,
     # but remove the buttons.
     await query.edit_message_reply_markup(InlineKeyboardMarkup([]))
-    locale: Locale = context.user_data.locale
-    await update.effective_chat.send_message(
-        context.bot_data.phrases["ask_final_comment"][locale],
-        reply_markup=InlineKeyboardMarkup([]),
+
+    await MessageSender.ask_yes_no(
+        update, context, question_phrase_internal_id="ask_final_comment"
     )
-    return CommonState.BYE
+    return CommonState.ASK_FINAL_COMMENT_TEXT_OR_BYE
 
 
 async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -636,10 +635,19 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
     return CommonState.REVIEW_REQUESTED_ITEM
 
 
+async def ask_text_of_final_comment(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int | None:
+    """Ask for final comment."""
+    query, _ = await answer_callback_query_and_get_data(update)
+    locale: Locale = context.user_data.locale
+    await query.edit_message_text(context.bot_data.phrases["ask_final_comment_text"][locale])
+
+    return CommonState.FINISH_REGISTRATION
+
+
 async def store_comment_create_person_start_helpdesk_chat(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
-    """Store comment, create a person in the backend, start conversation in helpdesk.
+    """Store comment (if given), create a person in the backend, start conversation in helpdesk.
 
     For a would-be teacher that is under 18, store their comment about potential useful skills.
     For others, store the general comment."""
@@ -648,7 +656,7 @@ async def store_comment_create_person_start_helpdesk_chat(
     phrases = context.bot_data.phrases
     role = user_data.role
 
-    user_data.comment = update.message.text
+    user_data.comment = update.message.text if update.message else ""
 
     await update.effective_chat.send_message(phrases["processing_wait"][locale])
 
