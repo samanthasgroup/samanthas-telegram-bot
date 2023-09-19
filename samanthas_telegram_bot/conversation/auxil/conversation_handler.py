@@ -298,7 +298,7 @@ states = {
             common_main.ask_text_of_final_comment,
             pattern=CommonCallbackData.YES,  # Yes, I want to leave a final comment
         ),
-        common_main.store_comment_create_person_start_helpdesk_chat,
+        CallbackQueryHandler(common_main.store_comment_create_person_start_helpdesk_chat),
     ],
     ConversationStateCommon.FINISH_REGISTRATION: [
         MessageHandler(
