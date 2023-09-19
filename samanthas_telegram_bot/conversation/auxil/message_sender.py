@@ -9,6 +9,7 @@ from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
+    Message,
     ReplyKeyboardMarkup,
     Update,
 )
@@ -48,8 +49,10 @@ class MessageSender:
         await cls.ask_yes_no(update, context, question_phrase_internal_id="ask_if_18")
 
     @staticmethod
-    async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Sends a message to ask for phone number."""
+    async def ask_phone_number(update: Update, context: CUSTOM_CONTEXT_TYPES) -> Message:
+        """Send a message to ask for phone number.  Return this message."""
+        # We could return Message from every method, which would be in line with PTB behavior,
+        # but it's currently not needed in practice. But this one will come in handy during review.
         locale: Locale = context.user_data.locale
 
         reply_markup = ReplyKeyboardMarkup(
@@ -64,16 +67,27 @@ class MessageSender:
             one_time_keyboard=True,
         )
 
-        await update.effective_chat.send_message(
+        message = await update.effective_chat.send_message(
             context.bot_data.phrases["ask_phone"][locale],
             disable_web_page_preview=True,  # the message contains link to site with country codes
             parse_mode=ParseMode.HTML,
             reply_markup=reply_markup,
         )
+        return message
 
     @classmethod
-    async def ask_review(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Sends a message to the user for them to review their basic info."""
+    async def delete_message_and_ask_review(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
+    ) -> None:
+        """Send a message to the user for them to review their basic info.
+
+        Remove messages that were before the review: the ``effective_message``
+        and potentially message(s) before (e.g. with bot's question).
+        """
+
+        chat_data = context.chat_data
+        user_data = context.user_data
+        locale: Locale = user_data.locale
 
         # If there was no message immediately before the review message is sent to user,
         # attempt to delete it will cause BadRequest.
@@ -81,15 +95,18 @@ class MessageSender:
         with suppress(telegram.error.BadRequest):
             await update.effective_message.delete()  # remove whatever was before the review
 
-        data = context.user_data
-        locale: Locale = data.locale
+        if chat_data.messages_to_delete_at_review is None:
+            chat_data.messages_to_delete_at_review = []
+
+        for _ in range(len(chat_data.messages_to_delete_at_review)):
+            await chat_data.messages_to_delete_at_review.pop().delete()
 
         if (
-            data.role == Role.TEACHER
+            user_data.role == Role.TEACHER
             and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
             == ConversationMode.REGISTRATION_MAIN_FLOW
         ):
-            data.teacher_additional_skills_comment = update.message.text
+            user_data.teacher_additional_skills_comment = update.message.text
 
         buttons = [
             InlineKeyboardButton(
@@ -153,6 +170,23 @@ class MessageSender:
                 parse_mode=parse_mode,
             )
         )
+
+    @staticmethod
+    async def send_info_on_reviewable_fields_if_applicable(
+        update: Update,
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> None:
+        """If user is in registration conversation mode, send a message about reviewable fields."""
+        locale: Locale = context.user_data.locale
+
+        if (
+            context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
+        ):
+            await update.effective_chat.send_message(
+                context.bot_data.phrases["note_editable_fields"][locale],
+                parse_mode=ParseMode.HTML,
+            )
 
     @staticmethod
     def _prepare_message_for_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:

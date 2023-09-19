@@ -55,7 +55,7 @@ async def store_age_ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) 
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
         == ConversationMode.REGISTRATION_REVIEW
     ):
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     # No matter what language the student will choose, we want to prepare assessment-related
@@ -173,7 +173,7 @@ async def store_non_english_level_ask_communication_language(
         context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
         == ConversationMode.REGISTRATION_REVIEW
     ):
-        await MessageSender.ask_review(update, context)
+        await MessageSender.delete_message_and_ask_review(update, context)
         return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
     # Students can only choose one language and one level, so no menu
@@ -368,7 +368,7 @@ async def store_communication_language_ask_non_teaching_help_or_start_review(
         await CQReplySender.ask_non_teaching_help(context, query)
         return ConversationStateStudent.NON_TEACHING_HELP_MENU_OR_ASK_REVIEW
 
-    await MessageSender.ask_review(update, context)
+    await MessageSender.delete_message_and_ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
 
@@ -386,7 +386,7 @@ async def store_non_teaching_help_ask_another(
 async def ask_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Asks if review is needed."""
     await update.callback_query.answer()
-    await MessageSender.ask_review(update, context)
+    await MessageSender.delete_message_and_ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
 

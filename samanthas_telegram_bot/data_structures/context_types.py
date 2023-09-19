@@ -2,7 +2,7 @@
 import json
 from dataclasses import dataclass
 
-from telegram import Update
+from telegram import Message, Update
 from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
@@ -83,12 +83,21 @@ class ChatData:
     current_assessment_question_id: int | None = None
     day_index: int | None = None
 
-    # for tracking "Don't know"s during assessment
+    # for tracking of "Don't know"s during assessment
     assessment_dont_knows_in_a_row: int | None = None
     ids_of_dont_know_options_in_assessment: set[int] | None = None
     """IDs of all question options whose text is 'I don't know'."""
 
     # misc
+    messages_to_delete_at_review: list[Message] | None = None
+    """A list of Telegram messages that should be deleted from the conversation
+    when the review begins.
+    
+    For example, during review the bot asks the user their first name again. The user answers
+    the question, and the user's answer is then replaced with review menu. But the bot's question
+    about the first name should be deleted too. Since it's not ``effective_message`` anymore,
+    we have to keep track of it.  
+    """
     peer_help_callback_data: set[str] | None = None
     """Names of callback data for peer help types selected by the user. It is not passed
     to the backend, only used to control the buttons and check number of options selected. 
