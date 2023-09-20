@@ -162,14 +162,18 @@ class MessageSender:
     ) -> None:
         """Ask "yes" or "no" (localized)."""
         locale: Locale = context.user_data.locale
-        await update.message.reply_text(
-            **make_dict_for_message_with_inline_keyboard(
-                message_text=context.bot_data.phrases[question_phrase_internal_id][locale],
-                buttons=make_buttons_yes_no(context),
-                buttons_per_row=2,
-                parse_mode=parse_mode,
-            )
+
+        data = make_dict_for_message_with_inline_keyboard(
+            message_text=context.bot_data.phrases[question_phrase_internal_id][locale],
+            buttons=make_buttons_yes_no(context),
+            buttons_per_row=2,
+            parse_mode=parse_mode,
         )
+        try:
+            await update.message.reply_text(**data)
+        except AttributeError:
+            # Nothing to reply to: just send new message
+            await update.effective_chat.send_message(**data)
 
     @staticmethod
     async def send_info_on_reviewable_fields_if_applicable(

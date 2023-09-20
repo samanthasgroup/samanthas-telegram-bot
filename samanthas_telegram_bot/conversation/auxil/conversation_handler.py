@@ -293,7 +293,14 @@ states = {
             review.student_age_groups, pattern=UserDataReviewCategory.STUDENT_AGE_GROUPS
         ),
     ],
-    ConversationStateCommon.BYE: [
+    ConversationStateCommon.ASK_FINAL_COMMENT_TEXT_OR_BYE: [
+        CallbackQueryHandler(
+            common_main.ask_text_of_final_comment,
+            pattern=CommonCallbackData.YES,  # Yes, I want to leave a final comment
+        ),
+        CallbackQueryHandler(common_main.store_comment_create_person_start_helpdesk_chat),
+    ],
+    ConversationStateCommon.FINISH_REGISTRATION: [
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
             common_main.store_comment_create_person_start_helpdesk_chat,
