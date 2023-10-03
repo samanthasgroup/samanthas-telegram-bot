@@ -328,7 +328,7 @@ class CallbackQueryReplySender:
             **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_role"][locale],
                 buttons=buttons,
-                buttons_per_row=2,
+                buttons_per_row=1,
             )
         )
 
