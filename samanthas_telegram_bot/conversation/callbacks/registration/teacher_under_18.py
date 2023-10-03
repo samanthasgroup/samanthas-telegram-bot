@@ -1,5 +1,4 @@
 from telegram import Update
-from telegram.ext import ConversationHandler
 
 from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
@@ -12,29 +11,6 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.helpers import answer_callback_query_and_get_data
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.literal_types import Locale
-
-
-async def ask_readiness_to_host_speaking_club(
-    update: Update, context: CUSTOM_CONTEXT_TYPES
-) -> int:
-    """Asks if the young teacher is 16+ and can host speaking clubs."""
-    query, _ = await answer_callback_query_and_get_data(update)
-    context.user_data.teacher_is_under_18 = True
-
-    await CQReplySender.ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
-        context, query
-    )
-    return ConversationStateTeacherUnder18.ASK_COMMUNICATION_LANGUAGE_OR_BYE
-
-
-async def bye_cannot_work(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Says bye to a young teacher that doesn't want to host speaking clubs."""
-    await update.callback_query.answer()
-
-    await update.effective_chat.send_message(
-        context.bot_data.phrases["reply_cannot_work"][context.user_data.locale]
-    )
-    return ConversationHandler.END
 
 
 async def ask_communication_language(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -77,12 +53,14 @@ async def store_speaking_club_language_ask_additional_skills_comment(
     #  one single language and we automatically add pre-intermediate level to it (one cannot choose
     #  level higher than A2 for any language other than English).
     #  Maybe we will need to add some more logic, but maybe not.  Speaking clubs are informal.
-    context.user_data.language_and_level_ids = [
+    user_data = context.user_data
+    user_data.language_and_level_ids = [
         context.bot_data.language_and_level_id_for_language_id_and_level[(lang_id, "A2")]
     ]
+    locale: Locale = user_data.locale
 
     await update.effective_chat.send_message(
-        context.bot_data.phrases["ask_teacher_any_additional_help"][context.user_data.locale]
+        context.bot_data.phrases["ask_teacher_any_additional_help"][locale]
     )
     return ConversationStateTeacherUnder18.ASK_FINAL_COMMENT
 

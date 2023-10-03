@@ -34,6 +34,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as AdultTeacherState,
 )
+from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateTeacherUnder18
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
     notify_speaking_club_coordinator_about_high_level_student,
@@ -496,6 +497,43 @@ async def store_email_check_existence_ask_age(
 
     await getattr(MessageSender, f"ask_age_{user_data.role}")(update, context)
     return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
+
+
+async def ask_young_teacher_if_can_host_speaking_club_or_bye_to_young_coordinator(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If this is a teacher under 18, ask if they are 16+ and can host speaking clubs. If this is
+    a coordinator, say bye.
+
+    **No students must be handled by this callback.**
+    """
+    query, _ = await answer_callback_query_and_get_data(update)
+    user_data = context.user_data
+    locale: Locale = user_data.locale
+    role = user_data.role
+
+    if role == Role.TEACHER:
+        user_data.teacher_is_under_18 = True
+        await CQReplySender.ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+            context, query
+        )
+        return ConversationStateTeacherUnder18.ASK_COMMUNICATION_LANGUAGE_OR_BYE
+    elif role == Role.COORDINATOR:
+        await update.callback_query.edit_message_text(
+            context.bot_data.phrases["reply_cannot_work"][locale]
+        )
+        return ConversationHandler.END
+    else:
+        raise NotImplementedError(f"Role {role} not supported.")
+
+
+async def bye_cannot_work(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Says bye to young coordinator or to young teacher that won't host speaking clubs."""
+    await update.callback_query.answer()
+    locale: Locale = context.user_data.locale
+
+    await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
+    return ConversationHandler.END
 
 
 # callbacks for asking timezone are in student and teacher_adult

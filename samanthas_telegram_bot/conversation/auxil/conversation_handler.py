@@ -100,7 +100,7 @@ states = {
             pattern=CommonCallbackData.YES,  # Teacher: "Yes, I am 18 or older"
         ),
         CallbackQueryHandler(
-            young_teacher.ask_readiness_to_host_speaking_club,
+            common_main.ask_young_teacher_if_can_host_speaking_club_or_bye_to_young_coordinator,
             pattern=CommonCallbackData.NO,
         ),
         # students don't reply "yes" or "no": they choose their age group
@@ -247,7 +247,7 @@ states = {
             young_teacher.ask_communication_language,
             pattern=CommonCallbackData.YES,  # "Yes, I'm ready to host speaking clubs"
         ),
-        CallbackQueryHandler(young_teacher.bye_cannot_work, pattern=CommonCallbackData.NO),
+        CallbackQueryHandler(common_main.bye_cannot_work, pattern=CommonCallbackData.NO),
     ],
     ConversationStateTeacherUnder18.ASK_SPEAKING_CLUB_LANGUAGE: [
         CallbackQueryHandler(young_teacher.store_communication_language_ask_speaking_club_language)
