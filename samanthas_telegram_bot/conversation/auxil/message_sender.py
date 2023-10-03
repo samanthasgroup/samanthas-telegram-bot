@@ -36,16 +36,25 @@ class MessageSender:
     and a way to be stylistically consistent with other helper classes.
     """
 
+    @classmethod
+    async def ask_age_coordinator(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Ask coordinator if they are 18+."""
+        await cls._ask_if_18(update, context)
+
     @staticmethod
     async def ask_age_student(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Asks student about their age group."""
+        """Ask student about their age group."""
         await update.effective_message.reply_text(
             **make_dict_for_message_to_ask_age_student(context)
         )
 
     @classmethod
     async def ask_age_teacher(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Asks teacher if they are 18+."""
+        """Ask teacher if they are 18+."""
+        await cls._ask_if_18(update, context)
+
+    @classmethod
+    async def _ask_if_18(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         await cls.ask_yes_no(update, context, question_phrase_internal_id="ask_if_18")
 
     @staticmethod
