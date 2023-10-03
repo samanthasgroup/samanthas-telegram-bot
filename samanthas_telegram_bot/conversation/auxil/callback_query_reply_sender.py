@@ -313,7 +313,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks role (student or teacher)."""
+        """Ask role (student, teacher or coordinator)."""
         locale: Locale = context.user_data.locale
 
         buttons = [
@@ -321,7 +321,7 @@ class CallbackQueryReplySender:
                 text=context.bot_data.phrases[f"option_{role}"][locale],
                 callback_data=role,
             )
-            for role in (Role.STUDENT, Role.TEACHER)
+            for role in (Role.STUDENT, Role.TEACHER, Role.COORDINATOR)
         ]
 
         await query.edit_message_text(
