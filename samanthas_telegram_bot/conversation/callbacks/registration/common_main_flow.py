@@ -495,7 +495,7 @@ async def store_email_check_existence_ask_age(
         await MessageSender.delete_message_and_ask_review(update, context)
         return CommonState.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU
 
-    await getattr(MessageSender, f" ask_age_{user_data.role}")(update, context)
+    await getattr(MessageSender, f"ask_age_{user_data.role}")(update, context)
     return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
 
 
