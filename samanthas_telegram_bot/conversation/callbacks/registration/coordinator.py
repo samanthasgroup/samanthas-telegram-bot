@@ -42,5 +42,5 @@ async def store_additional_help_show_review_menu(
 
     context.user_data.volunteer_additional_skills_comment = message.text
 
-    await MessageSender.delete_message_and_ask_review(update, context)
+    await MessageSender.ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU

@@ -85,50 +85,11 @@ class MessageSender:
         return message
 
     @classmethod
-    async def delete_message_and_ask_review(
-        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
-    ) -> None:
-        """Send a message to the user for them to review their basic info.
-
-        Remove messages that were before the review: the ``effective_message``
-        and potentially message(s) before (e.g. with bot's question).
-        """
-
-        chat_data = context.chat_data
-        user_data = context.user_data
-        locale: Locale = user_data.locale
-
-        # If there was no message immediately before the review message is sent to user,
-        # attempt to delete it will cause BadRequest.
-        # This is fine: we want to delete a message if it exists.
-        with suppress(telegram.error.BadRequest):
-            await update.effective_message.delete()  # remove whatever was before the review
-
-        if chat_data.messages_to_delete_at_review is None:
-            chat_data.messages_to_delete_at_review = []
-
-        for _ in range(len(chat_data.messages_to_delete_at_review)):
-            await chat_data.messages_to_delete_at_review.pop().delete()
-
-        if (
-            user_data.role == Role.TEACHER
-            and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-            == ConversationMode.REGISTRATION_MAIN_FLOW
-        ):
-            user_data.volunteer_additional_skills_comment = update.message.text
-
-        buttons = [
-            InlineKeyboardButton(
-                text=context.bot_data.phrases["review_reaction_" + option][locale],
-                callback_data=option,
-            )
-            for option in ("yes", "no")
-        ]
-
+    async def ask_review(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Show message with main user info and ask user if corrections are needed."""
         await update.effective_chat.send_message(
-            text=cls._prepare_message_for_review(update, context),
-            # each button in a separate list to make them show in one column
-            reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
+            text=cls._prepare_message_for_review(context),
+            reply_markup=cls._prepare_reaction_buttons_for_review(context),
         )
 
     @staticmethod
@@ -184,6 +145,41 @@ class MessageSender:
             # Nothing to reply to: just send new message
             await update.effective_chat.send_message(**data)
 
+    @classmethod
+    async def delete_message_and_ask_review(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
+    ) -> None:
+        """Send a message to the user for them to review their basic info.
+
+        Remove messages that were before the review: the ``effective_message``
+        and potentially message(s) before (e.g. with bot's question).
+        """
+
+        chat_data = context.chat_data
+        user_data = context.user_data
+
+        # If there was no message immediately before the review message is sent to user,
+        # attempt to delete it will cause BadRequest.
+        # This is fine: we want to delete a message if it exists.
+        with suppress(telegram.error.BadRequest):
+            await update.effective_message.delete()  # remove whatever was before the review
+
+        if chat_data.messages_to_delete_at_review is None:
+            chat_data.messages_to_delete_at_review = []
+
+        for _ in range(len(chat_data.messages_to_delete_at_review)):
+            await chat_data.messages_to_delete_at_review.pop().delete()
+
+        # TODO move to calling function? This seems to be the wrong place for this:
+        if (
+            user_data.role == Role.TEACHER
+            and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
+        ):
+            user_data.volunteer_additional_skills_comment = update.message.text
+
+        await cls.ask_review(update, context)
+
     @staticmethod
     async def send_info_on_reviewable_fields_if_applicable(
         update: Update,
@@ -202,7 +198,24 @@ class MessageSender:
             )
 
     @staticmethod
-    def _prepare_message_for_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
+    def _prepare_reaction_buttons_for_review(
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> InlineKeyboardMarkup:
+        locale: Locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=context.bot_data.phrases["review_reaction_" + option][locale],
+                callback_data=option,
+            )
+            for option in ("yes", "no")
+        ]
+
+        # each button in a separate list to put them into rows of one single column
+        return InlineKeyboardMarkup([[buttons[0]], [buttons[1]]])
+
+    @staticmethod
+    def _prepare_message_for_review(context: CUSTOM_CONTEXT_TYPES) -> str:
         """Prepares text message with user info for review, depending on role and other factors."""
         data = context.user_data
         locale: Locale = data.locale
