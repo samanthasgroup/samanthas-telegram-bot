@@ -266,7 +266,8 @@ class CallbackQueryReplySender:
     ) -> None:
         """Asks what info the user wants to change during the review."""
 
-        locale: Locale = context.user_data.locale
+        user_data = context.user_data
+        locale: Locale = user_data.locale
 
         options = [
             # Without f-strings they will produce something like <Enum: "name">.
@@ -275,19 +276,23 @@ class CallbackQueryReplySender:
             f"{UserDataReviewCategory.LAST_NAME}",
             f"{UserDataReviewCategory.EMAIL}",
             f"{UserDataReviewCategory.TIMEZONE}",
-            f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
-            f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
         ]
 
-        if context.user_data.phone_number:
+        if user_data.role != Role.COORDINATOR:
+            options += [
+                f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
+                f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
+            ]
+
+        if user_data.phone_number:
             options.append(f"{UserDataReviewCategory.PHONE_NUMBER}")
 
-        if context.user_data.role == Role.STUDENT:
+        if user_data.role == Role.STUDENT:
             options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUPS}")
 
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
-        if context.user_data.role == Role.TEACHER:
+        if user_data.role == Role.TEACHER:
             options.append(f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}")
             # TODO review preferred students' ages?
 
