@@ -108,7 +108,8 @@ class ChatData:
 class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
 
-    STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
+    DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
+    STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW = "needs_interview_to_determine_level"
 
     locale: Locale | None = None
     chat_id: int | None = None
@@ -190,10 +191,15 @@ class UserData:
         }
 
     def student_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
+        project_status = (
+            self.STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW
+            if self.student_needs_oral_interview
+            else self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER
+        )
         data: DataDict = {
             "personal_info": personal_info_id,
             "comment": self.comment,
-            "project_status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": project_status,
             "status_since": self._format_status_since(update),
             "can_read_in_english": self.student_can_read_in_english,
             "is_member_of_speaking_club": False,  # TODO can backend set to False by default?
@@ -223,7 +229,7 @@ class UserData:
         return {
             "personal_info": personal_info_id,
             "comment": self.comment,
-            "project_status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
             "status_since": self._format_status_since(update),
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
@@ -250,7 +256,7 @@ class UserData:
             "personal_info": personal_info_id,
             "comment": self.comment,
             "status_since": self._format_status_since(update),
-            "project_status": self.STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
