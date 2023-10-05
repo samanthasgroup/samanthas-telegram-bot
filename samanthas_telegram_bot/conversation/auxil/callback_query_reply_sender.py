@@ -365,16 +365,19 @@ class CallbackQueryReplySender:
         await query.edit_message_text(**make_dict_for_message_to_ask_age_student(context))
 
     @classmethod
-    async def ask_teacher_additional_help(
+    async def ask_teacher_or_coordinator_additional_help(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks about additional help the teacher can provide (in free text)."""
+        """Asks about additional help the coordinator/teacher can provide (in free text)."""
 
-        locale: Locale = context.user_data.locale
+        user_data = context.user_data
+        locale: Locale = user_data.locale
+        role: Role = user_data.role
+
         await query.edit_message_text(
-            context.bot_data.phrases["ask_teacher_any_additional_help"][locale],
+            context.bot_data.phrases[f"ask_{role}_any_additional_help"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
 

@@ -160,7 +160,7 @@ class UserData:
     teacher_student_age_range_ids: list[int] | None = None
     teacher_can_host_speaking_club: bool | None = None
     teacher_peer_help = TeacherPeerHelp()
-    teacher_additional_skills_comment: str | None = None
+    volunteer_additional_skills_comment: str | None = None  # for both teachers and coordinators
 
     def clear_student_data(self) -> None:
         """Sets all student-related attributes to ``None``. This may be needed because multiple
@@ -229,7 +229,7 @@ class UserData:
             "has_hosted_speaking_club": False,
             "is_validated": False,
             "has_prior_teaching_experience": self.teacher_has_prior_experience,
-            "non_teaching_help_provided_comment": self.teacher_additional_skills_comment,
+            "non_teaching_help_provided_comment": (self.volunteer_additional_skills_comment),
             "peer_support_can_check_syllabus": peer_help.can_check_syllabus,
             "peer_support_can_host_mentoring_sessions": peer_help.can_host_mentoring_sessions,
             "peer_support_can_give_feedback": peer_help.can_give_feedback,
@@ -254,7 +254,7 @@ class UserData:
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
-            "non_teaching_help_provided_comment": self.teacher_additional_skills_comment,
+            "non_teaching_help_provided_comment": self.volunteer_additional_skills_comment,
             "teaching_languages_and_levels": self.language_and_level_ids,
         }
 

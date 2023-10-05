@@ -29,6 +29,9 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
+    ConversationStateCoordinator as CoordinatorState,
+)
+from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent as StudentState,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import (
@@ -499,6 +502,26 @@ async def store_email_check_existence_ask_age(
     return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
 
 
+async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Ask timezone."""
+
+    query, _ = await answer_callback_query_and_get_data(update)
+    role = context.user_data.role
+
+    # TODO right now it is automatic that if teacher got here, they are an adult.
+    #  If we start asking young teachers about timezone, we'll need to read query data here
+    #  rather than using `pattern` in ConversationHandler
+    if role == Role.TEACHER:
+        context.user_data.teacher_is_under_18 = False
+
+    await CQReplySender.ask_timezone(context, query)
+    return (
+        CommonState.TIME_SLOTS_START
+        if role != Role.COORDINATOR
+        else CoordinatorState.ASK_ADDITIONAL_HELP
+    )
+
+
 async def ask_young_teacher_if_can_host_speaking_club_or_bye_to_young_coordinator(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:
@@ -536,7 +559,7 @@ async def bye_cannot_work(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return ConversationHandler.END
 
 
-# callbacks for asking timezone are in student and teacher_adult
+# callbacks for asking timezone are in modules for respective roles
 
 
 async def store_timezone_ask_slots_for_monday(

@@ -20,17 +20,6 @@ from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_
 from samanthas_telegram_bot.data_structures.enums import TeachingMode
 
 
-async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Ask timezone."""
-
-    query, _ = await answer_callback_query_and_get_data(update)
-    # this callback is only called if the teacher is an adult
-    context.user_data.teacher_is_under_18 = False
-
-    await CQReplySender.ask_timezone(context, query)
-    return ConversationStateCommon.TIME_SLOTS_START
-
-
 async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores teaching language, asks level."""
 
@@ -223,7 +212,7 @@ async def ask_peer_help_or_additional_help(update: Update, context: CUSTOM_CONTE
         await CQReplySender.ask_teacher_peer_help(context, query)
         return ConversationStateTeacherAdult.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
-    await CQReplySender.ask_teacher_additional_help(context, query)
+    await CQReplySender.ask_teacher_or_coordinator_additional_help(context, query)
     return ConversationStateTeacherAdult.ASK_REVIEW
 
 
@@ -254,7 +243,7 @@ async def ask_additional_skills_comment(update: Update, context: CUSTOM_CONTEXT_
         text=f"Teacher's peer help: {selected_types}",
     )
 
-    await CQReplySender.ask_teacher_additional_help(context, query)
+    await CQReplySender.ask_teacher_or_coordinator_additional_help(context, query)
     return ConversationStateTeacherAdult.ASK_REVIEW
 
 
@@ -265,7 +254,7 @@ async def store_additional_skills_comment_ask_review(
     if update.message is None:
         return None
 
-    context.user_data.teacher_additional_skills_comment = update.message.text
+    context.user_data.volunteer_additional_skills_comment = update.message.text
 
     await MessageSender.delete_message_and_ask_review(update, context)
     return ConversationStateCommon.ASK_FINAL_COMMENT_OR_SHOW_REVIEW_MENU

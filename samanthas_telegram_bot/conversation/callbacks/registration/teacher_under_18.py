@@ -77,7 +77,7 @@ async def store_additional_help_comment_ask_final_comment(
         return None
     locale: Locale = context.user_data.locale
 
-    context.user_data.teacher_additional_skills_comment = update.message.text
+    context.user_data.volunteer_additional_skills_comment = update.message.text
 
     # We want to give the young teacher the opportunity to double-check their email
     # without starting a full-fledged review

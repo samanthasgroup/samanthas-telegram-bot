@@ -62,6 +62,14 @@ class ConversationStateCommon(IntEnum):
     TIME_SLOTS_MENU_OR_ASK_TEACHING_LANGUAGE = state_auto()
 
 
+class ConversationStateCoordinator(IntEnum):
+    """Provides integer keys for the dictionary of coordinator's states for ConversationHandler."""
+
+    ASK_ADDITIONAL_HELP = state_auto()
+    ASK_REVIEW = state_auto()
+    ASK_TIMEZONE = state_auto()
+
+
 class ConversationStateStudent(IntEnum):
     """Provides integer keys for the dictionary of student's states for ConversationHandler."""
 

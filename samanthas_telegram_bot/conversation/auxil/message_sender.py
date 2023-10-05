@@ -115,7 +115,7 @@ class MessageSender:
             and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
             == ConversationMode.REGISTRATION_MAIN_FLOW
         ):
-            user_data.teacher_additional_skills_comment = update.message.text
+            user_data.volunteer_additional_skills_comment = update.message.text
 
         buttons = [
             InlineKeyboardButton(
