@@ -405,13 +405,13 @@ files = [
 
 [[package]]
 name = "phonenumberslite"
-version = "8.13.21"
+version = "8.13.22"
 description = "Python version of Google's common library for parsing, formatting, storing and validating international phone numbers."
 optional = false
 python-versions = "*"
 files = [
-    {file = "phonenumberslite-8.13.21-py2.py3-none-any.whl", hash = "sha256:12f0a9860b5bb2fc98ed71ff5026b36a870c991d573c0b4c130a0ae366eecfd1"},
-    {file = "phonenumberslite-8.13.21.tar.gz", hash = "sha256:3ab7743e149f89b109083656b591949e9073195d2f3482dfaf976f9ce5a983f2"},
+    {file = "phonenumberslite-8.13.22-py2.py3-none-any.whl", hash = "sha256:8d1e5f2adfee2a634ccdb54b251dec32c5308fbca3d7f6ae6058f4adee4594a3"},
+    {file = "phonenumberslite-8.13.22.tar.gz", hash = "sha256:98684f21804c6df2e7d224e72d60defee20eddf9e144d57f24cbd9db0df450e0"},
 ]
 
 [[package]]
@@ -762,4 +762,4 @@ test = ["covdefaults (>=2.3)", "coverage (>=7.2.7)", "coverage-enable-subprocess
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "364a484b52e84e5a0237cc242f539a4a5f20d77f99829fc55f468f79dd46b452"
+content-hash = "df77355e7541f0028f92cec4565e689dec00ea89ba18a28d165397e301ae8575"
