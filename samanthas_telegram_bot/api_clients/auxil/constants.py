@@ -14,7 +14,8 @@ DataDict = dict[
 
 API_URL_PREFIX = os.environ.get("BACKEND_API_URL_PREFIX")
 
-API_URL_COORDINATOR_CREATE = f"{API_URL_PREFIX}/coordinators/"
+API_URL_COORDINATOR_RETRIEVE = f"{API_URL_PREFIX}/coordinator/"
+API_URL_COORDINATORS_LIST_CREATE = f"{API_URL_PREFIX}/coordinators/"
 
 API_URL_ENROLLMENT_TEST_GET_LEVEL = f"{API_URL_PREFIX}/enrollment_test_result/get_level/"
 API_URL_ENROLLMENT_TEST_SEND_RESULT = f"{API_URL_PREFIX}/enrollment_test_result/"

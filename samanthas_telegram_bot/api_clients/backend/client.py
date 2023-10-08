@@ -9,7 +9,8 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_AGE_RANGES,
     API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
-    API_URL_COORDINATOR_CREATE,
+    API_URL_COORDINATOR_RETRIEVE,
+    API_URL_COORDINATORS_LIST_CREATE,
     API_URL_DAY_AND_TIME_SLOTS,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
@@ -353,7 +354,7 @@ class BackendClient(BaseApiClient):
 
         if user_data.role == Role.COORDINATOR:
             return (
-                API_URL_COORDINATOR_CREATE,
+                API_URL_COORDINATORS_LIST_CREATE,
                 user_data.coordinator_as_dict(update=update, personal_info_id=personal_info_id),
             )
 
@@ -405,6 +406,8 @@ class BackendClient(BaseApiClient):
             )
         elif user_data.role == Role.STUDENT:
             url_prefix = API_URL_STUDENT_RETRIEVE
+        elif user_data.role == Role.COORDINATOR:
+            url_prefix = API_URL_COORDINATOR_RETRIEVE
         else:
             raise NotImplementedError(f"{user_data.role=} not supported")
 
