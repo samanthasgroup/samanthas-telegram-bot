@@ -109,6 +109,7 @@ class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
 
     DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
+    DEFAULT_STATUS_AT_CREATION_COORDINATOR = "pending"
     STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW = "needs_interview_to_determine_level"
 
     locale: Locale | None = None
@@ -174,6 +175,17 @@ class UserData:
             if attr.startswith("student_") and not callable(getattr(self, attr))
         ):
             setattr(self, attr, None)
+
+    def coordinator_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
+        return {
+            "personal_info": personal_info_id,
+            "additional_skills_comment": self.volunteer_additional_skills_comment,
+            "comment": self.comment,
+            "is_admin": False,
+            "is_validated": False,
+            "project_status": self.DEFAULT_STATUS_AT_CREATION_COORDINATOR,
+            "status_since": self._format_status_since(update),
+        }
 
     def personal_info_as_dict(self) -> DataDict:
         return {

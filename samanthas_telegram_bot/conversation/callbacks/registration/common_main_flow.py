@@ -738,6 +738,8 @@ async def store_comment_create_person_start_helpdesk_chat(
         await ChatwootClient.send_message_to_conversation(update, context, text=message_text)
 
     match role:
+        case Role.COORDINATOR:
+            person_was_created = await BackendClient.create_coordinator(update, context)
         case Role.STUDENT:
             if user_data.student_needs_oral_interview:
                 await _set_student_language_and_level_for_english_starters(update, context)
@@ -771,6 +773,8 @@ async def store_comment_create_person_start_helpdesk_chat(
         # Here we're handling those who got high level in "written" assessment and decided to go on
         # with registration despite the fact that they will only be able to attend Speaking Club.
         text = f"{phrases['student_level_too_high_we_will_email_you'][locale]} {user_data.email}"
+    elif role == Role.COORDINATOR:
+        text = phrases["bye_to_coordinator_candidate"][locale]
     else:
         text = phrases["bye_wait_for_message_from_bot"][locale]
 

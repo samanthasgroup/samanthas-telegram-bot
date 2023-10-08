@@ -9,6 +9,7 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_AGE_RANGES,
     API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
+    API_URL_COORDINATOR_CREATE,
     API_URL_DAY_AND_TIME_SLOTS,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
@@ -64,6 +65,11 @@ class BackendClient(BaseApiClient):
             raise BackendClientError(f"Failed to check if {chat_id=} exists.") from err
 
         return status_code == httpx.codes.OK
+
+    @classmethod
+    async def create_coordinator(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
+        """Send a POST request to create a coordinator. Return `True` if successful."""
+        return bool(await cls._create_person(update, context))
 
     @classmethod
     async def create_student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
@@ -340,9 +346,15 @@ class BackendClient(BaseApiClient):
     ) -> tuple[str, DataDict]:
         """Returns url and data for a POST request to create a person, based on user data."""
         user_data = context.user_data
-        if user_data.role not in (Role.STUDENT, Role.TEACHER):
+        if user_data.role not in (Role.COORDINATOR, Role.STUDENT, Role.TEACHER):
             raise NotImplementedError(
                 f"Cannot produce url and data to post: {user_data.role=} not supported."
+            )
+
+        if user_data.role == Role.COORDINATOR:
+            return (
+                API_URL_COORDINATOR_CREATE,
+                user_data.coordinator_as_dict(update=update, personal_info_id=personal_info_id),
             )
 
         if user_data.role == Role.STUDENT:
