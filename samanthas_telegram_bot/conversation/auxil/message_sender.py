@@ -164,9 +164,6 @@ class MessageSender:
         with suppress(telegram.error.BadRequest):
             await update.effective_message.delete()  # remove whatever was before the review
 
-        if chat_data.messages_to_delete_at_review is None:
-            chat_data.messages_to_delete_at_review = []
-
         for _ in range(len(chat_data.messages_to_delete_at_review)):
             await chat_data.messages_to_delete_at_review.pop().delete()
 

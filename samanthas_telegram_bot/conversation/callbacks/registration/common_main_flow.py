@@ -50,7 +50,11 @@ from samanthas_telegram_bot.data_structures.constants import (
     RUSSIAN,
     UKRAINIAN,
 )
-from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
+from samanthas_telegram_bot.data_structures.context_types import (
+    CUSTOM_CONTEXT_TYPES,
+    ChatData,
+    UserData,
+)
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel, Role
 from samanthas_telegram_bot.data_structures.literal_types import Locale
 
@@ -61,7 +65,8 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     The interface language may not match the interface language of the phone, so better to ask.
     """
 
-    user_data = context.user_data
+    chat_data: ChatData = context.chat_data
+    user_data: UserData = context.user_data
 
     user_data.clear_student_data()
     user_data.chat_id = update.effective_chat.id
@@ -85,6 +90,8 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
     # Methods handling these iterables can be called from different callbacks, so better to set
     # them here, in one place.
+    chat_data.ids_of_dont_know_options_in_assessment = set()
+    chat_data.messages_to_delete_at_review = []
     user_data.day_and_time_slot_ids = []
     user_data.language_and_level_ids = []
     user_data.levels_for_teaching_language = {}
@@ -94,10 +101,10 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
     # but in order to remove selected options from InlineKeyboard, I have to store exact
     # callback_data somewhere.
-    context.chat_data.peer_help_callback_data = set()
+    chat_data.peer_help_callback_data = set()
 
     # set day of week to Monday to start asking about slots for each day
-    context.chat_data.day_index = 0
+    chat_data.day_index = 0
 
     greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
     for locale in LOCALES:
