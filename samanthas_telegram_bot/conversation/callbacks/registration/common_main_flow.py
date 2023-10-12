@@ -60,20 +60,49 @@ from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Starts the conversation and asks the user about the interface language.
+    """Reset chat and user data, start the conversation, ask user about interface language.
 
     The interface language may not match the interface language of the phone, so better to ask.
     """
 
-    chat_data: ChatData = context.chat_data
-    user_data: UserData = context.user_data
+    def reset_chat_and_user_data(ctx: CUSTOM_CONTEXT_TYPES) -> None:
+        """Set all non-private attrs to None, then create empty lists/sets for respective attrs.
 
-    user_data.clear_student_data()
-    user_data.chat_id = update.effective_chat.id
+        Note:
+            This function is intentionally put inside `start()` because it must only be called
+            from `start()`, when user intentionally starts new registration.
+        """
 
-    # This should not be needed in production, just adding as a precaution to avoid unexpected
-    # side effects of changing contacts in Chatwoot and/or backend
-    user_data.helpdesk_conversation_id = None
+        chat_data: ChatData = ctx.chat_data
+        user_data: UserData = ctx.user_data
+
+        # clear all relevant attributes, make sure not to touch methods
+        for data in (chat_data, user_data):
+            for attr in (
+                attr
+                for attr in dir(data)
+                if not attr.startswith("_") and not callable(getattr(data, attr))
+            ):
+                setattr(data, attr, None)
+
+        # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
+        # Methods handling these iterables can be called from different callbacks, so better to set
+        # them here, in one place.
+        chat_data.ids_of_dont_know_options_in_assessment = set()
+        chat_data.messages_to_delete_at_review = []
+        user_data.day_and_time_slot_ids = []
+        user_data.language_and_level_ids = []
+        user_data.levels_for_teaching_language = {}
+        user_data.non_teaching_help_types = []
+        user_data.teacher_student_age_range_ids = []
+
+        # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
+        # but in order to remove selected options from InlineKeyboard, I have to store exact
+        # callback_data somewhere.
+        chat_data.peer_help_callback_data = set()
+
+        # set day of week to Monday to start asking about slots for each day
+        chat_data.day_index = 0
 
     await logs(
         bot=context.bot,
@@ -87,24 +116,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
-    # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
-    # Methods handling these iterables can be called from different callbacks, so better to set
-    # them here, in one place.
-    chat_data.ids_of_dont_know_options_in_assessment = set()
-    chat_data.messages_to_delete_at_review = []
-    user_data.day_and_time_slot_ids = []
-    user_data.language_and_level_ids = []
-    user_data.levels_for_teaching_language = {}
-    user_data.non_teaching_help_types = []
-    user_data.teacher_student_age_range_ids = []
+    reset_chat_and_user_data(context)
 
-    # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
-    # but in order to remove selected options from InlineKeyboard, I have to store exact
-    # callback_data somewhere.
-    chat_data.peer_help_callback_data = set()
-
-    # set day of week to Monday to start asking about slots for each day
-    chat_data.day_index = 0
+    context.user_data.chat_id = update.effective_chat.id
 
     greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
     for locale in LOCALES:

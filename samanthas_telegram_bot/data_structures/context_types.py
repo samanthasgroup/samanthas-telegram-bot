@@ -164,18 +164,6 @@ class UserData:
     teacher_peer_help = TeacherPeerHelp()
     volunteer_additional_skills_comment: str | None = None  # for both teachers and coordinators
 
-    def clear_student_data(self) -> None:
-        """Sets all student-related attributes to ``None``. This may be needed because multiple
-        students can be registered from one device.
-        """
-        # clear all student-related attributes, make sure not to touch methods
-        for attr in (
-            attr
-            for attr in dir(self)
-            if attr.startswith("student_") and not callable(getattr(self, attr))
-        ):
-            setattr(self, attr, None)
-
     def coordinator_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
         return {
             "personal_info": personal_info_id,
