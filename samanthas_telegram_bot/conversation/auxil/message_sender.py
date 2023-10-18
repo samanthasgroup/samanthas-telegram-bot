@@ -237,6 +237,14 @@ class MessageSender:
         if user_data.phone_number:
             message += f"{phrases['review_phone_number'][locale]}: {user_data.phone_number}\n"
 
+        message += f"{phrases['review_communication_language'][locale]}: "
+        message += (
+            phrases[
+                f"class_communication_language_option_{user_data.communication_language_in_class}"
+            ][locale]
+            + "\n"
+        )
+
         offset_hour = user_data.utc_offset_hour
         offset_minute = str(user_data.utc_offset_minute).zfill(2)  # to produce "00" from 0
 
@@ -297,13 +305,5 @@ class MessageSender:
                     ", ".join(sorted(user_data.levels_for_teaching_language[language])) + "\n"
                 )
             message += "\n"
-
-        message += f"{phrases['review_communication_language'][locale]}: "
-        message += (
-            phrases[
-                f"class_communication_language_option_{user_data.communication_language_in_class}"
-            ][locale]
-            + "\n"
-        )
 
         return message
