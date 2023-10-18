@@ -26,6 +26,14 @@ from samanthas_telegram_bot.data_structures.models import (
 )
 
 
+def set_public_attrs_to_none(obj: object) -> None:
+    """Set all public attributes to ``None``, make sure not to touch methods."""
+    for attr in (
+        attr for attr in dir(obj) if not attr.startswith("_") and not callable(getattr(obj, attr))
+    ):
+        setattr(obj, attr, None)
+
+
 @dataclass
 class BotData:
     """Class for bot-level data needed for every conversation."""
@@ -107,6 +115,20 @@ class ChatData:
     """Names of callback data for peer help types selected by the user. It is not passed
     to the backend, only used to control the buttons and check number of options selected. 
     """
+
+    def reset(self) -> None:
+        set_public_attrs_to_none(self)
+
+        self.ids_of_dont_know_options_in_assessment = set()
+        self.messages_to_delete_at_review = []
+
+        # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
+        # but in order to remove selected options from InlineKeyboard, I have to store exact
+        # callback_data somewhere.
+        self.peer_help_callback_data = set()
+
+        # set day of week to Monday to start asking about slots for each day
+        self.day_index = 0
 
 
 @dataclass
@@ -190,6 +212,18 @@ class UserData:
             "registration_telegram_bot_language": self.locale,
             "chatwoot_conversation_id": self.helpdesk_conversation_id,
         }
+
+    def reset(self) -> None:
+        set_public_attrs_to_none(self)
+
+        # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
+        # Methods handling these iterables can be called from different callbacks, so better to set
+        # them here, in one place.
+        self.day_and_time_slot_ids = []
+        self.language_and_level_ids = []
+        self.levels_for_teaching_language = {}
+        self.non_teaching_help_types = []
+        self.teacher_student_age_range_ids = []
 
     def student_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
         project_status = (
