@@ -12,14 +12,6 @@ from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSend
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 
 
-async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Ask timezone."""
-
-    query, _ = await answer_callback_query_and_get_data(update)
-    await CQReplySender.ask_timezone(context, query)
-    return ConversationStateCoordinator.ASK_COMMUNICATION_LANGUAGE
-
-
 async def store_timezone_ask_communication_language(
     update: Update, context: CUSTOM_CONTEXT_TYPES
 ) -> int:

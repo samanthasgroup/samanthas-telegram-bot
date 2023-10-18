@@ -539,7 +539,7 @@ async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     return (
         CommonState.TIME_SLOTS_START
         if role != Role.COORDINATOR
-        else CoordinatorState.ASK_ADDITIONAL_HELP
+        else CoordinatorState.ASK_COMMUNICATION_LANGUAGE
     )
 
 
