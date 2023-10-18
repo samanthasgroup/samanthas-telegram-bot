@@ -14,11 +14,6 @@ CALLER_LOGGING_STACK_LEVEL = 2
 """Stack level that will make the logger inside an auxiliary function display the name 
 of function/method that called this helper function."""
 
-DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
-DEFAULT_STATUS_AT_CREATION_COORDINATOR = "pending"
-STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW = "needs_interview_to_determine_level"
-
-
 EMAIL_PATTERN = re.compile(
     "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+"
     "(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*"
@@ -37,6 +32,10 @@ EXCEPTION_TRACEBACK_CLEANUP_PATTERN = re.compile(r"File .+/")  # it is intended 
 """Pattern to remove the long 'File:/path/to/file/' portion, but leave the file name."""
 
 LOGGING_LEVEL = os.environ.get("LOGGING_LEVEL")
+
+PROJECT_STATUS_DEFAULT_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
+PROJECT_STATUS_DEFAULT_AT_CREATION_COORDINATOR = "pending"
+PROJECT_STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW = "needs_interview_to_determine_level"
 
 RUSSIAN_DOMAINS = (".ru", ".su", ".рф")
 
