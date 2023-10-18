@@ -17,17 +17,31 @@ async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     query, _ = await answer_callback_query_and_get_data(update)
     await CQReplySender.ask_timezone(context, query)
-    return ConversationStateCoordinator.ASK_ADDITIONAL_HELP
+    return ConversationStateCoordinator.ASK_COMMUNICATION_LANGUAGE
 
 
-async def store_timezone_ask_additional_help(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Store timezone, ask for additional help coordinator can provide."""
+async def store_timezone_ask_communication_language(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Store timezone, ask about communication language."""
     user_data = context.user_data
 
     query, data = await answer_callback_query_and_get_data(update)
     user_data.utc_offset_hour, user_data.utc_offset_minute = (
         int(item) for item in data.split(":")  # TODO this is repetition, but only one line
     )
+    await CQReplySender.ask_class_communication_languages(context, query)
+    return ConversationStateCoordinator.ASK_ADDITIONAL_HELP
+
+
+async def store_communication_language_ask_additional_help(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """Store communication language, ask for additional help coordinator can provide."""
+    (
+        query,
+        context.user_data.communication_language_in_class,
+    ) = await answer_callback_query_and_get_data(update)
     await CQReplySender.ask_teacher_or_coordinator_additional_help(context, query)
     return ConversationStateCoordinator.ASK_REVIEW
 

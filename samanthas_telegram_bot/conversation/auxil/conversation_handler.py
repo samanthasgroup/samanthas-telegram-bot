@@ -267,8 +267,11 @@ states = {
         )
     ],
     # MIDDLE OF CONVERSATION: COORDINATORS
+    ConversationStateCoordinator.ASK_COMMUNICATION_LANGUAGE: [
+        CallbackQueryHandler(coordinator.store_timezone_ask_communication_language)
+    ],
     ConversationStateCoordinator.ASK_ADDITIONAL_HELP: [
-        CallbackQueryHandler(coordinator.store_timezone_ask_additional_help),
+        CallbackQueryHandler(coordinator.store_communication_language_ask_additional_help),
     ],
     ConversationStateCoordinator.ASK_REVIEW: [
         MessageHandler(

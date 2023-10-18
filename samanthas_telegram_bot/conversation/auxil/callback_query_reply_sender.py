@@ -53,7 +53,7 @@ class CallbackQueryReplySender:
         if context.user_data.role == Role.TEACHER:
             language_codes = STUDENT_COMMUNICATION_LANGUAGE_CODES[:]
         else:
-            # the student cannot choose "L2 only" because that wouldn't make sense
+            # student or coordinator cannot choose "L2 only" because that wouldn't make sense
             language_codes = tuple(
                 c for c in STUDENT_COMMUNICATION_LANGUAGE_CODES if c != "l2_only"
             )
