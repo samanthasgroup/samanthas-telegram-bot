@@ -275,13 +275,13 @@ class CallbackQueryReplySender:
             f"{UserDataReviewCategory.FIRST_NAME}",
             f"{UserDataReviewCategory.LAST_NAME}",
             f"{UserDataReviewCategory.EMAIL}",
+            f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
             f"{UserDataReviewCategory.TIMEZONE}",
         ]
 
         if user_data.role != Role.COORDINATOR:
             options += [
                 f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
-                f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
             ]
 
         if user_data.phone_number:
