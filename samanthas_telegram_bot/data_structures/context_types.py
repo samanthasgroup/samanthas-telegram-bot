@@ -6,6 +6,11 @@ from telegram import Message, Update
 from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
+from samanthas_telegram_bot.auxil.constants import (
+    DEFAULT_STATUS_AT_CREATION_COORDINATOR,
+    DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
+    STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW,
+)
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.literal_types import CommunicationModeInClass, Locale
@@ -108,10 +113,6 @@ class ChatData:
 class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
 
-    DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
-    DEFAULT_STATUS_AT_CREATION_COORDINATOR = "pending"
-    STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW = "needs_interview_to_determine_level"
-
     locale: Locale | None = None
     chat_id: int | None = None
     first_name: str | None = None
@@ -171,7 +172,7 @@ class UserData:
             "comment": self.comment,
             "is_admin": False,
             "is_validated": False,
-            "project_status": self.DEFAULT_STATUS_AT_CREATION_COORDINATOR,
+            "project_status": DEFAULT_STATUS_AT_CREATION_COORDINATOR,
             "status_since": self._format_status_since(update),
         }
 
@@ -192,9 +193,9 @@ class UserData:
 
     def student_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
         project_status = (
-            self.STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW
+            STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW
             if self.student_needs_oral_interview
-            else self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER
+            else DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER
         )
         data: DataDict = {
             "personal_info": personal_info_id,
@@ -229,7 +230,7 @@ class UserData:
         return {
             "personal_info": personal_info_id,
             "comment": self.comment,
-            "project_status": self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
             "status_since": self._format_status_since(update),
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
@@ -256,7 +257,7 @@ class UserData:
             "personal_info": personal_info_id,
             "comment": self.comment,
             "status_since": self._format_status_since(update),
-            "project_status": self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
