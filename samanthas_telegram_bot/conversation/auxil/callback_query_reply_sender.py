@@ -53,7 +53,7 @@ class CallbackQueryReplySender:
         if context.user_data.role == Role.TEACHER:
             language_codes = STUDENT_COMMUNICATION_LANGUAGE_CODES[:]
         else:
-            # the student cannot choose "L2 only" because that wouldn't make sense
+            # student or coordinator cannot choose "L2 only" because that wouldn't make sense
             language_codes = tuple(
                 c for c in STUDENT_COMMUNICATION_LANGUAGE_CODES if c != "l2_only"
             )
@@ -266,7 +266,8 @@ class CallbackQueryReplySender:
     ) -> None:
         """Asks what info the user wants to change during the review."""
 
-        locale: Locale = context.user_data.locale
+        user_data = context.user_data
+        locale: Locale = user_data.locale
 
         options = [
             # Without f-strings they will produce something like <Enum: "name">.
@@ -274,20 +275,24 @@ class CallbackQueryReplySender:
             f"{UserDataReviewCategory.FIRST_NAME}",
             f"{UserDataReviewCategory.LAST_NAME}",
             f"{UserDataReviewCategory.EMAIL}",
-            f"{UserDataReviewCategory.TIMEZONE}",
-            f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
             f"{UserDataReviewCategory.CLASS_COMMUNICATION_LANGUAGE}",
+            f"{UserDataReviewCategory.TIMEZONE}",
         ]
 
-        if context.user_data.phone_number:
+        if user_data.role != Role.COORDINATOR:
+            options += [
+                f"{UserDataReviewCategory.DAY_AND_TIME_SLOTS}",
+            ]
+
+        if user_data.phone_number:
             options.append(f"{UserDataReviewCategory.PHONE_NUMBER}")
 
-        if context.user_data.role == Role.STUDENT:
+        if user_data.role == Role.STUDENT:
             options.append(f"{UserDataReviewCategory.STUDENT_AGE_GROUPS}")
 
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
-        if context.user_data.role == Role.TEACHER:
+        if user_data.role == Role.TEACHER:
             options.append(f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}")
             # TODO review preferred students' ages?
 
@@ -313,7 +318,7 @@ class CallbackQueryReplySender:
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks role (student or teacher)."""
+        """Ask role (student, teacher or coordinator)."""
         locale: Locale = context.user_data.locale
 
         buttons = [
@@ -321,14 +326,14 @@ class CallbackQueryReplySender:
                 text=context.bot_data.phrases[f"option_{role}"][locale],
                 callback_data=role,
             )
-            for role in (Role.STUDENT, Role.TEACHER)
+            for role in (Role.STUDENT, Role.TEACHER, Role.COORDINATOR)
         ]
 
         await query.edit_message_text(
             **make_dict_for_message_with_inline_keyboard(
                 message_text=context.bot_data.phrases["ask_role"][locale],
                 buttons=buttons,
-                buttons_per_row=2,
+                buttons_per_row=1,
             )
         )
 
@@ -365,16 +370,19 @@ class CallbackQueryReplySender:
         await query.edit_message_text(**make_dict_for_message_to_ask_age_student(context))
 
     @classmethod
-    async def ask_teacher_additional_help(
+    async def ask_teacher_or_coordinator_additional_help(
         cls,
         context: CUSTOM_CONTEXT_TYPES,
         query: CallbackQuery,
     ) -> None:
-        """Asks about additional help the teacher can provide (in free text)."""
+        """Asks about additional help the coordinator/teacher can provide (in free text)."""
 
-        locale: Locale = context.user_data.locale
+        user_data = context.user_data
+        locale: Locale = user_data.locale
+        role: Role = user_data.role
+
         await query.edit_message_text(
-            context.bot_data.phrases["ask_teacher_any_additional_help"][locale],
+            context.bot_data.phrases[f"ask_{role}_any_additional_help"][locale],
             reply_markup=InlineKeyboardMarkup([]),
         )
 

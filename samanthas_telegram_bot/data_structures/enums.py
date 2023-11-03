@@ -28,6 +28,7 @@ class LoggingLevel(str, Enum):
 class Role(str, Enum):
     """Role of a person. Members of this enum can be treated as strings."""
 
+    COORDINATOR = "coordinator"
     STUDENT = "student"
     TEACHER = "teacher"
 

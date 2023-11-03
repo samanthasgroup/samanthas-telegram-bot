@@ -8,12 +8,14 @@ from telegram.ext import (
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 import samanthas_telegram_bot.conversation.callbacks.registration.common_review as review
+import samanthas_telegram_bot.conversation.callbacks.registration.coordinator as coordinator
 import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
 from samanthas_telegram_bot.conversation.auxil.enums import (
     CommonCallbackData,
     ConversationStateCommon,
+    ConversationStateCoordinator,
     ConversationStateStudent,
     ConversationStateTeacherAdult,
     ConversationStateTeacherUnder18,
@@ -93,14 +95,14 @@ states = {
             common_main.store_email_check_existence_ask_age,
         )
     ],
-    # Callbacks for asking timezone depend on role (don't ask teen teachers about timezone)
+    # We don't ask teen teachers about timezone
     ConversationStateCommon.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB: [
         CallbackQueryHandler(
-            adult_teacher.ask_timezone,
-            pattern=CommonCallbackData.YES,  # Teacher: "Yes, I am 18 or older"
+            common_main.ask_timezone,
+            pattern=CommonCallbackData.YES,  # Teacher/Coordinator: "Yes, I am 18 or older"
         ),
         CallbackQueryHandler(
-            young_teacher.ask_readiness_to_host_speaking_club,
+            common_main.ask_young_teacher_if_can_host_speaking_club_or_bye_to_young_coordinator,
             pattern=CommonCallbackData.NO,
         ),
         # students don't reply "yes" or "no": they choose their age group
@@ -247,7 +249,7 @@ states = {
             young_teacher.ask_communication_language,
             pattern=CommonCallbackData.YES,  # "Yes, I'm ready to host speaking clubs"
         ),
-        CallbackQueryHandler(young_teacher.bye_cannot_work, pattern=CommonCallbackData.NO),
+        CallbackQueryHandler(common_main.bye_cannot_work, pattern=CommonCallbackData.NO),
     ],
     ConversationStateTeacherUnder18.ASK_SPEAKING_CLUB_LANGUAGE: [
         CallbackQueryHandler(young_teacher.store_communication_language_ask_speaking_club_language)
@@ -262,6 +264,18 @@ states = {
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
             young_teacher.store_additional_help_comment_ask_final_comment,
+        )
+    ],
+    # MIDDLE OF CONVERSATION: COORDINATORS
+    ConversationStateCoordinator.ASK_COMMUNICATION_LANGUAGE: [
+        CallbackQueryHandler(coordinator.store_timezone_ask_communication_language)
+    ],
+    ConversationStateCoordinator.ASK_ADDITIONAL_HELP: [
+        CallbackQueryHandler(coordinator.store_communication_language_ask_additional_help),
+    ],
+    ConversationStateCoordinator.ASK_REVIEW: [
+        MessageHandler(
+            filters.TEXT & ~filters.COMMAND, coordinator.store_additional_help_show_review_menu
         )
     ],
     # COMMON FINAL PART OF CONVERSATION:

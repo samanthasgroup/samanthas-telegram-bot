@@ -36,16 +36,25 @@ class MessageSender:
     and a way to be stylistically consistent with other helper classes.
     """
 
+    @classmethod
+    async def ask_age_coordinator(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Ask coordinator if they are 18+."""
+        await cls._ask_if_18(update, context)
+
     @staticmethod
     async def ask_age_student(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Asks student about their age group."""
+        """Ask student about their age group."""
         await update.effective_message.reply_text(
             **make_dict_for_message_to_ask_age_student(context)
         )
 
     @classmethod
     async def ask_age_teacher(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
-        """Asks teacher if they are 18+."""
+        """Ask teacher if they are 18+."""
+        await cls._ask_if_18(update, context)
+
+    @classmethod
+    async def _ask_if_18(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
         await cls.ask_yes_no(update, context, question_phrase_internal_id="ask_if_18")
 
     @staticmethod
@@ -76,50 +85,11 @@ class MessageSender:
         return message
 
     @classmethod
-    async def delete_message_and_ask_review(
-        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
-    ) -> None:
-        """Send a message to the user for them to review their basic info.
-
-        Remove messages that were before the review: the ``effective_message``
-        and potentially message(s) before (e.g. with bot's question).
-        """
-
-        chat_data = context.chat_data
-        user_data = context.user_data
-        locale: Locale = user_data.locale
-
-        # If there was no message immediately before the review message is sent to user,
-        # attempt to delete it will cause BadRequest.
-        # This is fine: we want to delete a message if it exists.
-        with suppress(telegram.error.BadRequest):
-            await update.effective_message.delete()  # remove whatever was before the review
-
-        if chat_data.messages_to_delete_at_review is None:
-            chat_data.messages_to_delete_at_review = []
-
-        for _ in range(len(chat_data.messages_to_delete_at_review)):
-            await chat_data.messages_to_delete_at_review.pop().delete()
-
-        if (
-            user_data.role == Role.TEACHER
-            and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
-            == ConversationMode.REGISTRATION_MAIN_FLOW
-        ):
-            user_data.teacher_additional_skills_comment = update.message.text
-
-        buttons = [
-            InlineKeyboardButton(
-                text=context.bot_data.phrases["review_reaction_" + option][locale],
-                callback_data=option,
-            )
-            for option in ("yes", "no")
-        ]
-
+    async def ask_review(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        """Show message with main user info and ask user if corrections are needed."""
         await update.effective_chat.send_message(
-            text=cls._prepare_message_for_review(update, context),
-            # each button in a separate list to make them show in one column
-            reply_markup=InlineKeyboardMarkup([[buttons[0]], [buttons[1]]]),
+            text=cls._prepare_message_for_review(context),
+            reply_markup=cls._prepare_reaction_buttons_for_review(context),
         )
 
     @staticmethod
@@ -175,6 +145,38 @@ class MessageSender:
             # Nothing to reply to: just send new message
             await update.effective_chat.send_message(**data)
 
+    @classmethod
+    async def delete_message_and_ask_review(
+        cls, update: Update, context: CUSTOM_CONTEXT_TYPES
+    ) -> None:
+        """Send a message to the user for them to review their basic info.
+
+        Remove messages that were before the review: the ``effective_message``
+        and potentially message(s) before (e.g. with bot's question).
+        """
+
+        chat_data = context.chat_data
+        user_data = context.user_data
+
+        # If there was no message immediately before the review message is sent to user,
+        # attempt to delete it will cause BadRequest.
+        # This is fine: we want to delete a message if it exists.
+        with suppress(telegram.error.BadRequest):
+            await update.effective_message.delete()  # remove whatever was before the review
+
+        for _ in range(len(chat_data.messages_to_delete_at_review)):
+            await chat_data.messages_to_delete_at_review.pop().delete()
+
+        # TODO move to calling function? This seems to be the wrong place for this:
+        if (
+            user_data.role == Role.TEACHER
+            and context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id]
+            == ConversationMode.REGISTRATION_MAIN_FLOW
+        ):
+            user_data.volunteer_additional_skills_comment = update.message.text
+
+        await cls.ask_review(update, context)
+
     @staticmethod
     async def send_info_on_reviewable_fields_if_applicable(
         update: Update,
@@ -193,52 +195,81 @@ class MessageSender:
             )
 
     @staticmethod
-    def _prepare_message_for_review(update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
+    def _prepare_reaction_buttons_for_review(
+        context: CUSTOM_CONTEXT_TYPES,
+    ) -> InlineKeyboardMarkup:
+        locale: Locale = context.user_data.locale
+
+        buttons = [
+            InlineKeyboardButton(
+                text=context.bot_data.phrases["review_reaction_" + option][locale],
+                callback_data=option,
+            )
+            for option in ("yes", "no")
+        ]
+
+        # each button in a separate list to put them into rows of one single column
+        return InlineKeyboardMarkup([[buttons[0]], [buttons[1]]])
+
+    @staticmethod
+    def _prepare_message_for_review(context: CUSTOM_CONTEXT_TYPES) -> str:
         """Prepares text message with user info for review, depending on role and other factors."""
-        data = context.user_data
-        locale: Locale = data.locale
+        user_data = context.user_data
+        locale: Locale = user_data.locale
         phrases = context.bot_data.phrases
 
         message = (
             f"{phrases['ask_review'][locale]}\n\n"
-            f"{phrases['review_first_name'][locale]}: {data.first_name}\n"
-            f"{phrases['review_last_name'][locale]}: {data.last_name}\n"
-            f"{phrases['review_email'][locale]}: {data.email}\n"
+            f"{phrases['review_first_name'][locale]}: {user_data.first_name}\n"
+            f"{phrases['review_last_name'][locale]}: {user_data.last_name}\n"
+            f"{phrases['review_email'][locale]}: {user_data.email}\n"
         )
 
-        if data.role == Role.STUDENT:
+        if user_data.role == Role.STUDENT:
             message += (
                 f"{phrases['review_student_age_group'][locale]}: "
-                f"{data.student_age_from}-{data.student_age_to}\n"
+                f"{user_data.student_age_from}-{user_data.student_age_to}\n"
             )
         # TODO add students' age ranges for teacher? This will require changes to UserData
 
-        if data.tg_username:
-            message += f"{phrases['review_username'][locale]} (@{data.tg_username})\n"
-        if data.phone_number:
-            message += f"{phrases['review_phone_number'][locale]}: {data.phone_number}\n"
+        if user_data.tg_username:
+            message += f"{phrases['review_username'][locale]} (@{user_data.tg_username})\n"
+        if user_data.phone_number:
+            message += f"{phrases['review_phone_number'][locale]}: {user_data.phone_number}\n"
 
-        offset_hour = data.utc_offset_hour
-        offset_minute = str(data.utc_offset_minute).zfill(2)  # to produce "00" from 0
+        message += f"{phrases['review_communication_language'][locale]}: "
+        message += (
+            phrases[
+                f"class_communication_language_option_{user_data.communication_language_in_class}"
+            ][locale]
+            + "\n"
+        )
 
-        if data.utc_offset_hour > 0:
+        offset_hour = user_data.utc_offset_hour
+        offset_minute = str(user_data.utc_offset_minute).zfill(2)  # to produce "00" from 0
+
+        if user_data.utc_offset_hour > 0:
             message += f"{phrases['review_timezone'][locale]}: UTC+{offset_hour}"
-        elif data.utc_offset_hour < 0:
+        elif user_data.utc_offset_hour < 0:
             message += f"{phrases['review_timezone'][locale]}: UTC{offset_hour}"
         else:
             message += f"\n{phrases['review_timezone'][locale]}: UTC"
 
         utc_time = datetime.datetime.now(tz=datetime.timezone.utc)
         now_with_offset = utc_time + datetime.timedelta(
-            hours=data.utc_offset_hour, minutes=data.utc_offset_minute
+            hours=user_data.utc_offset_hour, minutes=user_data.utc_offset_minute
         )
         message += (
             f" ({phrases['current_time'][locale]} " f"{now_with_offset.strftime('%H:%M')})\n"
         )
 
+        # the rest is for non-coordinators only
+        if user_data.role == Role.COORDINATOR:
+            return message
+
         message += f"\n{phrases['review_availability'][locale]}:\n"
 
-        slot_ids = sorted(data.day_and_time_slot_ids)
+        slot_ids = sorted(user_data.day_and_time_slot_ids)
         # creating a dictionary matching days to lists of slots, so that slots can be shown to
         # user grouped by a day of the week
         slot_id_for_day_index: dict[int, list[int]] = defaultdict(list)
@@ -266,19 +297,13 @@ class MessageSender:
 
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
-        if data.role == Role.TEACHER:
+        if user_data.role == Role.TEACHER:
             message += f"{phrases['review_languages_levels'][locale]}:\n"
-            for language in data.levels_for_teaching_language:
+            for language in user_data.levels_for_teaching_language:
                 message += f"{phrases[language][locale]}: "
-                message += ", ".join(sorted(data.levels_for_teaching_language[language])) + "\n"
+                message += (
+                    ", ".join(sorted(user_data.levels_for_teaching_language[language])) + "\n"
+                )
             message += "\n"
-
-        message += f"{phrases['review_communication_language'][locale]}: "
-        message += (
-            phrases[f"class_communication_language_option_{data.communication_language_in_class}"][
-                locale
-            ]
-            + "\n"
-        )
 
         return message

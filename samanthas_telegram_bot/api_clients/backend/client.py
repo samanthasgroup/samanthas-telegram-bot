@@ -9,6 +9,8 @@ from samanthas_telegram_bot.api_clients.auxil.constants import (
     API_URL_AGE_RANGES,
     API_URL_CHECK_EXISTENCE_OF_CHAT_ID,
     API_URL_CHECK_EXISTENCE_OF_PERSONAL_INFO,
+    API_URL_COORDINATOR_RETRIEVE,
+    API_URL_COORDINATORS_LIST_CREATE,
     API_URL_DAY_AND_TIME_SLOTS,
     API_URL_ENROLLMENT_TEST_GET_LEVEL,
     API_URL_ENROLLMENT_TEST_SEND_RESULT,
@@ -66,28 +68,43 @@ class BackendClient(BaseApiClient):
         return status_code == httpx.codes.OK
 
     @classmethod
-    async def create_student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
-        """Sends a POST request to create a student and send results of assessment if any.
+    async def create_coordinator(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+        """Send a POST request to create a coordinator. Return `True` if successful.
 
-        Returns `True` if successful.
+        Return their new personal info ID.
+        """
+        return await cls._create_person(update, context)
+
+    @classmethod
+    async def create_student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+        """Send a POST request to create a student and send results of assessment if any.
+
+        Return their new personal info ID.
         """
 
         personal_info_id = await cls._create_person(update, context)
-        return await cls._send_student_assessment_results(
+
+        if await cls._send_student_assessment_results(
             update=update,
             context=context,
             personal_info_id=personal_info_id,
+        ):
+            return personal_info_id
+
+        raise BackendClientError(
+            "Failed to create student because written assessment for student ID "
+            f"{personal_info_id=} wasn't sent"
         )
 
     @classmethod
     async def create_adult_or_young_teacher(
         cls, update: Update, context: CUSTOM_CONTEXT_TYPES
-    ) -> bool:
-        """Sends a POST request to create teacher (adult or young).
+    ) -> int:
+        """Send a POST request to create teacher (adult or young).
 
-        Returns `True` if successful.
+        Return their new personal info ID.
         """
-        return bool(await cls._create_person(update, context))
+        return await cls._create_person(update, context)
 
     @classmethod
     def get_age_ranges(cls) -> typing.Any:
@@ -340,9 +357,15 @@ class BackendClient(BaseApiClient):
     ) -> tuple[str, DataDict]:
         """Returns url and data for a POST request to create a person, based on user data."""
         user_data = context.user_data
-        if user_data.role not in (Role.STUDENT, Role.TEACHER):
+        if user_data.role not in (Role.COORDINATOR, Role.STUDENT, Role.TEACHER):
             raise NotImplementedError(
                 f"Cannot produce url and data to post: {user_data.role=} not supported."
+            )
+
+        if user_data.role == Role.COORDINATOR:
+            return (
+                API_URL_COORDINATORS_LIST_CREATE,
+                user_data.coordinator_as_dict(update=update, personal_info_id=personal_info_id),
             )
 
         if user_data.role == Role.STUDENT:
@@ -393,6 +416,8 @@ class BackendClient(BaseApiClient):
             )
         elif user_data.role == Role.STUDENT:
             url_prefix = API_URL_STUDENT_RETRIEVE
+        elif user_data.role == Role.COORDINATOR:
+            url_prefix = API_URL_COORDINATOR_RETRIEVE
         else:
             raise NotImplementedError(f"{user_data.role=} not supported")
 

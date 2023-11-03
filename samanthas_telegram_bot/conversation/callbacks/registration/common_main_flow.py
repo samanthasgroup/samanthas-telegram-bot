@@ -29,11 +29,15 @@ from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender impor
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
+    ConversationStateCoordinator as CoordinatorState,
+)
+from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateStudent as StudentState,
 )
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as AdultTeacherState,
 )
+from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateTeacherUnder18
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
     notify_speaking_club_coordinator_about_high_level_student,
@@ -52,19 +56,10 @@ from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
 async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
-    """Starts the conversation and asks the user about the interface language.
+    """Reset chat and user data, start the conversation, ask user about interface language.
 
     The interface language may not match the interface language of the phone, so better to ask.
     """
-
-    user_data = context.user_data
-
-    user_data.clear_student_data()
-    user_data.chat_id = update.effective_chat.id
-
-    # This should not be needed in production, just adding as a precaution to avoid unexpected
-    # side effects of changing contacts in Chatwoot and/or backend
-    user_data.helpdesk_conversation_id = None
 
     await logs(
         bot=context.bot,
@@ -72,34 +67,26 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
         update=update,
     )
 
-    context.bot_data.conversation_mode_for_chat_id[
-        context.user_data.chat_id
+    bot_data = context.bot_data
+    chat_data = context.chat_data
+    user_data = context.user_data
+
+    bot_data.conversation_mode_for_chat_id[
+        user_data.chat_id
     ] = ConversationMode.REGISTRATION_MAIN_FLOW
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
-    # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
-    # Methods handling these iterables can be called from different callbacks, so better to set
-    # them here, in one place.
-    user_data.day_and_time_slot_ids = []
-    user_data.language_and_level_ids = []
-    user_data.levels_for_teaching_language = {}
-    user_data.non_teaching_help_types = []
-    user_data.teacher_student_age_range_ids = []
+    chat_data.reset()
+    user_data.reset()
 
-    # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
-    # but in order to remove selected options from InlineKeyboard, I have to store exact
-    # callback_data somewhere.
-    context.chat_data.peer_help_callback_data = set()
-
-    # set day of week to Monday to start asking about slots for each day
-    context.chat_data.day_index = 0
+    user_data.chat_id = update.effective_chat.id
 
     greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
     for locale in LOCALES:
         greeting += (
-            rf"{context.bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
-            f"{context.bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
+            f"{bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
+            f"{bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
         )
 
     await update.message.reply_text(
@@ -498,7 +485,64 @@ async def store_email_check_existence_ask_age(
     return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
 
 
-# callbacks for asking timezone are in student and teacher_adult
+async def ask_timezone(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Ask timezone."""
+
+    query, _ = await answer_callback_query_and_get_data(update)
+    role = context.user_data.role
+
+    # TODO right now it is automatic that if teacher got here, they are an adult.
+    #  If we start asking young teachers about timezone, we'll need to read query data here
+    #  rather than using `pattern` in ConversationHandler
+    if role == Role.TEACHER:
+        context.user_data.teacher_is_under_18 = False
+
+    await CQReplySender.ask_timezone(context, query)
+    return (
+        CommonState.TIME_SLOTS_START
+        if role != Role.COORDINATOR
+        else CoordinatorState.ASK_COMMUNICATION_LANGUAGE
+    )
+
+
+async def ask_young_teacher_if_can_host_speaking_club_or_bye_to_young_coordinator(
+    update: Update, context: CUSTOM_CONTEXT_TYPES
+) -> int:
+    """If this is a teacher under 18, ask if they are 16+ and can host speaking clubs. If this is
+    a coordinator, say bye.
+
+    **No students must be handled by this callback.**
+    """
+    query, _ = await answer_callback_query_and_get_data(update)
+    user_data = context.user_data
+    locale: Locale = user_data.locale
+    role = user_data.role
+
+    if role == Role.TEACHER:
+        user_data.teacher_is_under_18 = True
+        await CQReplySender.ask_young_teacher_is_over_16_and_ready_to_host_speaking_clubs(
+            context, query
+        )
+        return ConversationStateTeacherUnder18.ASK_COMMUNICATION_LANGUAGE_OR_BYE
+    elif role == Role.COORDINATOR:
+        await update.callback_query.edit_message_text(
+            context.bot_data.phrases["reply_cannot_work"][locale]
+        )
+        return ConversationHandler.END
+    else:
+        raise NotImplementedError(f"Role {role} not supported.")
+
+
+async def bye_cannot_work(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+    """Says bye to young coordinator or to young teacher that won't host speaking clubs."""
+    await update.callback_query.answer()
+    locale: Locale = context.user_data.locale
+
+    await update.effective_chat.send_message(context.bot_data.phrases["reply_cannot_work"][locale])
+    return ConversationHandler.END
+
+
+# callbacks for asking timezone are in modules for respective roles
 
 
 async def store_timezone_ask_slots_for_monday(
@@ -677,6 +721,8 @@ async def store_comment_create_person_start_helpdesk_chat(
         await ChatwootClient.send_message_to_conversation(update, context, text=message_text)
 
     match role:
+        case Role.COORDINATOR:
+            personal_info_id = await BackendClient.create_coordinator(update, context)
         case Role.STUDENT:
             if user_data.student_needs_oral_interview:
                 await _set_student_language_and_level_for_english_starters(update, context)
@@ -694,9 +740,9 @@ async def store_comment_create_person_start_helpdesk_chat(
                     )
                     return StudentState.CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE
 
-            person_was_created = await BackendClient.create_student(update, context)
+            personal_info_id = await BackendClient.create_student(update, context)
         case Role.TEACHER:
-            person_was_created = await BackendClient.create_adult_or_young_teacher(update, context)
+            personal_info_id = await BackendClient.create_adult_or_young_teacher(update, context)
         case _:
             raise NotImplementedError(f"Logic for { role=} not implemented.")
 
@@ -710,10 +756,12 @@ async def store_comment_create_person_start_helpdesk_chat(
         # Here we're handling those who got high level in "written" assessment and decided to go on
         # with registration despite the fact that they will only be able to attend Speaking Club.
         text = f"{phrases['student_level_too_high_we_will_email_you'][locale]} {user_data.email}"
+    elif role == Role.COORDINATOR:
+        text = phrases["bye_to_coordinator_candidate"][locale]
     else:
         text = phrases["bye_wait_for_message_from_bot"][locale]
 
-    if person_was_created is True:
+    if personal_info_id:
         await wait_message.edit_text(text)
     else:
         await logs(

@@ -6,6 +6,11 @@ from telegram import Message, Update
 from telegram.ext import CallbackContext, ExtBot
 
 from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
+from samanthas_telegram_bot.auxil.constants import (
+    PROJECT_STATUS_DEFAULT_AT_CREATION_COORDINATOR,
+    PROJECT_STATUS_DEFAULT_AT_CREATION_STUDENT_TEACHER,
+    PROJECT_STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW,
+)
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.literal_types import CommunicationModeInClass, Locale
@@ -19,6 +24,14 @@ from samanthas_telegram_bot.data_structures.models import (
     SmalltalkResult,
     TeacherPeerHelp,
 )
+
+
+def set_public_attrs_to_none(obj: object) -> None:
+    """Set all public attributes to ``None``, make sure not to touch methods."""
+    for attr in (
+        attr for attr in dir(obj) if not attr.startswith("_") and not callable(getattr(obj, attr))
+    ):
+        setattr(obj, attr, None)
 
 
 @dataclass
@@ -103,13 +116,24 @@ class ChatData:
     to the backend, only used to control the buttons and check number of options selected. 
     """
 
+    def reset(self) -> None:
+        set_public_attrs_to_none(self)
+
+        self.ids_of_dont_know_options_in_assessment = set()
+        self.messages_to_delete_at_review = []
+
+        # We will be storing the selected options in boolean flags of TeacherPeerHelp(),
+        # but in order to remove selected options from InlineKeyboard, I have to store exact
+        # callback_data somewhere.
+        self.peer_help_callback_data = set()
+
+        # set day of week to Monday to start asking about slots for each day
+        self.day_index = 0
+
 
 @dataclass
 class UserData:
     """Class for data pertaining to the user that will be sent to backend."""
-
-    DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER = "no_group_yet"
-    STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW = "needs_interview_to_determine_level"
 
     locale: Locale | None = None
     chat_id: int | None = None
@@ -161,19 +185,18 @@ class UserData:
     teacher_student_age_range_ids: list[int] | None = None
     teacher_can_host_speaking_club: bool | None = None
     teacher_peer_help = TeacherPeerHelp()
-    teacher_additional_skills_comment: str | None = None
+    volunteer_additional_skills_comment: str | None = None  # for both teachers and coordinators
 
-    def clear_student_data(self) -> None:
-        """Sets all student-related attributes to ``None``. This may be needed because multiple
-        students can be registered from one device.
-        """
-        # clear all student-related attributes, make sure not to touch methods
-        for attr in (
-            attr
-            for attr in dir(self)
-            if attr.startswith("student_") and not callable(getattr(self, attr))
-        ):
-            setattr(self, attr, None)
+    def coordinator_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
+        return {
+            "personal_info": personal_info_id,
+            "additional_skills_comment": self.volunteer_additional_skills_comment,
+            "comment": self.comment,
+            "is_admin": False,
+            "is_validated": False,
+            "project_status": PROJECT_STATUS_DEFAULT_AT_CREATION_COORDINATOR,
+            "status_since": self._format_status_since(update),
+        }
 
     def personal_info_as_dict(self) -> DataDict:
         return {
@@ -190,11 +213,23 @@ class UserData:
             "chatwoot_conversation_id": self.helpdesk_conversation_id,
         }
 
+    def reset(self) -> None:
+        set_public_attrs_to_none(self)
+
+        # Set the iterable attributes to empty lists/sets to avoid TypeError/KeyError later on.
+        # Methods handling these iterables can be called from different callbacks, so better to set
+        # them here, in one place.
+        self.day_and_time_slot_ids = []
+        self.language_and_level_ids = []
+        self.levels_for_teaching_language = {}
+        self.non_teaching_help_types = []
+        self.teacher_student_age_range_ids = []
+
     def student_as_dict(self, update: Update, personal_info_id: int) -> DataDict:
         project_status = (
-            self.STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW
+            PROJECT_STATUS_FOR_STUDENTS_THAT_NEED_INTERVIEW
             if self.student_needs_oral_interview
-            else self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER
+            else PROJECT_STATUS_DEFAULT_AT_CREATION_STUDENT_TEACHER
         )
         data: DataDict = {
             "personal_info": personal_info_id,
@@ -229,13 +264,13 @@ class UserData:
         return {
             "personal_info": personal_info_id,
             "comment": self.comment,
-            "project_status": self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": PROJECT_STATUS_DEFAULT_AT_CREATION_STUDENT_TEACHER,
             "status_since": self._format_status_since(update),
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
             "has_prior_teaching_experience": self.teacher_has_prior_experience,
-            "non_teaching_help_provided_comment": self.teacher_additional_skills_comment,
+            "non_teaching_help_provided_comment": (self.volunteer_additional_skills_comment),
             "peer_support_can_check_syllabus": peer_help.can_check_syllabus,
             "peer_support_can_host_mentoring_sessions": peer_help.can_host_mentoring_sessions,
             "peer_support_can_give_feedback": peer_help.can_give_feedback,
@@ -256,11 +291,11 @@ class UserData:
             "personal_info": personal_info_id,
             "comment": self.comment,
             "status_since": self._format_status_since(update),
-            "project_status": self.DEFAULT_STATUS_AT_CREATION_STUDENT_TEACHER,
+            "project_status": PROJECT_STATUS_DEFAULT_AT_CREATION_STUDENT_TEACHER,
             "can_host_speaking_club": self.teacher_can_host_speaking_club,
             "has_hosted_speaking_club": False,
             "is_validated": False,
-            "non_teaching_help_provided_comment": self.teacher_additional_skills_comment,
+            "non_teaching_help_provided_comment": self.volunteer_additional_skills_comment,
             "teaching_languages_and_levels": self.language_and_level_ids,
         }
 
