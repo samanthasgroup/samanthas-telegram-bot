@@ -85,7 +85,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
     for locale in LOCALES:
         greeting += (
-            rf"{bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
+            f"{bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
             f"{bot_data.phrases['choose_language_of_conversation'][locale]}\n\n"
         )
 
