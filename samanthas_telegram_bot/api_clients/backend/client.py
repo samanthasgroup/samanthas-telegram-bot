@@ -68,33 +68,43 @@ class BackendClient(BaseApiClient):
         return status_code == httpx.codes.OK
 
     @classmethod
-    async def create_coordinator(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
-        """Send a POST request to create a coordinator. Return `True` if successful."""
-        return bool(await cls._create_person(update, context))
+    async def create_coordinator(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+        """Send a POST request to create a coordinator. Return `True` if successful.
+
+        Return their new personal info ID.
+        """
+        return await cls._create_person(update, context)
 
     @classmethod
-    async def create_student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> bool:
-        """Sends a POST request to create a student and send results of assessment if any.
+    async def create_student(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
+        """Send a POST request to create a student and send results of assessment if any.
 
-        Returns `True` if successful.
+        Return their new personal info ID.
         """
 
         personal_info_id = await cls._create_person(update, context)
-        return await cls._send_student_assessment_results(
+
+        if await cls._send_student_assessment_results(
             update=update,
             context=context,
             personal_info_id=personal_info_id,
+        ):
+            return personal_info_id
+
+        raise BackendClientError(
+            "Failed to create student because written assessment for student ID "
+            f"{personal_info_id=} wasn't sent"
         )
 
     @classmethod
     async def create_adult_or_young_teacher(
         cls, update: Update, context: CUSTOM_CONTEXT_TYPES
-    ) -> bool:
-        """Sends a POST request to create teacher (adult or young).
+    ) -> int:
+        """Send a POST request to create teacher (adult or young).
 
-        Returns `True` if successful.
+        Return their new personal info ID.
         """
-        return bool(await cls._create_person(update, context))
+        return await cls._create_person(update, context)
 
     @classmethod
     def get_age_ranges(cls) -> typing.Any:

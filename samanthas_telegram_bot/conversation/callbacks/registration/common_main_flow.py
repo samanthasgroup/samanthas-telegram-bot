@@ -722,7 +722,7 @@ async def store_comment_create_person_start_helpdesk_chat(
 
     match role:
         case Role.COORDINATOR:
-            person_was_created = await BackendClient.create_coordinator(update, context)
+            personal_info_id = await BackendClient.create_coordinator(update, context)
         case Role.STUDENT:
             if user_data.student_needs_oral_interview:
                 await _set_student_language_and_level_for_english_starters(update, context)
@@ -740,9 +740,9 @@ async def store_comment_create_person_start_helpdesk_chat(
                     )
                     return StudentState.CREATE_STUDENT_WITH_HIGH_LEVEL_OR_BYE
 
-            person_was_created = await BackendClient.create_student(update, context)
+            personal_info_id = await BackendClient.create_student(update, context)
         case Role.TEACHER:
-            person_was_created = await BackendClient.create_adult_or_young_teacher(update, context)
+            personal_info_id = await BackendClient.create_adult_or_young_teacher(update, context)
         case _:
             raise NotImplementedError(f"Logic for { role=} not implemented.")
 
@@ -761,7 +761,7 @@ async def store_comment_create_person_start_helpdesk_chat(
     else:
         text = phrases["bye_wait_for_message_from_bot"][locale]
 
-    if person_was_created is True:
+    if personal_info_id:
         await wait_message.edit_text(text)
     else:
         await logs(
