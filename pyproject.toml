@@ -11,7 +11,7 @@ packages = [{include = "samanthas_telegram_bot"}]
 python = "^3.10"
 python-telegram-bot = {extras = ["webhooks"], version = "^20.7"}
 phonenumberslite = "^8.13.28"
-python-dotenv = "^1.0.0"
+python-dotenv = "^1.0.1"
 uvicorn = "^0.27.0"
 starlette = "^0.35.1"
 
