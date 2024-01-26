@@ -13,7 +13,7 @@ python-telegram-bot = {extras = ["webhooks"], version = "^20.7"}
 phonenumberslite = "^8.13.28"
 python-dotenv = "^1.0.1"
 uvicorn = "^0.27.0"
-starlette = "^0.35.1"
+starlette = "^0.36.1"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.12.1"
