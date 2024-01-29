@@ -1,4 +1,5 @@
 """Module with context types to be used with python-telegram-bot instead of plain dictionaries."""
+
 import json
 from dataclasses import dataclass
 
@@ -67,9 +68,9 @@ class BotData:
     """Matches IDs of `LanguageAndLevel` objects to same `LanguageAndLevel` objects."""
 
     # naming with "_objects" to avoid ambiguity of "languages_and_levels"
-    language_and_level_objects_for_language_id: dict[
-        str, tuple[LanguageAndLevel, ...]
-    ] | None = None
+    language_and_level_objects_for_language_id: dict[str, tuple[LanguageAndLevel, ...]] | None = (
+        None
+    )
     """Matches IDs of teaching languages (strings like "en", "de" etc.) to tuples
     of corresponding `LanguageAndLevel` objects."""
 

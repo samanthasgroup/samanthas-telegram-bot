@@ -1,4 +1,5 @@
 """Functions for interaction with Chatwoot helpdesk."""
+
 import logging
 import os
 import typing

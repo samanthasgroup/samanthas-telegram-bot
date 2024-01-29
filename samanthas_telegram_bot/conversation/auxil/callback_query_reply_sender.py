@@ -209,9 +209,9 @@ class CallbackQueryReplySender:
                 ),
                 buttons=buttons,
                 buttons_per_row=2,
-                bottom_row_button=abort_button
-                if context.chat_data.assessment_dont_knows_in_a_row >= 5
-                else None,
+                bottom_row_button=(
+                    abort_button if context.chat_data.assessment_dont_knows_in_a_row >= 5 else None
+                ),
             )
         )
 

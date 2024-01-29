@@ -71,9 +71,9 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     chat_data = context.chat_data
     user_data = context.user_data
 
-    bot_data.conversation_mode_for_chat_id[
-        user_data.chat_id
-    ] = ConversationMode.REGISTRATION_MAIN_FLOW
+    bot_data.conversation_mode_for_chat_id[user_data.chat_id] = (
+        ConversationMode.REGISTRATION_MAIN_FLOW
+    )
 
     await update.effective_chat.set_menu_button(MenuButtonCommands())
 
@@ -672,9 +672,9 @@ async def show_review_menu(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int
 
     # Switch into review mode to let other callbacks know that they should return user
     # back to the review callback instead of moving him normally along the conversation line
-    context.bot_data.conversation_mode_for_chat_id[
-        context.user_data.chat_id
-    ] = ConversationMode.REGISTRATION_REVIEW
+    context.bot_data.conversation_mode_for_chat_id[context.user_data.chat_id] = (
+        ConversationMode.REGISTRATION_REVIEW
+    )
     await CQReplySender.ask_review_category(context, query)
     return CommonState.REVIEW_REQUESTED_ITEM
 

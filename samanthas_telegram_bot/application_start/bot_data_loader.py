@@ -1,4 +1,5 @@
 """Functionality for API queries and other operations necessary for loading BotData."""
+
 import csv
 import logging
 import typing
