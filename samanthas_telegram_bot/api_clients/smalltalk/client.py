@@ -1,4 +1,5 @@
 """Functions for interaction with SmallTalk oral test service."""
+
 import asyncio
 import typing
 

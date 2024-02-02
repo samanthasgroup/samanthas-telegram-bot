@@ -1,4 +1,5 @@
 """Constants related to business logic and NOT imported from environment variables."""
+
 import re
 
 from samanthas_telegram_bot.data_structures.literal_types import Locale

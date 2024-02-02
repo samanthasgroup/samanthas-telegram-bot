@@ -1,4 +1,5 @@
 """Auxiliary constants not related to business logic or imported from environment variables."""
+
 import os
 import re
 
