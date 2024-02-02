@@ -16,7 +16,7 @@ uvicorn = "^0.27.0"
 starlette = "^0.36.1"
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.12.1"
+black = "^24.1.1"
 ruff = "^0.2.0"
 pre-commit = "^3.6.0"
 icecream = "^2.1.3"
