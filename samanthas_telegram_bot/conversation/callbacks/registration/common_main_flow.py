@@ -82,7 +82,13 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     user_data.chat_id = update.effective_chat.id
 
-    greeting = "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"  # noqa # TODO remove going to production
+    greeting = (  # noqa # TODO remove going to production
+        "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"
+        "Бот наразі працює тільки в тестовому режимі.\n"
+        "Для реєстрації та отримання додаткової інформації звертайтесь на сайт: https://samanthasgroup.com/\n\n"
+        "The bot is currently operating in test mode only.\n"
+        "For registration and all additional information, please visit: https://samanthasgroup.com/"
+    )
     for locale in LOCALES:
         greeting += (
             f"{bot_data.phrases['hello'][locale]} {update.message.from_user.first_name}! "
