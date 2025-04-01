@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 
 HEADERS = {"Authorization": f"Bearer {os.environ.get('SMALLTALK_TOKEN')}"}
 ORAL_TEST_ID = os.environ.get("SMALLTALK_TEST_ID")
+CHATWOOT_DISABLED = os.environ.get("CHATWOOT_DISABLED", "true").lower() == "true"
 
 
 class ChatwootClient(BaseApiClient):
@@ -41,6 +42,8 @@ class ChatwootClient(BaseApiClient):
         context: CUSTOM_CONTEXT_TYPES,
         text: str,
     ) -> bool:
+        if CHATWOOT_DISABLED:
+            return True
         """Sends a message to a conversation in Chatwoot.  Returns `True` if successful.
 
         Docs:
@@ -100,6 +103,8 @@ class ChatwootClient(BaseApiClient):
         context: CUSTOM_CONTEXT_TYPES,
         text: str,
     ) -> bool:
+        if CHATWOOT_DISABLED:
+            return True
         """Creates contact in Chatwoot and starts new conversation. Returns `True` if successful.
 
         **Stores Chatwoot conversation ID in `context.user_data`**
@@ -122,6 +127,8 @@ class ChatwootClient(BaseApiClient):
 
     @classmethod
     async def _create_contact(cls, update: Update, context: CUSTOM_CONTEXT_TYPES) -> str:
+        if CHATWOOT_DISABLED:
+            return "123"
         """Creates new contact in Chatwoot.
 
          Docs:
@@ -173,6 +180,8 @@ class ChatwootClient(BaseApiClient):
     async def _start_conversation(
         cls, update: Update, context: CUSTOM_CONTEXT_TYPES, source_id: str
     ) -> int:
+        if CHATWOOT_DISABLED:
+            return 123
         """Creates new conversation in Chatwoot and returns its ID.
 
         Docs:
