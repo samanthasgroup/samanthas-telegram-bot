@@ -2,6 +2,7 @@
 
 import json
 from dataclasses import dataclass
+from typing import TypeAlias
 
 from telegram import Message, Update
 from telegram.ext import CallbackContext, ExtBot
@@ -309,4 +310,4 @@ class UserData:
 
 # Include custom classes into ContextTypes to get attribute hinting (replacing standard dicts with
 # UserData for "user_data" etc.).
-CUSTOM_CONTEXT_TYPES = CallbackContext[ExtBot[None], UserData, ChatData, BotData]
+CUSTOM_CONTEXT_TYPES: TypeAlias = CallbackContext[ExtBot[None], UserData, ChatData, BotData]
