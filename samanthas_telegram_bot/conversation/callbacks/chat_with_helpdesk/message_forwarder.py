@@ -1,3 +1,5 @@
+import os
+
 from telegram import Update
 
 from samanthas_telegram_bot.api_clients import ChatwootClient
@@ -10,12 +12,16 @@ from samanthas_telegram_bot.data_structures.custom_updates import (
 )
 from samanthas_telegram_bot.data_structures.enums import LoggingLevel
 
+CHATWOOT_DISABLED = os.environ.get("CHATWOOT_DISABLED", "true").lower() == "true"
+
 
 class MessageForwarder:
     """Class for forwarding messages from helpdesk to user in bot and vice versa."""
 
     @staticmethod
     async def from_helpdesk_to_user(update: ChatwootUpdate, context: CUSTOM_CONTEXT_TYPES) -> None:
+        if CHATWOOT_DISABLED:
+            return
         """Forward message sent by coordinator to user, switch communication mode."""
         bot_data = context.bot_data
         if update.direction == ChatwootMessageDirection.FROM_CHATWOOT_TO_BOT:
@@ -43,6 +49,8 @@ class MessageForwarder:
 
     @staticmethod
     async def from_user_to_helpdesk(update: Update, context: CUSTOM_CONTEXT_TYPES) -> None:
+        if CHATWOOT_DISABLED:
+            return
         """Forward message sent by user to coordinator in helpdesk."""
 
         await logs(
