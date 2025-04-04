@@ -213,6 +213,15 @@ async def ask_peer_help_or_additional_help(update: Update, context: CUSTOM_CONTE
         await CQReplySender.ask_teacher_peer_help(context, query)
         return ConversationStateTeacherAdult.PEER_HELP_MENU_OR_ASK_ADDITIONAL_HELP
 
+    # check if there are teacher_peer_help object
+    # because if user skiped this questions
+    # it will be None
+    if (
+        not hasattr(context.user_data, "teacher_peer_help")
+        or context.user_data.teacher_peer_help is None
+    ):
+        context.user_data.teacher_peer_help = TeacherPeerHelp()
+
     await CQReplySender.ask_teacher_or_coordinator_additional_help(context, query)
     return ConversationStateTeacherAdult.ASK_REVIEW
 
@@ -220,12 +229,6 @@ async def ask_peer_help_or_additional_help(update: Update, context: CUSTOM_CONTE
 async def store_peer_help_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores one option of teacher peer help, asks for another."""
     query, type_of_peer_help = await answer_callback_query_and_get_data(update)
-
-    if (
-        not hasattr(context.user_data, "teacher_peer_help")
-        or context.user_data.teacher_peer_help is None
-    ):
-        context.user_data.teacher_peer_help = TeacherPeerHelp()
 
     setattr(context.user_data.teacher_peer_help, type_of_peer_help, True)
     context.chat_data.peer_help_callback_data.add(type_of_peer_help)
