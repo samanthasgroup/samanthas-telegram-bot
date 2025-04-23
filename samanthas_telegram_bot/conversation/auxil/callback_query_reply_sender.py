@@ -293,8 +293,12 @@ class CallbackQueryReplySender:
         # Because of complex logic around English, we will not offer the student to review their
         # language/level for now.  This option will be reserved for teachers.
         if user_data.role == Role.TEACHER:
-            options.append(f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}")
-            # TODO review preferred students' ages?
+            options.extend(
+                [
+                    f"{UserDataReviewCategory.LANGUAGES_AND_LEVELS}",
+                    f"{UserDataReviewCategory.STUDENT_AGE_GROUPS}",
+                ]
+            )
 
         buttons = [
             InlineKeyboardButton(

@@ -22,7 +22,7 @@ from samanthas_telegram_bot.conversation.auxil.helpers import (
     make_dict_for_message_with_inline_keyboard,
 )
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
-from samanthas_telegram_bot.data_structures.enums import Role
+from samanthas_telegram_bot.data_structures.enums import AgeRangeType, Role
 from samanthas_telegram_bot.data_structures.literal_types import Locale
 
 
@@ -215,6 +215,7 @@ class MessageSender:
     def _prepare_message_for_review(context: CUSTOM_CONTEXT_TYPES) -> str:
         """Prepares text message with user info for review, depending on role and other factors."""
         user_data = context.user_data
+        bot_data = context.bot_data
         locale: Locale = user_data.locale
         phrases = context.bot_data.phrases
 
@@ -304,6 +305,30 @@ class MessageSender:
                 message += (
                     ", ".join(sorted(user_data.levels_for_teaching_language[language])) + "\n"
                 )
+            message += "\n"
+
+            message += f"{phrases['review_teacher_age_groups_of_students'][locale]}:\n"
+            age_range_display = []
+            for range_id in sorted(user_data.teacher_student_age_range_ids):
+                age_range = next(
+                    (
+                        ar
+                        for ar in bot_data.age_ranges_for_type[AgeRangeType.TEACHER]
+                        if ar.id == range_id
+                    ),
+                    None,
+                )
+                if age_range:
+                    group_name = (
+                        bot_data.phrases[age_range.bot_phrase_id][locale]
+                        if age_range.bot_phrase_id
+                        else f"Age {age_range.age_from}-{age_range.age_to}"
+                    )
+                    age_range_display.append(f"{group_name}")
+                else:
+                    age_range_display.append(f"Unknown group (ID: {range_id})")
+
+            message += ", ".join(age_range_display) if age_range_display else " "
             message += "\n"
 
         return message
