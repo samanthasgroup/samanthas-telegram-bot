@@ -110,6 +110,6 @@ async def student_age_groups(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
         await CQReplySender.ask_student_age_group(context, query)
         return CommonState.ASK_TIMEZONE_OR_IS_YOUNG_TEACHER_READY_TO_HOST_SPEAKING_CLUB
 
-    # TODO is it in the menu?
+    context.user_data.teacher_student_age_range_ids = []
     await CQReplySender.ask_teacher_age_groups_of_students(context, query)
     return TeacherState.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP
