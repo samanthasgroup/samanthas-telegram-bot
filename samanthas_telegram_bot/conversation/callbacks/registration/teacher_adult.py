@@ -12,13 +12,13 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 )
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
+    ensure_teacher_peer_help,
     store_selected_language_level,
 )
 from samanthas_telegram_bot.conversation.auxil.message_sender import MessageSender
 from samanthas_telegram_bot.data_structures.constants import TEACHER_PEER_HELP_TYPES
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import TeachingMode
-from samanthas_telegram_bot.data_structures.models import TeacherPeerHelp
 
 
 async def store_teaching_language_ask_level(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
@@ -216,11 +216,7 @@ async def ask_peer_help_or_additional_help(update: Update, context: CUSTOM_CONTE
     # check if there are teacher_peer_help object
     # because if user skiped this questions
     # it will be None
-    if (
-        not hasattr(context.user_data, "teacher_peer_help")
-        or context.user_data.teacher_peer_help is None
-    ):
-        context.user_data.teacher_peer_help = TeacherPeerHelp()
+    ensure_teacher_peer_help(context)
 
     await CQReplySender.ask_teacher_or_coordinator_additional_help(context, query)
     return ConversationStateTeacherAdult.ASK_REVIEW
@@ -229,6 +225,8 @@ async def ask_peer_help_or_additional_help(update: Update, context: CUSTOM_CONTE
 async def store_peer_help_ask_another(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
     """Stores one option of teacher peer help, asks for another."""
     query, type_of_peer_help = await answer_callback_query_and_get_data(update)
+
+    ensure_teacher_peer_help(context)
 
     setattr(context.user_data.teacher_peer_help, type_of_peer_help, True)
     context.chat_data.peer_help_callback_data.add(type_of_peer_help)
