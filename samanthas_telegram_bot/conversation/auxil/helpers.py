@@ -8,6 +8,7 @@ from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.enums import CommonCallbackData
 from samanthas_telegram_bot.data_structures.context_types import CUSTOM_CONTEXT_TYPES
 from samanthas_telegram_bot.data_structures.enums import AgeRangeType, LoggingLevel
+from samanthas_telegram_bot.data_structures.models import TeacherPeerHelp
 
 
 async def answer_callback_query_and_get_data(update: Update) -> tuple[CallbackQuery, str]:
@@ -174,3 +175,11 @@ def store_selected_language_level(context: CUSTOM_CONTEXT_TYPES, level: str) -> 
     user_data.language_and_level_ids.append(
         bot_data.language_and_level_id_for_language_id_and_level[(last_language_added, level)]
     )
+
+
+def ensure_teacher_peer_help(context: CUSTOM_CONTEXT_TYPES) -> None:
+    if (
+        not hasattr(context.user_data, "teacher_peer_help")
+        or context.user_data.teacher_peer_help is None
+    ):
+        context.user_data.teacher_peer_help = TeacherPeerHelp()
