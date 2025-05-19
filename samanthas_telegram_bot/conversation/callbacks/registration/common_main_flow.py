@@ -26,7 +26,9 @@ from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    ConversationMode,
+)
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateCoordinator as CoordinatorState,
@@ -37,7 +39,9 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as AdultTeacherState,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateTeacherUnder18
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    ConversationStateTeacherUnder18,
+)
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
     notify_speaking_club_coordinator_about_high_level_student,
