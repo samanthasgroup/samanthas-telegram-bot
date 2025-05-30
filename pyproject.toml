@@ -14,7 +14,6 @@ dependencies = [
 name = "samanthas-telegram-bot"
 version = "0.1.0"
 description = "Telegram bot(s) for Samanthas Group"
-readme = "README.md"
 
 [dependency-groups]
 dev = [

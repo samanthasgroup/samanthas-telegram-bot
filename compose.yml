@@ -1,0 +1,16 @@
+services:
+  bot:
+    build: .
+    command: >
+      sh -c "
+        uv run python bot/main.py 
+      "
+    env_file:
+      - .env
+    volumes:
+      - .:/bot
+    # depends_on:
+    #   - postgres
+    #   - redis
+
+

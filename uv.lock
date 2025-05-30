@@ -429,9 +429,9 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "phonenumberslite", specifier = ">=8.13.42,<9.0.0" },
+    { name = "phonenumberslite", specifier = ">=8.13.42,<10.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.1,<2.0.0" },
-    { name = "python-telegram-bot", extras = ["webhooks"], specifier = ">=21.4,<22.0" },
+    { name = "python-telegram-bot", extras = ["webhooks"], specifier = ">=21.4,<23.0" },
     { name = "starlette", specifier = ">=0.38.2,<1.0.0" },
     { name = "uvicorn", specifier = ">=0.30.5,<1.0.0" },
 ]
