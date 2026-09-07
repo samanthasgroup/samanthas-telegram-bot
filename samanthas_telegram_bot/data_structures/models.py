@@ -4,7 +4,7 @@ Most of the classes correspond to models in the backend.
 """
 
 from dataclasses import dataclass
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from samanthas_telegram_bot.api_clients.auxil.constants import DataDict
 from samanthas_telegram_bot.api_clients.auxil.enums import SmalltalkTestStatus
@@ -18,7 +18,7 @@ class AgeRange:
     age_from: int
     age_to: int
     type: AgeRangeType
-    bot_phrase_id: Optional[str] = None
+    bot_phrase_id: str | None = None
 
 
 @dataclass

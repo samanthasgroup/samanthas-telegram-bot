@@ -4,7 +4,7 @@ from samanthas_telegram_bot.data_structures.context_types import BotData, ChatDa
 from samanthas_telegram_bot.data_structures.custom_updates import ChatwootUpdate
 
 
-class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # type:ignore[misc]
+class CustomContext(CallbackContext[ExtBot, UserData, ChatData, BotData]):  # type: ignore[misc]
     """
     Custom CallbackContext class that makes `chat_data` and `user_data` available for updates
     of type `ChatwootUpdate`.
