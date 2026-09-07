@@ -8,8 +8,6 @@ from telegram.ext import (
 
 import samanthas_telegram_bot.conversation.callbacks.registration.common_main_flow as common_main
 import samanthas_telegram_bot.conversation.callbacks.registration.common_review as review
-import samanthas_telegram_bot.conversation.callbacks.registration.coordinator as coordinator
-import samanthas_telegram_bot.conversation.callbacks.registration.student as student
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_adult as adult_teacher
 import samanthas_telegram_bot.conversation.callbacks.registration.teacher_under_18 as young_teacher
 from samanthas_telegram_bot.conversation.auxil.enums import (
@@ -22,6 +20,7 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
     UserDataReviewCategory,
 )
 from samanthas_telegram_bot.conversation.callbacks.chat_with_helpdesk import MessageForwarder
+from samanthas_telegram_bot.conversation.callbacks.registration import coordinator, student
 from samanthas_telegram_bot.data_structures.constants import (
     ALL_LEVELS_PATTERN,
     ENGLISH,
@@ -134,7 +133,7 @@ states = {
             pattern=ALL_LEVELS_PATTERN,
         ),
     ],
-    ConversationStateStudent.ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ: [  # noqa:E501
+    ConversationStateStudent.ENGLISH_STUDENTS_ASK_COMMUNICATION_LANGUAGE_OR_START_TEST_DEPENDING_ON_ABILITY_TO_READ: [
         CallbackQueryHandler(
             student.ask_or_start_assessment_for_english_reader_depending_on_age,
             pattern=CommonCallbackData.YES,  # "yes, I can read in English"
@@ -190,7 +189,7 @@ states = {
         CallbackQueryHandler(student.store_non_teaching_help_ask_another),
     ],
     # MIDDLE OF CONVERSATION: ADULT TEACHER CALLBACKS
-    ConversationStateTeacherAdult.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [  # noqa:E501
+    ConversationStateTeacherAdult.ASK_LEVEL_OR_ANOTHER_LANGUAGE_OR_COMMUNICATION_LANGUAGE: [
         CallbackQueryHandler(
             adult_teacher.ask_class_communication_language,
             pattern=CommonCallbackData.DONE,
@@ -221,11 +220,11 @@ states = {
     ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_START: [
         CallbackQueryHandler(adult_teacher.store_number_of_groups_ask_age_groups),
     ],
-    ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [  # noqa:E501
+    ConversationStateTeacherAdult.PREFERRED_STUDENT_AGE_GROUPS_MENU_OR_ASK_NON_TEACHING_HELP: [
         CallbackQueryHandler(adult_teacher.ask_non_teaching_help, pattern=CommonCallbackData.DONE),
         CallbackQueryHandler(adult_teacher.store_student_age_group_ask_another),
     ],
-    ConversationStateTeacherAdult.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP: [  # noqa:E501
+    ConversationStateTeacherAdult.NON_TEACHING_HELP_MENU_OR_ASK_PEER_HELP_OR_ADDITIONAL_HELP: [
         CallbackQueryHandler(
             adult_teacher.ask_peer_help_or_additional_help, pattern=CommonCallbackData.DONE
         ),
