@@ -168,7 +168,7 @@ class ChatwootClient(BaseApiClient):
             ) from err
 
         try:
-            source_id = data["payload"]["contact_inbox"]["source_id"]  # type:ignore  # TODO
+            source_id = data["payload"]["contact_inbox"]["source_id"]  # type: ignore  # TODO
         except KeyError as err:
             raise ChatwootJSONParsingError(f"Could not parse Chatwoot {data=}") from err
 
@@ -217,7 +217,7 @@ class ChatwootClient(BaseApiClient):
             ) from err
 
         try:
-            conversation_id = data["id"]  # type:ignore
+            conversation_id = data["id"]  # type: ignore
         except KeyError as err:
             raise ChatwootJSONParsingError(f"Could not parse Chatwoot {data=}") from err
 

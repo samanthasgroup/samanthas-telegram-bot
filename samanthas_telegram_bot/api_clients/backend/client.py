@@ -185,7 +185,7 @@ class BackendClient(BaseApiClient):
         answer_ids: tuple[int, ...] = tuple(
             item.answer_id for item in user_data.student_assessment_answers
         )
-        number_of_questions = len(context.chat_data.assessment.questions)  # noqa
+        number_of_questions = len(context.chat_data.assessment.questions)
 
         await logs(
             bot=context.bot,
