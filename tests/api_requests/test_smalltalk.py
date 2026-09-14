@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-import samanthas_telegram_bot.api_clients.smalltalk as smalltalk
+from samanthas_telegram_bot.api_clients import smalltalk
 from samanthas_telegram_bot.api_clients.auxil.enums import SmalltalkTestStatus
 from tests.constants import TEST_DIR
 

@@ -315,7 +315,7 @@ async def send_smalltalk_url(update: Update, context: CUSTOM_CONTEXT_TYPES) -> i
         ) = await SmallTalkClient.send_user_data_get_test(update, context)
     except SmallTalkClientError as err:
         raise RegistrationError("Failed to get SmallTalk test") from err
-        pass  # TODO notify student, assign level based on written assessment
+        # TODO notify student, assign level based on written assessment
     await CQReplySender.send_smalltalk_url(context, query)
     return ConversationStateStudent.ASK_COMMUNICATION_LANGUAGE_AFTER_SMALLTALK
 
