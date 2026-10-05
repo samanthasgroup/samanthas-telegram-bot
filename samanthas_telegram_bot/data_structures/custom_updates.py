@@ -43,11 +43,11 @@ class ChatwootUpdate:
 
         # When creating a Chatwoot contact, we stored their chat ID.
         # It's time to use it now to identify which chat this update belongs to
-        self.chat_id = data[top_key]["meta"]["sender"]["custom_attributes"][  # type:ignore[index]
-            CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT  # type:ignore[index]
+        self.chat_id = data[top_key]["meta"]["sender"]["custom_attributes"][  # type: ignore[index]
+            CHATWOOT_CUSTOM_ATTRIBUTE_CHAT_ID_IN_BOT  # type: ignore[index]
         ]
 
-        self.chatwoot_conversation_id = data[top_key]["id"]  # type:ignore[index]
+        self.chatwoot_conversation_id = data[top_key]["id"]  # type: ignore[index]
 
         logger.debug(f"{self.chat_id=}, {self.chatwoot_conversation_id=}, {data=}")
 

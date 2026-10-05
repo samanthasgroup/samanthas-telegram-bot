@@ -26,7 +26,10 @@ from samanthas_telegram_bot.auxil.log_and_notify import logs
 from samanthas_telegram_bot.conversation.auxil.callback_query_reply_sender import (
     CallbackQueryReplySender as CQReplySender,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import ConversationMode
+from samanthas_telegram_bot.conversation.auxil.enums import (
+    ConversationMode,
+    ConversationStateTeacherUnder18,
+)
 from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateCommon as CommonState
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateCoordinator as CoordinatorState,
@@ -37,7 +40,6 @@ from samanthas_telegram_bot.conversation.auxil.enums import (
 from samanthas_telegram_bot.conversation.auxil.enums import (
     ConversationStateTeacherAdult as AdultTeacherState,
 )
-from samanthas_telegram_bot.conversation.auxil.enums import ConversationStateTeacherUnder18
 from samanthas_telegram_bot.conversation.auxil.helpers import (
     answer_callback_query_and_get_data,
     notify_speaking_club_coordinator_about_high_level_student,
@@ -82,7 +84,7 @@ async def start(update: Update, context: CUSTOM_CONTEXT_TYPES) -> int:
 
     user_data.chat_id = update.effective_chat.id
 
-    greeting = (  # noqa # TODO remove going to production
+    greeting = (  # TODO remove going to production
         "🚧 ТЕСТОВИЙ РЕЖИМ | TEST MODE 🚧\n\n"
         "Бот наразі працює тільки в тестовому режимі.\n"
         "Для реєстрації та отримання додаткової інформації звертайтесь на сайт: https://samanthasgroup.com/\n\n"

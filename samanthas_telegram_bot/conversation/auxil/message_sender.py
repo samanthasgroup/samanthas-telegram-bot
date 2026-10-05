@@ -292,8 +292,7 @@ class MessageSender:
                     f" {(slot.from_utc_hour + offset_hour) % 24}:{offset_minute}-"
                     f"{(slot.to_utc_hour + offset_hour) % 24}:{offset_minute};"
                 )
-            else:  # remove last semicolon, end day with line break
-                message = message[:-1] + "\n"
+            message = message[:-1] + "\n"
         message += "\n"
 
         # Because of complex logic around English, we will not offer the student to review their
